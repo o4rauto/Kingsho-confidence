@@ -1,0 +1,21 @@
+{
+  "name": "frontier-bastion",
+  "version": "1.0.0",
+  "description": "Frontier Bastion — jogo web original de estratégia de sobrevivência (construção de fortaleza + defesa por tiro). HTML/CSS/JS puro, sem build.",
+  "private": true,
+  "scripts": {
+    "test": "node test/smoke.test.js",
+    "start": "python3 -m http.server 8000",
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "game",
+    "strategy",
+    "survival",
+    "canvas",
+    "idle",
+    "tower-defense",
+    "vanilla-js"
+  ],
+  "license": "MIT"
+}
