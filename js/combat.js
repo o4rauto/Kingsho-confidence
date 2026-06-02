@@ -49,8 +49,13 @@ const Combat = {
     this.wallHp = this.wallMax;
     this.enemies = []; this.bullets = []; this.particles = [];
     this.spawnQueue = []; this.spawnTimer = 0;
-    this.archerCooldown = 0; this.chargeCooldown = 0; this.shake = 0;
+    this.archerCooldown = 0; this.chargeCooldown = 0; this.shake = 0; this.shield = 0;
     this.chargeMax = DATA.combat.cavalryChargeCooldown;
+    this.heroSkills = {};
+    for (const id in Game.state.heroes) {
+      const def = Game.heroDef(id);
+      if (def && def.skill) this.heroSkills[id] = { def: def.skill, cd: 0 };
+    }
     this.score = 0; this.ended = false; this.running = true;
     this.resize();
     this.nextWave();
@@ -137,6 +142,46 @@ const Combat = {
     return hit > 0;
   },
 
+  // Aplica dano à muralha, consumindo o escudo (se houver) antes do HP.
+  damageWall(d) {
+    if (this.shield > 0) {
+      const absorbed = Math.min(this.shield, d);
+      this.shield -= absorbed;
+      d -= absorbed;
+    }
+    if (d > 0) this.wallHp -= d;
+  },
+
+  skillCooldown(id) {
+    return this.heroSkills && this.heroSkills[id] ? this.heroSkills[id].cd : 0;
+  },
+
+  // Aciona a habilidade ativa de um herói recrutado.
+  useHeroSkill(id) {
+    const s = this.heroSkills && this.heroSkills[id];
+    if (!s || s.cd > 0 || !this.running || this.ended) return false;
+    const sk = s.def;
+    if (sk.type === 'heal') {
+      this.wallHp = Math.min(this.wallMax, this.wallHp + sk.value * this.wallMax);
+      this.burst(this.wallX, this.H * 0.5, '#5fcf6b', 18);
+    } else if (sk.type === 'shield') {
+      this.shield = Math.min(this.wallMax, this.shield + sk.value * this.wallMax);
+      this.burst(this.wallX, this.H * 0.5, '#7fd4ff', 18);
+    } else if (sk.type === 'volley') {
+      const live = this.enemies.filter(e => e.hp > 0);
+      for (let i = 0; i < sk.value; i++) {
+        const t = live[i % Math.max(1, live.length)];
+        if (t) this.fireBullet(t.x, t.y, Game.shotDamage() * 1.6, '#ffd45e', 640, true);
+      }
+    } else if (sk.type === 'nuke') {
+      const dmg = Math.floor(sk.value * Game.chargeDamage());
+      for (const en of this.enemies) { en.hp -= dmg; en.hitFlash = 0.15; this.burst(en.x, en.y, '#ff7a3c', 8); }
+      this.shake = 0.3;
+    }
+    s.cd = sk.cooldown;
+    return true;
+  },
+
   fireBullet(tx, ty, dmg, color, speed, manual) {
     const sx = this.wallX, sy = this.H * 0.5;
     const ang = Math.atan2(ty - sy, tx - sx);
@@ -173,6 +218,7 @@ const Combat = {
 
     if (this.chargeCooldown > 0) this.chargeCooldown = Math.max(0, this.chargeCooldown - dt);
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt);
+    for (const id in this.heroSkills) { const s = this.heroSkills[id]; if (s.cd > 0) s.cd = Math.max(0, s.cd - dt); }
 
     // Move projéteis e checa colisão.
     for (const b of this.bullets) {
@@ -195,7 +241,7 @@ const Combat = {
       en.x -= en.speed * dt;
       if (en.hitFlash > 0) en.hitFlash -= dt;
       if (en.x - en.r <= this.wallX) {
-        this.wallHp -= en.dmg;
+        this.damageWall(en.dmg);
         en.hp = 0;
         this.burst(this.wallX, en.y, '#ff5050', 12);
         this.shake = 0.18;
@@ -299,6 +345,12 @@ const Combat = {
     ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(4, 8, hpW, 8);
     ctx.fillStyle = hpFrac > 0.35 ? '#5fcf6b' : '#e05050';
     ctx.fillRect(4, 8, hpW * hpFrac, 8);
+    // Escudo (Égide) sobre a barra de HP.
+    if (this.shield > 0) {
+      const shFrac = Math.min(1, this.shield / this.wallMax);
+      ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(4, 18, hpW, 4);
+      ctx.fillStyle = '#7fd4ff'; ctx.fillRect(4, 18, hpW * shFrac, 4);
+    }
 
     // Inimigos.
     for (const en of this.enemies) {

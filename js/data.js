@@ -91,7 +91,7 @@ const DATA = {
     },
     academia: {
       name: 'Academia', icon: '📚', max: 30,
-      desc: 'Estuda técnicas que elevam a produção global de recursos (+4% por nível).',
+      desc: 'Centro de estudos. Eleva a produção global (+4%/nível) e destrava níveis da árvore de Pesquisa.',
       prodBonus: 0.04,
       baseCost: { wood: 90, stone: 80, gold: 30 }, costFactor: 1.62,
       baseTime: 8, timeFactor: 1.31,
@@ -119,16 +119,17 @@ const DATA = {
     cavalry: {
       name: 'Cavalaria', icon: '🐎', power: 8,
       cost: { food: 70, gold: 18 }, time: 11, charge: 60,
-      desc: 'Aumenta o dano da Carga de Cavalaria, seu especial em batalha.',
+      desc: 'Aumenta o dano da Carga de Cavalaria e é essencial nas expedições.',
     },
   },
 
   /* ------------------------------------------------------------------------
-   * Heróis. Recrutados uma vez (pagando o custo) e podem ser promovidos com
-   * Ouro para ganhar poder e reforçar o bônus. `bonus` aceita:
-   *   production -> +% produção global
-   *   atk        -> +% dano em combate
-   *   defense    -> +% HP da muralha
+   * Heróis. Recrutados uma vez e promovidos com Ouro. Além do bônus passivo,
+   * cada herói concede uma HABILIDADE ATIVA usável no combate de defesa:
+   *   heal   -> recupera HP da muralha
+   *   shield -> escudo temporário que absorve dano antes da muralha
+   *   volley -> rajada de disparos potentes nos inimigos mais próximos
+   *   nuke   -> dano em área a todos os invasores na tela
    * ----------------------------------------------------------------------*/
   heroes: [
     {
@@ -136,24 +137,28 @@ const DATA = {
       cost: { gold: 4000 }, bonus: { production: 0.10 }, power: 80,
       bonusText: '+10% de produção de recursos',
       lore: 'Guarda-florestal que conhece cada trilha. Mantém os celeiros sempre cheios.',
+      skill: { name: 'Suprimentos', icon: '📦', cooldown: 14, type: 'heal', value: 0.12, text: 'Recupera 12% do HP da muralha.' },
     },
     {
       id: 'aurora', name: 'Aurora', icon: '🛡️', role: 'Guardiã', rarity: 'Épico',
       cost: { gems: 280 }, bonus: { defense: 0.18 }, power: 130,
       bonusText: '+18% de HP da muralha',
       lore: 'Comandante da guarda. Sua presença faz a muralha resistir ao impossível.',
+      skill: { name: 'Égide', icon: '🛡️', cooldown: 16, type: 'shield', value: 0.30, text: 'Ergue um escudo que absorve dano (30% do HP da muralha).' },
     },
     {
       id: 'corvus', name: 'Corvus', icon: '🎯', role: 'Atirador', rarity: 'Épico',
       cost: { gems: 280 }, bonus: { atk: 0.18 }, power: 130,
       bonusText: '+18% de dano em combate',
       lore: 'Franco-atirador silencioso. Nenhum invasor passa do seu campo de visão.',
+      skill: { name: 'Saraivada', icon: '🎯', cooldown: 12, type: 'volley', value: 10, text: 'Dispara 10 tiros certeiros instantâneos.' },
     },
     {
       id: 'vex', name: 'Vex', icon: '⚡', role: 'Estrategista', rarity: 'Lendário',
       cost: { gems: 750 }, bonus: { atk: 0.12, defense: 0.12, production: 0.06 }, power: 240,
       bonusText: '+12% dano, +12% muralha e +6% produção',
       lore: 'Mente brilhante por trás de cada vitória. Transforma recursos escassos em poder.',
+      skill: { name: 'Investida Tática', icon: '⚡', cooldown: 18, type: 'nuke', value: 2.2, text: 'Detona uma onda que fere todos os invasores na tela.' },
     },
   ],
 
@@ -171,5 +176,83 @@ const DATA = {
       brute:  { name: 'Brutamonte', hp: 190, speed: 20, dmg: 42, gold: 16, color: '#7a4ca0', r: 22 },
       boss:   { name: 'Senhor da Horda', hp: 900, speed: 16, dmg: 90, gold: 80, color: '#b8323f', r: 34 },
     },
+  },
+
+  /* ------------------------------------------------------------------------
+   * Pesquisa (árvore de tecnologia). Cada nó dá um efeito permanente por nível
+   * e é destravado pelo nível da Academia (reqAcademy). Tem fila própria,
+   * independente da fila de construção.
+   *   effect: prod | storage | atk | archer | wall | shot (percentuais)
+   *           march (inteiro: +slots de expedição)
+   * ----------------------------------------------------------------------*/
+  research: {
+    eco_forestry: {
+      branch: 'Economia', name: 'Silvicultura', icon: '🌲', max: 10, reqAcademy: 1,
+      effect: { prod: 0.03 }, effectText: 'produção de recursos',
+      baseCost: { wood: 300, food: 200 }, costFactor: 1.55, baseTime: 25, timeFactor: 1.28,
+    },
+    eco_storage: {
+      branch: 'Economia', name: 'Logística', icon: '📦', max: 8, reqAcademy: 2,
+      effect: { storage: 0.06 }, effectText: 'capacidade de estoque',
+      baseCost: { wood: 350, stone: 250 }, costFactor: 1.55, baseTime: 30, timeFactor: 1.28,
+    },
+    eco_cartography: {
+      branch: 'Economia', name: 'Cartografia', icon: '🗺️', max: 5, reqAcademy: 3,
+      effect: { march: 1 }, effectText: 'slots de expedição',
+      baseCost: { wood: 600, gold: 250 }, costFactor: 1.7, baseTime: 90, timeFactor: 1.35,
+    },
+    mil_weapons: {
+      branch: 'Militar', name: 'Forja de Armas', icon: '⚔️', max: 10, reqAcademy: 2,
+      effect: { atk: 0.04 }, effectText: 'dano em combate',
+      baseCost: { stone: 300, gold: 150 }, costFactor: 1.58, baseTime: 35, timeFactor: 1.29,
+    },
+    mil_archery: {
+      branch: 'Militar', name: 'Arquearia', icon: '🏹', max: 10, reqAcademy: 3,
+      effect: { archer: 0.05 }, effectText: 'dano dos arqueiros',
+      baseCost: { wood: 320, gold: 160 }, costFactor: 1.58, baseTime: 35, timeFactor: 1.29,
+    },
+    def_masonry: {
+      branch: 'Defesa', name: 'Alvenaria', icon: '🧱', max: 10, reqAcademy: 2,
+      effect: { wall: 0.04 }, effectText: 'HP da muralha',
+      baseCost: { stone: 360, wood: 200 }, costFactor: 1.58, baseTime: 35, timeFactor: 1.29,
+    },
+    def_traps: {
+      branch: 'Defesa', name: 'Armadilhas', icon: '🪤', max: 10, reqAcademy: 4,
+      effect: { shot: 0.05 }, effectText: 'dano do seu tiro',
+      baseCost: { wood: 280, stone: 280, gold: 120 }, costFactor: 1.6, baseTime: 45, timeFactor: 1.30,
+    },
+  },
+
+  /* ------------------------------------------------------------------------
+   * Expedições (mapa-múndi / PvE). Enviam tropas por um tempo; ao retornar,
+   * concedem recompensas. As tropas ficam ocupadas durante a expedição.
+   *   need -> tropas reservadas | dur -> segundos | reward -> recursos
+   * ----------------------------------------------------------------------*/
+  expeditions: {
+    forage:   { name: 'Coleta na Mata',     icon: '🌲', dur: 45,  need: 10, reward: { wood: 700, food: 450 } },
+    scavenge: { name: 'Saque nas Ruínas',   icon: '🏚️', dur: 90,  need: 20, reward: { stone: 600, gold: 180 } },
+    hunt:     { name: 'Caçada à Matilha',   icon: '🐺', dur: 75,  need: 30, reward: { food: 650, gems: 6 } },
+    convoy:   { name: 'Escolta de Comboio', icon: '🛒', dur: 150, need: 50, reward: { gold: 500, wood: 900, stone: 600 } },
+    expedboss:{ name: 'Toca do Colosso',    icon: '🐲', dur: 240, need: 80, reward: { gold: 1200, gems: 20, stone: 800 } },
+  },
+
+  /* ------------------------------------------------------------------------
+   * Missões. Objetivos permanentes com recompensa única ao atingir a meta.
+   *   type -> power | troops | battles | buildLevels | expeditions | heroes | research
+   * ----------------------------------------------------------------------*/
+  missions: [
+    { id: 'm_build1',  name: 'Erga a fortaleza',   icon: '🏗️', type: 'buildLevels', target: 15,   reward: { wood: 500, stone: 400 } },
+    { id: 'm_troops1', name: 'Forme um exército',  icon: '⚔️', type: 'troops',      target: 50,   reward: { food: 600, gold: 150 } },
+    { id: 'm_battle1', name: 'Primeira defesa',    icon: '🛡️', type: 'battles',     target: 1,    reward: { gems: 30 } },
+    { id: 'm_battle5', name: 'Veterano de guerra', icon: '🎖️', type: 'battles',     target: 5,    reward: { gems: 60, gold: 500 } },
+    { id: 'm_exped1',  name: 'Explore o mundo',    icon: '🗺️', type: 'expeditions', target: 3,    reward: { gold: 400, gems: 15 } },
+    { id: 'm_hero1',   name: 'Recrute um herói',   icon: '🦸', type: 'heroes',      target: 1,    reward: { gold: 800 } },
+    { id: 'm_res1',    name: 'Avanço tecnológico', icon: '🔬', type: 'research',    target: 5,    reward: { gems: 50, wood: 800 } },
+    { id: 'm_power1',  name: 'Potência regional',  icon: '⚡', type: 'power',       target: 2000, reward: { gems: 100, gold: 1000 } },
+  ],
+
+  /* Recompensa diária (1x por dia real). */
+  daily: {
+    reward: { wood: 1000, food: 1000, stone: 600, gold: 300, gems: 25 },
   },
 };

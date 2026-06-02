@@ -24,10 +24,15 @@ const Game = {
       buildings,
       troops: { infantry: 0, archer: 0, cavalry: 0 },
       heroes: {},               // id -> { level }
+      research: {},             // id -> nível
       buildQueue: null,         // { key, startedAt, endsAt, toLevel }
       trainQueue: null,         // { type, qty, startedAt, endsAt }
+      researchQueue: null,      // { id, startedAt, endsAt, toLevel }
+      expeditions: [],          // [{ id, need, startedAt, endsAt, reward }]
+      missionsClaimed: {},      // id -> true
+      dailyClaim: null,         // 'AAAA-M-D' do último resgate diário
       stage: 1,                 // estágio de campanha desbloqueado
-      stats: { battlesWon: 0, enemiesDefeated: 0 },
+      stats: { battlesWon: 0, enemiesDefeated: 0, troopsTrainedTotal: 0, expeditionsDone: 0 },
     };
   },
 
@@ -43,6 +48,10 @@ const Game = {
       this.state.buildings = Object.assign(this.defaultState().buildings, data.buildings || {});
       this.state.troops    = Object.assign({ infantry: 0, archer: 0, cavalry: 0 }, data.troops || {});
       this.state.heroes    = data.heroes || {};
+      this.state.research  = data.research || {};
+      this.state.expeditions = Array.isArray(data.expeditions) ? data.expeditions : [];
+      this.state.missionsClaimed = data.missionsClaimed || {};
+      this.state.stats     = Object.assign({ battlesWon: 0, enemiesDefeated: 0, troopsTrainedTotal: 0, expeditionsDone: 0 }, data.stats || {});
       return true;
     } catch (e) {
       console.warn('Falha ao carregar save, iniciando novo jogo.', e);
@@ -94,7 +103,7 @@ const Game = {
     const acad = (this.state.buildings.academia || 0) * DATA.buildings.academia.prodBonus;
     const pop  = this.population() * 0.0009;
     const hero = this.heroBonus('production');
-    return 1 + acad + pop + hero;
+    return 1 + acad + pop + hero + this.researchBonus('prod');
   },
 
   // Produção por segundo de um recurso, somando todos os edifícios.
@@ -113,7 +122,7 @@ const Game = {
   storageCap() {
     const base = 1000;
     const wh = (this.state.buildings.armazem || 0) * DATA.buildings.armazem.storage;
-    return base + wh;
+    return Math.floor((base + wh) * (1 + this.researchBonus('storage')));
   },
 
   // Soma de um tipo de bônus entre os heróis recrutados (escala leve com nível).
@@ -306,19 +315,19 @@ const Game = {
   wallMaxHp() {
     const wall = (this.state.buildings.muralha || 0) * DATA.buildings.muralha.wallHp;
     const inf  = this.state.troops.infantry * DATA.troops.infantry.wallHp;
-    return Math.floor((wall + inf + 150) * (1 + this.heroBonus('defense')));
+    return Math.floor((wall + inf + 150) * (1 + this.heroBonus('defense') + this.researchBonus('wall')));
   },
 
   shotDamage() {
-    return Math.floor(DATA.combat.baseShotDamage * (1 + this.heroBonus('atk')));
+    return Math.floor(DATA.combat.baseShotDamage * (1 + this.heroBonus('atk') + this.researchBonus('atk') + this.researchBonus('shot')));
   },
 
   archerDps() {
-    return Math.floor(this.state.troops.archer * DATA.troops.archer.dps * (1 + this.heroBonus('atk')));
+    return Math.floor(this.state.troops.archer * DATA.troops.archer.dps * (1 + this.heroBonus('atk') + this.researchBonus('atk') + this.researchBonus('archer')));
   },
 
   chargeDamage() {
-    return Math.floor((200 + this.state.troops.cavalry * DATA.troops.cavalry.charge) * (1 + this.heroBonus('atk')));
+    return Math.floor((200 + this.state.troops.cavalry * DATA.troops.cavalry.charge) * (1 + this.heroBonus('atk') + this.researchBonus('atk')));
   },
 
   /* ----- Poder ---------------------------------------------------------- */
@@ -330,6 +339,7 @@ const Game = {
       const def = this.heroDef(id);
       if (def) p += def.power * this.state.heroes[id].level;
     }
+    for (const rid in this.state.research) p += (this.state.research[rid] || 0) * 6;
     return Math.floor(p);
   },
 
@@ -345,7 +355,23 @@ const Game = {
     if (this.state.trainQueue && now >= this.state.trainQueue.endsAt) {
       const q = this.state.trainQueue;
       this.state.troops[q.type] = (this.state.troops[q.type] || 0) + q.qty;
+      this.state.stats.troopsTrainedTotal = (this.state.stats.troopsTrainedTotal || 0) + q.qty;
       this.state.trainQueue = null;
+    }
+    if (this.state.researchQueue && now >= this.state.researchQueue.endsAt) {
+      const q = this.state.researchQueue;
+      this.state.research[q.id] = q.toLevel;
+      this.state.researchQueue = null;
+    }
+    if (this.state.expeditions && this.state.expeditions.length) {
+      const still = [];
+      for (const ex of this.state.expeditions) {
+        if (now >= ex.endsAt) {
+          this.add(ex.reward);
+          this.state.stats.expeditionsDone = (this.state.stats.expeditionsDone || 0) + 1;
+        } else still.push(ex);
+      }
+      this.state.expeditions = still;
     }
   },
 
@@ -384,5 +410,144 @@ const Game = {
       if (d > 0) gained[r] = d;
     }
     return { seconds: Math.floor(elapsed), gained };
+  },
+
+  /* ----- Pesquisa (árvore de tecnologia) -------------------------------- */
+  // Soma de um tipo de efeito entre todos os nós pesquisados.
+  researchBonus(type) {
+    let sum = 0;
+    for (const id in DATA.research) {
+      const lvl = this.state.research[id] || 0;
+      const eff = DATA.research[id].effect[type];
+      if (lvl > 0 && eff) sum += eff * lvl;
+    }
+    return sum;
+  },
+
+  researchCost(id) {
+    const def = DATA.research[id];
+    return this.scaleCost(def.baseCost, def.costFactor, this.state.research[id] || 0);
+  },
+
+  researchTime(id) {
+    const def = DATA.research[id];
+    return def.baseTime * Math.pow(def.timeFactor, this.state.research[id] || 0);
+  },
+
+  researchBlockReason(id) {
+    const def = DATA.research[id];
+    if ((this.state.research[id] || 0) >= def.max) return 'Nível máximo atingido.';
+    if ((this.state.buildings.academia || 0) < def.reqAcademy) return 'Requer Academia nível ' + def.reqAcademy + '.';
+    if (this.state.researchQueue) return 'Já há uma pesquisa em andamento.';
+    if (!this.canAfford(this.researchCost(id))) return 'Recursos insuficientes.';
+    return null;
+  },
+
+  startResearch(id) {
+    if (this.researchBlockReason(id)) return false;
+    this.spend(this.researchCost(id));
+    const now = Date.now();
+    this.state.researchQueue = { id, startedAt: now, endsAt: now + this.researchTime(id) * 1000, toLevel: (this.state.research[id] || 0) + 1 };
+    return true;
+  },
+
+  rushResearch() {
+    const q = this.state.researchQueue;
+    if (!q) return false;
+    const cost = this.rushCost(q.endsAt);
+    if ((this.state.resources.gems || 0) < cost) return false;
+    this.state.resources.gems -= cost;
+    q.endsAt = Date.now();
+    this.processQueues();
+    return true;
+  },
+
+  /* ----- Expedições (mapa-múndi / PvE) ---------------------------------- */
+  marchSlots()  { return 1 + this.researchBonus('march'); },
+  busyTroops()  { return (this.state.expeditions || []).reduce((s, e) => s + e.need, 0); },
+  availableTroops() { return this.troopCount() - this.busyTroops(); },
+
+  expeditionBlockReason(id) {
+    if ((this.state.expeditions || []).length >= this.marchSlots()) return 'Sem slots de marcha livres.';
+    const need = DATA.expeditions[id].need;
+    if (this.availableTroops() < need) return 'Tropas livres insuficientes (precisa de ' + need + ').';
+    return null;
+  },
+
+  startExpedition(id) {
+    if (this.expeditionBlockReason(id)) return false;
+    const def = DATA.expeditions[id];
+    const now = Date.now();
+    this.state.expeditions.push({ id, need: def.need, startedAt: now, endsAt: now + def.dur * 1000, reward: Object.assign({}, def.reward) });
+    return true;
+  },
+
+  rushExpedition(index) {
+    const ex = (this.state.expeditions || [])[index];
+    if (!ex) return false;
+    const cost = this.rushCost(ex.endsAt);
+    if ((this.state.resources.gems || 0) < cost) return false;
+    this.state.resources.gems -= cost;
+    ex.endsAt = Date.now();
+    this.processQueues();
+    return true;
+  },
+
+  /* ----- Missões e recompensa diária ------------------------------------ */
+  buildingLevelsTotal() {
+    let t = 0;
+    for (const k in this.state.buildings) t += this.state.buildings[k] || 0;
+    return t;
+  },
+
+  researchLevelsTotal() {
+    let t = 0;
+    for (const k in this.state.research) t += this.state.research[k] || 0;
+    return t;
+  },
+
+  missionProgress(m) {
+    switch (m.type) {
+      case 'power':       return this.power();
+      case 'troops':      return this.state.stats.troopsTrainedTotal || 0;
+      case 'battles':     return this.state.stats.battlesWon || 0;
+      case 'expeditions': return this.state.stats.expeditionsDone || 0;
+      case 'buildLevels': return this.buildingLevelsTotal();
+      case 'research':    return this.researchLevelsTotal();
+      case 'heroes':      return Object.keys(this.state.heroes).length;
+      default:            return 0;
+    }
+  },
+
+  missionClaimed(id) { return !!this.state.missionsClaimed[id]; },
+  missionClaimable(m) { return !this.missionClaimed(m.id) && this.missionProgress(m) >= m.target; },
+
+  claimMission(id) {
+    const m = DATA.missions.find(x => x.id === id);
+    if (!m || !this.missionClaimable(m)) return false;
+    this.add(m.reward);
+    this.state.missionsClaimed[id] = true;
+    return true;
+  },
+
+  // Conta missões prontas para resgate (para o "selo" de notificação).
+  claimableCount() {
+    let n = DATA.missions.reduce((c, m) => c + (this.missionClaimable(m) ? 1 : 0), 0);
+    if (this.canClaimDaily()) n += 1;
+    return n;
+  },
+
+  todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  },
+
+  canClaimDaily() { return this.state.dailyClaim !== this.todayKey(); },
+
+  claimDaily() {
+    if (!this.canClaimDaily()) return false;
+    this.add(DATA.daily.reward);
+    this.state.dailyClaim = this.todayKey();
+    return true;
   },
 };

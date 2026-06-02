@@ -9,10 +9,12 @@
   'use strict';
 
   const NAV = [
-    { id: 'cidade',  icon: '🏰', label: 'Fortaleza' },
-    { id: 'quartel', icon: '⚔️', label: 'Quartel' },
-    { id: 'herois',  icon: '🦸', label: 'Heróis' },
-    { id: 'batalha', icon: '🎯', label: 'Defesa' },
+    { id: 'cidade',   icon: '🏰', label: 'Fortaleza' },
+    { id: 'pesquisa', icon: '🔬', label: 'Pesquisa' },
+    { id: 'quartel',  icon: '⚔️', label: 'Quartel' },
+    { id: 'mundo',    icon: '🗺️', label: 'Mundo' },
+    { id: 'herois',   icon: '🦸', label: 'Heróis' },
+    { id: 'batalha',  icon: '🎯', label: 'Defesa' },
   ];
 
   let battleStageView = 1;   // estágio sendo visualizado no saguão
@@ -60,6 +62,8 @@
     }
     const pw = document.getElementById('power-val');
     if (pw) pw.textContent = Game.fmt(Game.power());
+    const badge = document.getElementById('missions-badge');
+    if (badge) { const c = Game.claimableCount(); badge.textContent = c; badge.hidden = (c === 0); }
   }
 
   /* ----- Navegação ----------------------------------------------------- */
@@ -80,7 +84,9 @@
 
     if (id === 'cidade')       screen.innerHTML = Screens.renderCidade();
     else if (id === 'quartel') screen.innerHTML = Screens.renderQuartel();
-    else if (id === 'herois')  screen.innerHTML = Screens.renderHerois();
+    else if (id === 'herois')   screen.innerHTML = Screens.renderHerois();
+    else if (id === 'pesquisa') screen.innerHTML = Screens.renderPesquisa();
+    else if (id === 'mundo')    screen.innerHTML = Screens.renderMundo();
     else if (id === 'batalha') {
       if (!samePage) battleStageView = Game.state.stage;          // ao entrar, mostra o estágio mais avançado
       battleStageView = Math.max(1, Math.min(battleStageView, Game.state.stage));
@@ -96,17 +102,58 @@
 
   /* ----- Delegação de eventos (cliques) -------------------------------- */
   function onClick(e) {
-    const t = e.target.closest('[data-nav],[data-upgrade],[data-train],[data-trainmax],[data-recruit],[data-promote],[data-rush]');
+    const t = e.target.closest('[data-nav],[data-upgrade],[data-train],[data-trainmax],[data-recruit],[data-promote],[data-rush],[data-rushexp],[data-research],[data-exped],[data-claim],[data-daily],[data-missions]');
     if (!t) return;
 
     if (t.dataset.nav) return navigate(t.dataset.nav);
+    if (t.dataset.missions !== undefined) return openMissions();
 
     if (t.dataset.rush) {
-      const ok = t.dataset.rush === 'build' ? Game.rushBuild() : Game.rushTraining();
+      let ok;
+      if (t.dataset.rush === 'build') ok = Game.rushBuild();
+      else if (t.dataset.rush === 'train') ok = Game.rushTraining();
+      else if (t.dataset.rush === 'research') ok = Game.rushResearch();
       if (!ok) return toast('Gemas insuficientes para acelerar.', 'warn');
       Game.save();
       refreshScreen();
       return toast('Concluído instantaneamente!', 'ok');
+    }
+
+    if (t.dataset.rushexp !== undefined) {
+      if (!Game.rushExpedition(parseInt(t.dataset.rushexp, 10))) return toast('Gemas insuficientes para acelerar.', 'warn');
+      Game.save();
+      refreshScreen();
+      return toast('Expedição concluída!', 'ok');
+    }
+
+    if (t.dataset.research) {
+      const reason = Game.researchBlockReason(t.dataset.research);
+      if (reason) return toast(reason, 'warn');
+      Game.startResearch(t.dataset.research);
+      Game.save();
+      refreshScreen();
+      return toast(`Pesquisa iniciada: ${DATA.research[t.dataset.research].name}.`, 'ok');
+    }
+
+    if (t.dataset.exped) {
+      const reason = Game.expeditionBlockReason(t.dataset.exped);
+      if (reason) return toast(reason, 'warn');
+      Game.startExpedition(t.dataset.exped);
+      Game.save();
+      refreshScreen();
+      return toast(`Expedição enviada: ${DATA.expeditions[t.dataset.exped].name}.`, 'ok');
+    }
+
+    if (t.dataset.claim) {
+      if (!Game.claimMission(t.dataset.claim)) return toast('Missão indisponível.', 'warn');
+      Game.save(); refreshTopbar(); refreshMissionsModal();
+      return toast('Recompensa resgatada! 🎉', 'ok');
+    }
+
+    if (t.dataset.daily !== undefined) {
+      if (!Game.claimDaily()) return toast('Diária já resgatada hoje.', 'warn');
+      Game.save(); refreshTopbar(); refreshMissionsModal();
+      return toast('Recompensa diária resgatada! 🎁', 'ok');
     }
 
     if (t.dataset.upgrade) {
@@ -175,6 +222,8 @@
 
     const startBtn = document.getElementById('battle-start');
     const overlay = document.getElementById('battle-overlay');
+    const skillBtns = Array.from(document.querySelectorAll('#skill-bar .skill-btn'));
+    const heroBtns = Array.from(document.querySelectorAll('#skill-bar [data-skill]'));
     const chargeBtn = document.getElementById('charge-btn');
 
     document.getElementById('stage-prev').onclick = () => {
@@ -188,32 +237,22 @@
 
     startBtn.onclick = () => {
       overlay.classList.add('hidden');
-      chargeBtn.hidden = false;
+      skillBtns.forEach(b => { b.hidden = false; b.classList.remove('cooling'); });
       Combat.start(battleStageView, onBattleEnd);
     };
 
-    chargeBtn.onclick = () => {
-      if (Combat.chargeCooldown > 0) return;
-      if (!Combat.useCharge()) return;
-    };
+    if (chargeBtn) chargeBtn.onclick = () => { Combat.useCharge(); };
+    heroBtns.forEach(btn => { btn.onclick = () => { Combat.useHeroSkill(btn.dataset.skill); }; });
 
-    // Atualiza o cooldown visual da carga.
-    if (window.__chargeRaf) cancelAnimationFrame(window.__chargeRaf);
-    const tickCharge = () => {
+    // Atualiza os cooldowns visuais (Carga de Cavalaria + habilidades de herói).
+    if (window.__skillRaf) cancelAnimationFrame(window.__skillRaf);
+    const tickSkills = () => {
       if (Screens.current !== 'batalha') return;
-      const btn = document.getElementById('charge-btn');
-      if (btn && !btn.hidden) {
-        if (Combat.chargeCooldown > 0) {
-          btn.classList.add('cooling');
-          btn.textContent = '🐎 ' + Math.ceil(Combat.chargeCooldown) + 's';
-        } else {
-          btn.classList.remove('cooling');
-          btn.textContent = '🐎 Carga';
-        }
-      }
-      window.__chargeRaf = requestAnimationFrame(tickCharge);
+      if (chargeBtn && !chargeBtn.hidden) updateSkillBtn(chargeBtn, Combat.chargeCooldown);
+      heroBtns.forEach(btn => { if (!btn.hidden) updateSkillBtn(btn, Combat.skillCooldown(btn.dataset.skill)); });
+      window.__skillRaf = requestAnimationFrame(tickSkills);
     };
-    tickCharge();
+    tickSkills();
   }
 
   function updateStageLabel() {
@@ -225,8 +264,7 @@
 
   function onBattleEnd(result) {
     const overlay = document.getElementById('battle-overlay');
-    const chargeBtn = document.getElementById('charge-btn');
-    if (chargeBtn) chargeBtn.hidden = true;
+    document.querySelectorAll('#skill-bar .skill-btn').forEach(b => { b.hidden = true; });
     if (!overlay) return;
 
     let rewardsHtml = '';
@@ -253,6 +291,36 @@
       navigate('batalha');
     };
     refreshTopbar();
+  }
+
+  /* ----- Missões (modal) ----------------------------------------------- */
+  function openMissions() {
+    const modal = document.getElementById('modal');
+    modal.innerHTML = `
+      <div class="modal-card modal-wide">
+        <h3>📜 Missões &amp; Recompensas</h3>
+        <div id="missions-body">${Screens.renderMissionsBody()}</div>
+        <button class="btn btn-ghost" id="missions-close">Fechar</button>
+      </div>`;
+    modal.classList.add('show');
+    document.getElementById('missions-close').onclick = () => modal.classList.remove('show');
+  }
+
+  function refreshMissionsModal() {
+    const modal = document.getElementById('modal');
+    const body = document.getElementById('missions-body');
+    if (body && modal.classList.contains('show')) body.innerHTML = Screens.renderMissionsBody();
+  }
+
+  function updateSkillBtn(btn, cd) {
+    const cdEl = btn.querySelector('.sk-cd');
+    if (cd > 0) {
+      btn.classList.add('cooling');
+      if (cdEl) cdEl.textContent = Math.ceil(cd);
+    } else {
+      btn.classList.remove('cooling');
+      if (cdEl) cdEl.textContent = '';
+    }
   }
 
   /* ----- Progresso offline (modal de boas-vindas) ---------------------- */
@@ -282,16 +350,22 @@
 
     const bq = Game.state.buildQueue;
     const tq = Game.state.trainQueue;
+    const rq = Game.state.researchQueue;
+    const expCount = Game.state.expeditions.length;
     Game.tick(dt);
     const buildDone = bq && !Game.state.buildQueue;
     const trainDone = tq && !Game.state.trainQueue;
+    const researchDone = rq && !Game.state.researchQueue;
+    const expDone = Game.state.expeditions.length < expCount;
     if (buildDone) toast(`${DATA.buildings[bq.key].name} concluído (Nv ${bq.toLevel}).`, 'ok');
     if (trainDone) toast(`${tq.qty} ${DATA.troops[tq.type].name} prontos para a batalha.`, 'ok');
+    if (researchDone) toast(`Pesquisa concluída: ${DATA.research[rq.id].name} Nv ${rq.toLevel}.`, 'ok');
+    if (expDone) toast('Expedição retornou com recompensas! 🎁', 'ok');
 
     refreshTopbar();
     if (Screens.current === 'batalha') {
       /* o combate gerencia o próprio canvas */
-    } else if (buildDone || trainDone) {
+    } else if (buildDone || trainDone || researchDone || expDone) {
       navigate(Screens.current);                 // re-render para refletir a conclusão
     } else {
       Screens.refresh();

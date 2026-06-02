@@ -27,17 +27,29 @@ Roda 100% no navegador, sem dependências e sem etapa de build — é só abrir 
    - **Muralha** aumenta muito o HP de defesa nas batalhas.
    - O **Centro de Comando** define o nível máximo dos demais edifícios — eleve-o
      para destravar melhorias.
-2. **Quartel** ⚔️ — treine **Infantaria** (reforça a muralha), **Arqueiros**
-   (tiro automático em batalha) e **Cavalaria** (potencializa a *Carga*).
-3. **Heróis** 🦸 — recrute e promova líderes com bônus permanentes de produção,
-   ataque e defesa.
-4. **Defesa** 🎯 — escolha o estágio e segure as ondas:
+2. **Pesquisa** 🔬 — árvore de tecnologia com três ramos (**Economia**,
+   **Militar**, **Defesa**). Cada nó dá bônus permanentes (produção, estoque,
+   dano, muralha, slots de expedição) e é destravado pelo nível da Academia.
+   Tem **fila própria**, paralela à de construção.
+3. **Quartel** ⚔️ — treine **Infantaria** (reforça a muralha), **Arqueiros**
+   (tiro automático em batalha) e **Cavalaria** (potencializa a *Carga* e as
+   expedições).
+4. **Mundo** 🗺️ — envie tropas em **expedições PvE** (coleta, saque, caçada,
+   comboios e a Toca do Colosso). As tropas ficam ocupadas durante a missão e
+   retornam com recompensas. O nº de expedições simultâneas vem dos **slots de
+   marcha** (pesquisa de Cartografia).
+5. **Heróis** 🦸 — recrute e promova líderes com bônus permanentes **e** uma
+   **habilidade ativa** usável no combate (cura, escudo, saraivada ou dano em área).
+6. **Defesa** 🎯 — escolha o estágio e segure as ondas:
    - **Clique/toque** na arena para **atirar** nos invasores.
    - Seus **arqueiros** disparam sozinhos no inimigo mais próximo.
-   - O botão **🐎 Carga** dispara um ataque em área (recarrega com o tempo e
-     escala com a quantidade de cavalaria).
+   - O botão **🐎 Carga** e as **habilidades de herói** ficam na barra inferior,
+     cada um com seu tempo de recarga.
    - Não deixe o HP da muralha chegar a zero! Vencer todas as ondas concede
      recompensas e desbloqueia o próximo estágio.
+
+Use o botão **📜 Missões** (topo) para acompanhar objetivos, resgatar
+recompensas e pegar o **bônus diário**.
 
 O progresso é **salvo automaticamente** no navegador (`localStorage`) e a
 fortaleza **continua produzindo enquanto você está ausente** (até 12h de
@@ -69,14 +81,18 @@ Não há dependências para instalar.
 
 ## 🧪 Testes
 
-Há um teste de fumaça que valida a lógica do motor (economia, filas, tropas,
-heróis, combate, persistência e progresso offline) sem precisar de navegador:
+Há um teste de fumaça (**64 asserções**) que valida a lógica do motor —
+economia, filas, tropas, heróis, **pesquisa**, **expedições**, **missões**,
+**recompensa diária**, combate, persistência e progresso offline — sem precisar
+de navegador:
 
 ```bash
 npm test
 # ou
 node test/smoke.test.js
 ```
+
+O mesmo roda no **GitHub Actions** (`.github/workflows/ci.yml`) a cada push/PR.
 
 ---
 

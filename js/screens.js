@@ -189,6 +189,11 @@ const Screens = {
   renderBatalha(selected) {
     const sel = Math.max(1, Math.min(selected || Game.state.stage, Game.state.stage));
     const max = Game.state.stage;
+    const heroSkillBtns = Object.keys(Game.state.heroes).map(id => {
+      const h = Game.heroDef(id);
+      if (!h || !h.skill) return '';
+      return `<button class="skill-btn" data-skill="${id}" title="${h.skill.name} — ${h.skill.text}" hidden>${h.skill.icon}<span class="sk-cd"></span></button>`;
+    }).join('');
     return `
       ${this.header('Defesa', 'Repele as hordas. Mire e atire; vença todas as ondas para avançar.')}
       <div class="battle-meta">
@@ -211,9 +216,157 @@ const Screens = {
             <button class="btn btn-big" id="battle-start">Iniciar Estágio <span id="start-stage">${sel}</span></button>
           </div>
         </div>
-        <button class="charge-btn" id="charge-btn" hidden>🐎 Carga</button>
+        <div class="skill-bar" id="skill-bar">
+          <button class="skill-btn charge" id="charge-btn" title="Carga de Cavalaria — dano em área" hidden>🐎<span class="sk-cd"></span></button>
+          ${heroSkillBtns}
+        </div>
       </div>
     `;
+  },
+
+  /* ===================================================================== *
+   * PESQUISA (árvore de tecnologia)
+   * ===================================================================== */
+  renderPesquisa() {
+    const branches = { 'Economia': [], 'Militar': [], 'Defesa': [] };
+    for (const id in DATA.research) branches[DATA.research[id].branch].push(id);
+    const acad = Game.state.buildings.academia || 0;
+    const sections = Object.keys(branches).map(b => `
+      <h3 class="branch-title">${b}</h3>
+      <div class="grid research">${branches[b].map(id => this.researchCard(id)).join('')}</div>`).join('');
+    return `${this.header('Pesquisa', `Academia nível <b>${acad}</b> destrava novos níveis. Uma pesquisa por vez.`)}${sections}`;
+  },
+
+  researchCard(id) {
+    const def = DATA.research[id];
+    const lvl = Game.state.research[id] || 0;
+    const q = Game.state.researchQueue && Game.state.researchQueue.id === id ? Game.state.researchQueue : null;
+    const reason = Game.researchBlockReason(id);
+    const locked = (Game.state.buildings.academia || 0) < def.reqAcademy;
+    const ek = Object.keys(def.effect)[0];
+    const effNow = ek === 'march'
+      ? `+${lvl} ${def.effectText}`
+      : `+${Math.round(def.effect[ek] * lvl * 100)}% ${def.effectText}`;
+    const perLvl = ek === 'march' ? '+1 por nível' : `+${Math.round(def.effect[ek] * 100)}% por nível`;
+
+    let footer;
+    if (q) {
+      footer = `<div class="b-building" data-rq="${id}">
+                  <div class="bar"><div class="bar-fill" style="width:0%"></div></div>
+                  <div class="b-build-row"><span class="b-timer">…</span>
+                    <button class="btn btn-rush" data-rush="research" title="Concluir com gemas">⚡<span class="rush-cost"></span></button>
+                  </div>
+                </div>`;
+    } else if (lvl >= def.max) {
+      footer = `<div class="b-max">Nível máximo</div>`;
+    } else if (locked) {
+      footer = `<div class="b-max">🔒 Requer Academia Nv ${def.reqAcademy}</div>`;
+    } else {
+      footer = `<div class="b-cost">${this.costChips(Game.researchCost(id))}</div>
+                <button class="btn" data-research="${id}" ${reason && reason !== 'Recursos insuficientes.' ? 'disabled' : ''}>
+                  Pesquisar · ${Game.fmtTime(Game.researchTime(id))}
+                </button>`;
+    }
+    return `
+      <div class="card research-node">
+        <div class="b-top">
+          <div class="b-icon">${def.icon}</div>
+          <div class="b-info">
+            <div class="b-name">${def.name} <span class="b-level">Nv ${lvl}/${def.max}</span></div>
+            <div class="b-prod">✨ ${effNow}</div>
+            <div class="b-desc">${perLvl}</div>
+          </div>
+        </div>
+        <div class="b-foot">${footer}</div>
+      </div>`;
+  },
+
+  /* ===================================================================== *
+   * MUNDO (expedições / PvE)
+   * ===================================================================== */
+  renderMundo() {
+    const slots = Game.marchSlots();
+    const used = Game.state.expeditions.length;
+    const active = Game.state.expeditions.map((ex, i) => this.expeditionActiveCard(ex, i)).join('');
+    const targets = Object.keys(DATA.expeditions).map(id => this.expeditionCard(id)).join('');
+    return `
+      ${this.header('Mundo', `Slots de marcha: <b id="march-slots">${used}/${slots}</b> · Tropas livres: <b id="free-troops">${Game.availableTroops()}</b>`)}
+      ${active ? `<h3 class="branch-title">Em andamento</h3><div class="grid expeditions">${active}</div>` : ''}
+      <h3 class="branch-title">Destinos</h3>
+      <div class="grid expeditions">${targets}</div>
+    `;
+  },
+
+  expeditionCard(id) {
+    const def = DATA.expeditions[id];
+    const reward = Object.keys(def.reward).map(r => `<span class="chip">${DATA.resources[r].icon} +${Game.fmt(def.reward[r])}</span>`).join('');
+    return `
+      <div class="card expedition">
+        <div class="b-top">
+          <div class="b-icon">${def.icon}</div>
+          <div class="b-info">
+            <div class="b-name">${def.name}</div>
+            <div class="b-desc">👥 ${def.need} tropas · ⏱ ${Game.fmtTime(def.dur)}</div>
+            <div class="b-cost" style="margin-top:6px">${reward}</div>
+          </div>
+        </div>
+        <div class="b-foot"><button class="btn" data-exped="${id}">Enviar tropas</button></div>
+      </div>`;
+  },
+
+  expeditionActiveCard(ex, i) {
+    const def = DATA.expeditions[ex.id];
+    const reward = Object.keys(ex.reward).map(r => `<span class="chip">${DATA.resources[r].icon} +${Game.fmt(ex.reward[r])}</span>`).join('');
+    return `
+      <div class="card expedition active" data-exp="${i}">
+        <div class="b-top">
+          <div class="b-icon">${def.icon}</div>
+          <div class="b-info">
+            <div class="b-name">${def.name} <span class="b-level">👥 ${ex.need}</span></div>
+            <div class="b-cost" style="margin:4px 0 6px">${reward}</div>
+            <div class="bar"><div class="bar-fill" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="b-foot">
+          <div class="b-build-row"><span class="b-timer">…</span>
+            <button class="btn btn-rush" data-rushexp="${i}" title="Concluir com gemas">⚡<span class="rush-cost"></span></button>
+          </div>
+        </div>
+      </div>`;
+  },
+
+  /* ===================================================================== *
+   * MISSÕES (corpo do modal)
+   * ===================================================================== */
+  renderMissionsBody() {
+    const canDaily = Game.canClaimDaily();
+    const dailyChips = Object.keys(DATA.daily.reward).map(r => `<span class="chip">${DATA.resources[r].icon} +${Game.fmt(DATA.daily.reward[r])}</span>`).join('');
+    const list = DATA.missions.map(m => {
+      const prog = Game.missionProgress(m);
+      const done = Game.missionClaimed(m.id);
+      const claimable = Game.missionClaimable(m);
+      const pct = Math.min(100, Math.round(prog / m.target * 100));
+      const reward = Object.keys(m.reward).map(r => `<span class="chip">${DATA.resources[r].icon} +${Game.fmt(m.reward[r])}</span>`).join('');
+      let act;
+      if (done) act = `<span class="mission-check">✓</span>`;
+      else if (claimable) act = `<button class="btn" data-claim="${m.id}">Resgatar</button>`;
+      else act = `<button class="btn" disabled>Em progresso</button>`;
+      return `<div class="mission ${done ? 'done' : ''} ${claimable ? 'ready' : ''}">
+        <div class="mission-ico">${m.icon}</div>
+        <div class="mission-mid">
+          <div class="mission-name">${m.name}</div>
+          <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
+          <div class="mission-sub">${Game.fmt(Math.min(prog, m.target))}/${Game.fmt(m.target)} &nbsp; ${reward}</div>
+        </div>
+        <div class="mission-act">${act}</div>
+      </div>`;
+    }).join('');
+    return `
+      <div class="daily-card">
+        <div class="daily-info"><b>🎁 Recompensa diária</b><div class="reward-row">${dailyChips}</div></div>
+        <button class="btn" data-daily="1" ${canDaily ? '' : 'disabled'}>${canDaily ? 'Resgatar' : 'Amanhã'}</button>
+      </div>
+      <div class="mission-list">${list}</div>`;
   },
 
   /* ===================================================================== *
@@ -222,6 +375,8 @@ const Screens = {
   refresh() {
     if (this.current === 'cidade') this.refreshCidade();
     else if (this.current === 'quartel') this.refreshQuartel();
+    else if (this.current === 'pesquisa') this.refreshPesquisa();
+    else if (this.current === 'mundo') this.refreshMundo();
   },
 
   refreshCidade() {
@@ -255,5 +410,40 @@ const Screens = {
         if (rush) rush.textContent = ' ' + Game.rushCost(q.endsAt) + '💎';
       });
     }
+  },
+
+  refreshPesquisa() {
+    const q = Game.state.researchQueue;
+    if (!q) return;
+    document.querySelectorAll('[data-rq]').forEach(node => {
+      if (node.getAttribute('data-rq') !== q.id) return;
+      const total = q.endsAt - q.startedAt;
+      const done = Math.min(1, (Date.now() - q.startedAt) / total);
+      const fill = node.querySelector('.bar-fill');
+      const timer = node.querySelector('.b-timer');
+      const rush = node.querySelector('.rush-cost');
+      if (fill) fill.style.width = (done * 100).toFixed(1) + '%';
+      if (timer) timer.textContent = Game.fmtTime((q.endsAt - Date.now()) / 1000) + ' restante';
+      if (rush) rush.textContent = ' ' + Game.rushCost(q.endsAt) + '💎';
+    });
+  },
+
+  refreshMundo() {
+    const slotsEl = this.el('march-slots');
+    if (slotsEl) slotsEl.textContent = `${Game.state.expeditions.length}/${Game.marchSlots()}`;
+    const freeEl = this.el('free-troops');
+    if (freeEl) freeEl.textContent = Game.availableTroops();
+    Game.state.expeditions.forEach((ex, i) => {
+      const node = document.querySelector(`[data-exp="${i}"]`);
+      if (!node) return;
+      const total = ex.endsAt - ex.startedAt;
+      const done = Math.min(1, (Date.now() - ex.startedAt) / total);
+      const fill = node.querySelector('.bar-fill');
+      const timer = node.querySelector('.b-timer');
+      const rush = node.querySelector('.rush-cost');
+      if (fill) fill.style.width = (done * 100).toFixed(1) + '%';
+      if (timer) timer.textContent = Game.fmtTime((ex.endsAt - Date.now()) / 1000) + ' restante';
+      if (rush) rush.textContent = ' ' + Game.rushCost(ex.endsAt) + '💎';
+    });
   },
 };

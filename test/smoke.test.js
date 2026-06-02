@@ -129,5 +129,65 @@ check('fmt 2_000_000 -> 2.0M', Game.fmt(2000000) === '2.0M');
 check('fmt 25_000_000 -> 25M', Game.fmt(25000000) === '25M');
 check('fmtTime 90 -> 1m 30s', Game.fmtTime(90) === '1m 30s');
 
+console.log('\n[11] Pesquisa');
+Game.state.buildings.academia = 5;
+Game.state.research = {};
+Game.state.researchQueue = null;
+Game.state.resources.wood = 1e7; Game.state.resources.food = 1e7; Game.state.resources.stone = 1e7; Game.state.resources.gold = 1e7;
+check('pesquisa exige Academia', (function () {
+  const a = Game.state.buildings.academia; Game.state.buildings.academia = 0;
+  const r = Game.researchBlockReason('mil_weapons'); Game.state.buildings.academia = a;
+  return /Academia/.test(r);
+})());
+const prodMultBefore = Game.productionMultiplier();
+check('iniciar Silvicultura', Game.startResearch('eco_forestry') === true);
+check('fila de pesquisa criada', !!Game.state.researchQueue);
+check('2ª pesquisa bloqueada (fila única)', Game.researchBlockReason('mil_weapons') !== null);
+Game.state.researchQueue.endsAt = Date.now() - 1;
+Game.processQueues();
+check('nível de pesquisa aplicado', (Game.state.research.eco_forestry || 0) === 1);
+check('bônus de produção da pesquisa ativo', Game.researchBonus('prod') > 0);
+check('multiplicador de produção subiu', Game.productionMultiplier() > prodMultBefore);
+
+console.log('\n[12] Expedições');
+Game.state.expeditions = [];
+Game.state.research.eco_cartography = 0;
+Game.state.troops = { infantry: 100, archer: 0, cavalry: 0 };
+check('1 slot de marcha por padrão', Game.marchSlots() === 1);
+const avail0 = Game.availableTroops();
+check('iniciar Coleta na Mata', Game.startExpedition('forage') === true);
+check('tropas ocupadas = need', Game.busyTroops() === DATA.expeditions.forage.need);
+check('tropas livres reduzem', Game.availableTroops() === avail0 - DATA.expeditions.forage.need);
+check('2ª expedição bloqueada (sem slot)', Game.expeditionBlockReason('scavenge') === 'Sem slots de marcha livres.');
+Game.state.research.eco_cartography = 1;
+check('cartografia adiciona slot de marcha', Game.marchSlots() === 2);
+Game.state.resources.wood = 0; Game.state.resources.food = 0;
+const expDoneBefore = Game.state.stats.expeditionsDone;
+Game.state.expeditions[0].endsAt = Date.now() - 1;
+Game.processQueues();
+check('expedição concluída libera o slot', Game.busyTroops() === 0);
+check('recompensa de expedição creditada', Game.state.resources.wood === DATA.expeditions.forage.reward.wood);
+check('expedição contabilizada', Game.state.stats.expeditionsDone === expDoneBefore + 1);
+
+console.log('\n[13] Missões');
+Game.state.missionsClaimed = {};
+Game.state.stats.battlesWon = 5;
+const mBattle = DATA.missions.find(m => m.id === 'm_battle1');
+check('progresso reflete os stats', Game.missionProgress(mBattle) === 5);
+check('missão atingida é resgatável', Game.missionClaimable(mBattle) === true);
+const gemsBeforeM = Game.state.resources.gems;
+check('resgatar missão', Game.claimMission('m_battle1') === true);
+check('recompensa da missão creditada', Game.state.resources.gems === gemsBeforeM + mBattle.reward.gems);
+check('missão não resgata 2x', Game.claimMission('m_battle1') === false);
+
+console.log('\n[14] Recompensa diária');
+Game.state.dailyClaim = null;
+check('pode resgatar diária', Game.canClaimDaily() === true);
+const gemsBeforeD = Game.state.resources.gems;
+check('resgatar diária', Game.claimDaily() === true);
+check('gemas da diária creditadas', Game.state.resources.gems === gemsBeforeD + DATA.daily.reward.gems);
+check('não resgata diária 2x', Game.canClaimDaily() === false && Game.claimDaily() === false);
+check('claimableCount é numérico', typeof Game.claimableCount() === 'number');
+
 console.log(`\nResultado: ${passed} passou(aram), ${failed} falhou(aram).`);
 process.exit(failed ? 1 : 0);
