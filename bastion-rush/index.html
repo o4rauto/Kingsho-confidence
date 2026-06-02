@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Bastion Rush</title>
+  <!-- Engine e áudio via CDN (sem assets locais) -->
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/howler@2.2.4/dist/howler.min.js"></script>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #14121f; overflow: hidden; }
+    body { display: flex; justify-content: center; align-items: center; touch-action: none; }
+    canvas { border-radius: 24px; box-shadow: 0 12px 40px rgba(157, 78, 221, 0.45); }
+  </style>
+</head>
+<body>
+<script>
+/* ============================================================================
+ * BASTION RUSH — merge tower-defense "juicy" (single-file)
+ * Jogo original inspirado no GÊNERO (merge + tower defense + feedback
+ * dopaminérgico). Arte desenhada por código; nada de assets/marcas de terceiros.
+ * ==========================================================================*/
+
+/* ===== BALANCEAMENTO — ajuste à vontade ===== */
+const CONFIG = {
+  GRID_SIZE: 3,        // grade 3x3 para as torres
+  CELL_SIZE: 112,      // tamanho da célula (px)
+  START_COINS: 100,    // moedas iniciais
+  TOWER_COST: 50,      // custo da torre nível 1
+  MERGE_BONUS: 1.6,    // fator de dano por nível ao fazer merge
+  ENEMY_HP: 90,        // vida base do inimigo
+  ENEMY_SPEED: 78,     // velocidade base (px/s)
+  WAVE_BASE: 5,        // inimigos na onda 1
+  WAVE_GROWTH: 2,      // inimigos extras por onda
+  WAVE_DELAY: 750,     // ms entre spawns
+  COIN_VALUE: 10,      // moedas por kill
+  BOSS_EVERY: 5,       // boss a cada N ondas
+  MAX_LEVEL: 6,        // nível máximo de torre
+};
+
+/* ===== Paleta ===== */
+const COLORS = {
+  bg: 0x1a1a2e, panel: 0x16213e, line: 0x0f3460,
+  primary: 0x9D4EDD, secondary: 0xFF5D8F, accent: 0x00BBF9,
+  gold: 0xFFD700, green: 0x00F5A0, orange: 0xFF7A3C, white: 0xFFFFFF,
+};
+
+/* ============================================================================
+ * SOM — Howler.js alimentado por WAVs gerados em runtime (sem arquivos).
+ * Cada efeito é sintetizado (tom + envelope + ruído) e vira um data URI.
+ * Se o Howler não carregar (offline), tudo vira no-op silencioso.
+ * ==========================================================================*/
+const SoundLib = (function () {
+  const SR = 22050;
+  function encodeWav(samples) {
+    const n = samples.length, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE');
+    str(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, SR, true); v.setUint32(28, SR * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    str(36, 'data'); v.setUint32(40, n * 2, true);
+    let o = 44;
+    for (let i = 0; i < n; i++) { const s = Math.max(-1, Math.min(1, samples[i])); v.setInt16(o, s * 32767, true); o += 2; }
+    const bytes = new Uint8Array(buf); let bin = ''; const c = 0x8000;
+    for (let i = 0; i < bytes.length; i += c) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + c));
+    return 'data:audio/wav;base64,' + btoa(bin);
+  }
+  function tone(o) {
+    const dur = o.dur, n = Math.floor(dur * SR), out = new Float32Array(n);
+    const f0 = o.freq, f1 = o.freq2 != null ? o.freq2 : o.freq;
+    const decay = o.decay != null ? o.decay : 16, noise = o.noise || 0, gain = o.gain != null ? o.gain : 0.5;
+    for (let i = 0; i < n; i++) {
+      const t = i / SR, f = f0 + (f1 - f0) * (t / dur), ph = 2 * Math.PI * f * t;
+      let s;
+      if (o.wave === 'square') s = Math.sin(ph) >= 0 ? 1 : -1;
+      else if (o.wave === 'saw') s = 2 * ((f * t) % 1) - 1;
+      else if (o.wave === 'triangle') s = 2 * Math.abs(2 * ((f * t) % 1) - 1) - 1;
+      else s = Math.sin(ph);
+      if (noise > 0) s = s * (1 - noise) + (Math.random() * 2 - 1) * noise;
+      out[i] = s * Math.exp(-decay * t) * gain;
+    }
+    return out;
+  }
+  const ok = (typeof Howl !== 'undefined');
+  const mk = (o) => ok ? new Howl({ src: [encodeWav(tone(o))], format: ['wav'], volume: 0.55 }) : { play() {} };
+  const lib = {
+    coin:  mk({ freq: 1046, freq2: 1568, dur: 0.12, decay: 22, wave: 'sine', gain: 0.5 }),
+    buy:   mk({ freq: 440,  freq2: 880,  dur: 0.10, decay: 28, wave: 'square', gain: 0.3 }),
+    merge: mk({ freq: 330,  freq2: 1100, dur: 0.34, decay: 7,  wave: 'triangle', gain: 0.45 }),
+    hit:   mk({ freq: 620,  dur: 0.05, decay: 40, noise: 0.35, wave: 'square', gain: 0.22 }),
+    kill:  mk({ freq: 200,  freq2: 60,  dur: 0.28, decay: 12, noise: 0.6, wave: 'saw', gain: 0.5 }),
+    wave:  mk({ freq: 300,  freq2: 760, dur: 0.38, decay: 6,  wave: 'sine', gain: 0.4 }),
+    boss:  mk({ freq: 130,  freq2: 48,  dur: 0.7,  decay: 4,  noise: 0.3, wave: 'saw', gain: 0.6 }),
+    error: mk({ freq: 150,  dur: 0.14, decay: 18, wave: 'square', gain: 0.28 }),
+    over:  mk({ freq: 440,  freq2: 110, dur: 0.7,  decay: 5,  wave: 'triangle', gain: 0.5 }),
+  };
+  return {
+    available: ok,
+    play(name) { if (lib[name]) try { lib[name].play(); } catch (e) {} },
+    toggleMute() { if (ok) { const m = !Howler._muted; Howler.mute(m); return m; } return false; },
+  };
+})();
+
+/* ============================================================================
+ * SAVE — progresso em localStorage (estado da run + recorde de onda).
+ * ==========================================================================*/
+const SaveManager = {
+  KEY: 'bastion-rush-save', BEST: 'bastion-rush-best',
+  load() { try { const r = localStorage.getItem(this.KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; } },
+  save(d) { try { localStorage.setItem(this.KEY, JSON.stringify(d)); } catch (e) {} },
+  clearRun() { try { localStorage.removeItem(this.KEY); } catch (e) {} },
+  best() { try { return parseInt(localStorage.getItem(this.BEST) || '0', 10) || 0; } catch (e) { return 0; } },
+  setBest(w) { try { if (w > this.best()) localStorage.setItem(this.BEST, String(w)); } catch (e) {} },
+};
+
+/* ============================================================================
+ * CENA PRINCIPAL
+ * ==========================================================================*/
+class GameScene extends Phaser.Scene {
+  constructor() { super('GameScene'); }
+
+  create() {
+    // Estado é resetado AQUI (e não no construtor) para funcionar no restart.
+    this.towers = []; this.enemies = []; this.projectiles = [];
+    this.grid = []; this.enemiesSpawned = 0; this.waveTotal = 0;
+    this.waveActive = false; this.gameIsOver = false; this.started = false;
+    this.buyPulse = null;
+
+    this.cameras.main.setBackgroundColor(COLORS.bg);
+
+    // Textura de partícula ANTES dos emitters (bug clássico do MVP).
+    if (!this.textures.exists('spark')) {
+      const g = this.add.graphics();
+      g.fillStyle(0xffffff, 1); g.fillCircle(8, 8, 8);
+      g.generateTexture('spark', 16, 16); g.destroy();
+    }
+    this.explosion = this.add.particles(0, 0, 'spark', {
+      speed: { min: 90, max: 320 }, scale: { start: 0.7, end: 0 },
+      blendMode: 'ADD', lifespan: 460, tint: COLORS.gold, emitting: false,
+    }).setDepth(7);
+    this.coinFx = this.add.particles(0, 0, 'spark', {
+      speed: { min: 120, max: 280 }, scale: { start: 0.55, end: 0 },
+      blendMode: 'ADD', lifespan: 480, tint: COLORS.gold, emitting: false,
+    }).setDepth(12);
+
+    // Carrega save (estado da run).
+    const save = SaveManager.load();
+    this.coins = save ? save.coins : CONFIG.START_COINS;
+    this.wave = save ? save.wave : 1;
+    this.best = SaveManager.best();
+
+    this.createGrid();
+    this.createHUD();
+    this.createWaveBar();
+    this.createBuyButton();
+    this.createMuteButton();
+
+    if (save && Array.isArray(save.towers)) {
+      save.towers.forEach(t => this.createTower(t.row, t.col, t.level, true));
+    }
+
+    this.setupDrag();
+    this.showStartOverlay(!!save);
+  }
+
+  /* ----- Grade ----- */
+  createGrid() {
+    const gs = CONFIG.GRID_SIZE, cs = CONFIG.CELL_SIZE;
+    const startX = 200 - (gs * cs) / 2 + cs / 2;
+    const startY = 320;
+    for (let r = 0; r < gs; r++) {
+      this.grid[r] = [];
+      for (let c = 0; c < gs; c++) {
+        const x = startX + c * cs, y = startY + r * cs;
+        const cell = this.add.rectangle(x, y, cs - 12, cs - 12, COLORS.panel)
+          .setStrokeStyle(2, COLORS.line, 0.6).setDepth(1);
+        this.grid[r][c] = { x, y, cell, tower: null };
+      }
+    }
+  }
+
+  /* ----- HUD ----- */
+  createHUD() {
+    const g = this.add.graphics().setDepth(10);
+    g.fillStyle(COLORS.primary, 0.92); g.fillRoundedRect(12, 12, 168, 52, 24);
+    this.add.circle(44, 38, 14, COLORS.gold).setStrokeStyle(2, COLORS.white, 0.9).setDepth(11);
+    this.coinText = this.add.text(70, 38, String(this.coins), {
+      fontFamily: 'Arial', fontSize: '24px', color: '#fff', fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(11);
+
+    this.waveText = this.add.text(388, 26, 'Onda ' + this.wave, {
+      fontFamily: 'Arial', fontSize: '20px', color: '#fff', fontStyle: 'bold',
+    }).setOrigin(1, 0.5).setDepth(11);
+    this.bestText = this.add.text(388, 50, 'Recorde: ' + this.best, {
+      fontFamily: 'Arial', fontSize: '13px', color: '#9aa6c0',
+    }).setOrigin(1, 0.5).setDepth(11);
+  }
+
+  /* ----- Barra de onda ----- */
+  createWaveBar() {
+    const g = this.add.graphics().setDepth(9);
+    g.fillStyle(0x000000, 0.35); g.fillRoundedRect(12, 74, 376, 18, 9);
+    this.waveBar = this.add.graphics().setDepth(9);
+  }
+  updateWaveBar(p) {
+    this.waveBar.clear();
+    if (p <= 0) return;
+    this.waveBar.fillStyle(COLORS.accent, 1);
+    this.waveBar.fillRoundedRect(12, 74, Math.max(6, 376 * p), 18, 9);
+    const sh = this.add.graphics().setDepth(9);
+    sh.fillStyle(0xffffff, 0.35); sh.fillRoundedRect(12, 74, Math.max(6, 376 * p), 18, 9);
+    this.tweens.add({ targets: sh, alpha: 0, duration: 220, onComplete: () => sh.destroy() });
+  }
+
+  /* ----- Botões (containers com cantos arredondados) ----- */
+  roundedButton(x, y, w, h, color, label, fontSize) {
+    const g = this.add.graphics();
+    g.fillStyle(color, 1); g.fillRoundedRect(-w / 2, -h / 2, w, h, 22);
+    const txt = this.add.text(0, 0, label, {
+      fontFamily: 'Arial', fontSize: (fontSize || 20) + 'px', color: '#fff', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    const cont = this.add.container(x, y, [g, txt]);
+    cont.setSize(w, h);
+    cont.setInteractive(new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h), Phaser.Geom.Rectangle.Contains);
+    cont.label = txt;
+    return cont;
+  }
+
+  createBuyButton() {
+    this.buyBtn = this.roundedButton(200, 650, 220, 60, COLORS.secondary, 'COMPRAR', 20).setDepth(10);
+    this.buyBtn.on('pointerdown', () => {
+      this.tweens.killTweensOf(this.buyBtn); this.buyPulse = null;
+      this.tweens.add({ targets: this.buyBtn, scale: 0.93, duration: 80, yoyo: true, ease: 'Quad.easeOut',
+        onComplete: () => this.updateBuyButton() });
+      if (!this.started) return;
+      if (this.coins >= CONFIG.TOWER_COST) { this.buyTower(); }
+      else { this.shake(60, 0.004); SoundLib.play('error'); this.cameras.main.flash(80, 255, 60, 90, false); }
+    });
+    this.updateBuyButton();
+  }
+
+  updateBuyButton() {
+    const can = this.coins >= CONFIG.TOWER_COST;
+    this.buyBtn.label.setText(can ? ('COMPRAR · ' + CONFIG.TOWER_COST + ' 🪙') : 'SEM MOEDAS');
+    if (can && !this.buyPulse) {
+      this.buyPulse = this.tweens.add({ targets: this.buyBtn, scale: 1.06, duration: 450,
+        yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    } else if (!can && this.buyPulse) {
+      this.buyPulse.stop(); this.buyPulse = null; this.buyBtn.setScale(1);
+    }
+  }
+
+  createMuteButton() {
+    if (!SoundLib.available) return;
+    this.muteBtn = this.roundedButton(372, 116, 44, 40, COLORS.panel, '🔊', 18).setDepth(10);
+    this.muteBtn.on('pointerdown', () => {
+      const muted = SoundLib.toggleMute();
+      this.muteBtn.label.setText(muted ? '🔇' : '🔊');
+    });
+  }
+
+  /* ----- Overlay inicial (desbloqueia o áudio no 1º toque) ----- */
+  showStartOverlay(hasSave) {
+    const ov = this.add.rectangle(200, 350, 400, 700, 0x0a0a14, 0.82).setDepth(20).setInteractive();
+    const title = this.add.text(200, 250, 'BASTION\nRUSH', {
+      fontFamily: 'Arial Black', fontSize: '54px', color: '#fff', align: 'center',
+      stroke: '#9D4EDD', strokeThickness: 8,
+    }).setOrigin(0.5).setDepth(21);
+    const sub = this.add.text(200, 360, 'Arraste torres iguais para fundir.\nNão deixe os invasores passarem!', {
+      fontFamily: 'Arial', fontSize: '16px', color: '#cfd6e6', align: 'center', lineSpacing: 6,
+    }).setOrigin(0.5).setDepth(21);
+    const btn = this.roundedButton(200, 470, 240, 64, COLORS.primary, hasSave ? 'CONTINUAR' : 'JOGAR', 24).setDepth(21);
+    this.tweens.add({ targets: btn, scale: 1.06, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const start = () => {
+      this.started = true;
+      [ov, title, sub, btn].forEach(o => o.destroy());
+      this.time.delayedCall(400, () => this.startWave());
+    };
+    btn.on('pointerdown', start);
+    ov.on('pointerdown', start);
+  }
+
+  /* ----- Drag & merge ----- */
+  setupDrag() {
+    this.input.on('dragstart', (p, obj) => { if (obj.getData && obj.getData('type') === 'tower') this.children.bringToTop(obj); });
+    this.input.on('drag', (p, obj, dx, dy) => { if (obj.getData && obj.getData('type') === 'tower') { obj.x = dx; obj.y = dy; } });
+    this.input.on('dragend', (p, obj) => { if (obj.getData && obj.getData('type') === 'tower') this.handleTowerDrop(obj); });
+  }
+
+  /* ----- Torres ----- */
+  towerColor(level) {
+    const c = [COLORS.primary, COLORS.secondary, COLORS.accent, COLORS.gold, COLORS.green, COLORS.orange];
+    return c[(level - 1) % c.length];
+  }
+  towerSize(level) { return Math.min(28 + level * 7, 56); }
+  towerDamage(level) { return Math.round(16 * Math.pow(CONFIG.MERGE_BONUS, level - 1) * level); }
+  towerRate(level) { return Math.max(180, 520 - level * 45); }
+
+  buyTower() {
+    for (let r = 0; r < CONFIG.GRID_SIZE; r++)
+      for (let c = 0; c < CONFIG.GRID_SIZE; c++)
+        if (!this.grid[r][c].tower) {
+          this.coins -= CONFIG.TOWER_COST;
+          this.updateCoins();
+          this.createTower(r, c, 1);
+          SoundLib.play('buy');
+          this.saveGame();
+          return;
+        }
+    this.shake(60, 0.004); SoundLib.play('error'); // grade cheia
+  }
+
+  createTower(row, col, level, silent) {
+    const pos = this.grid[row][col];
+    const size = this.towerSize(level);
+    const tower = this.add.circle(pos.x, pos.y, size, this.towerColor(level)).setDepth(5);
+    tower.setStrokeStyle(level >= 4 ? 5 : 3, COLORS.white, level >= 4 ? 1 : 0.8);
+    tower.setData('type', 'tower');
+    tower.setData('level', level);
+    tower.setData('cool', 0);
+    tower.setData('gridPos', { row, col });
+    tower.setInteractive(); this.input.setDraggable(tower);
+    pos.tower = tower;
+    this.towers.push(tower);
+    if (!silent) {
+      this.cameras.main.flash(110, 255, 255, 255, false);
+      this.explosion.emitParticleAt(pos.x, pos.y, 16);
+      tower.setScale(0.4);
+      this.tweens.add({ targets: tower, scale: 1, duration: 260, ease: 'Back.easeOut' });
+    }
+    return tower;
+  }
+
+  cellFromWorld(x, y) {
+    for (let r = 0; r < CONFIG.GRID_SIZE; r++)
+      for (let c = 0; c < CONFIG.GRID_SIZE; c++)
+        if (Phaser.Math.Distance.Between(x, y, this.grid[r][c].x, this.grid[r][c].y) < CONFIG.CELL_SIZE / 2)
+          return { row: r, col: c };
+    return null;
+  }
+
+  snapBack(tower) {
+    const p = tower.getData('gridPos'), cell = this.grid[p.row][p.col];
+    this.tweens.add({ targets: tower, x: cell.x, y: cell.y, duration: 200, ease: 'Back.easeOut' });
+  }
+
+  handleTowerDrop(tower) {
+    const target = this.cellFromWorld(tower.x, tower.y);
+    if (!target) return this.snapBack(tower);
+    const dest = this.grid[target.row][target.col];
+    const from = tower.getData('gridPos');
+
+    if (dest.tower && dest.tower !== tower) {
+      if (dest.tower.getData('level') === tower.getData('level') && tower.getData('level') < CONFIG.MAX_LEVEL) {
+        this.mergeTowers(tower, dest.tower, target.row, target.col);
+        this.grid[from.row][from.col].tower = null;
+      } else {
+        return this.snapBack(tower); // níveis diferentes ou nível máximo
+      }
+    } else if (!dest.tower) {
+      this.grid[from.row][from.col].tower = null;
+      dest.tower = tower; tower.setData('gridPos', target);
+      this.tweens.add({ targets: tower, x: dest.x, y: dest.y, duration: 200, ease: 'Back.easeOut' });
+      this.saveGame();
+    } else {
+      this.snapBack(tower); // soltou em cima de si mesmo
+    }
+  }
+
+  mergeTowers(a, b, row, col) {
+    const newLevel = a.getData('level') + 1;
+    const pos = this.grid[row][col];
+    this.towers = this.towers.filter(t => t !== a && t !== b);
+    a.destroy(); b.destroy();
+
+    // JUICE de merge
+    this.cameras.main.flash(150, 255, 215, 0, false);
+    this.shake(150, 0.011);
+    this.explosion.emitParticleAt(pos.x, pos.y, 30);
+    SoundLib.play('merge');
+
+    this.createTower(row, col, newLevel);
+
+    const txt = this.add.text(pos.x, pos.y - 36, 'NÍVEL ' + newLevel + '!', {
+      fontFamily: 'Arial Black', fontSize: '28px', color: '#FFD700', stroke: '#000', strokeThickness: 6,
+    }).setOrigin(0.5).setDepth(15);
+    this.tweens.add({ targets: txt, y: pos.y - 84, alpha: 0, duration: 850, ease: 'Quad.easeOut', onComplete: () => txt.destroy() });
+    this.saveGame();
+  }
+
+  /* ----- Ondas / inimigos ----- */
+  startWave() {
+    if (this.gameIsOver) return;
+    this.waveActive = true;
+    this.enemiesSpawned = 0;
+    this.waveTotal = CONFIG.WAVE_BASE + (this.wave - 1) * CONFIG.WAVE_GROWTH;
+    this.isBossWave = (this.wave % CONFIG.BOSS_EVERY === 0);
+    this.updateWaveBar(0);
+    this.spawnLoop();
+  }
+
+  spawnLoop() {
+    if (this.gameIsOver) return;
+    const last = this.enemiesSpawned === this.waveTotal - 1;
+    this.spawnEnemy(this.isBossWave && last);
+    this.enemiesSpawned++;
+    this.updateWaveBar(this.enemiesSpawned / this.waveTotal);
+    if (this.enemiesSpawned < this.waveTotal)
+      this.time.delayedCall(CONFIG.WAVE_DELAY, () => this.spawnLoop());
+  }
+
+  spawnEnemy(boss) {
+    const x = 90 + Math.random() * 220;
+    const r = boss ? 34 : 20;
+    const hp = boss ? CONFIG.ENEMY_HP * this.wave * 9 : Math.round(CONFIG.ENEMY_HP * (1 + (this.wave - 1) * 0.5));
+    const body = this.add.circle(x, -40, r, boss ? COLORS.orange : COLORS.secondary)
+      .setStrokeStyle(3, 0x000000, 0.25).setDepth(4);
+    body.setData('hp', hp); body.setData('maxHp', hp); body.setData('boss', !!boss);
+    body.setData('speed', (boss ? CONFIG.ENEMY_SPEED * 0.6 : CONFIG.ENEMY_SPEED + this.wave * 3));
+
+    const bw = boss ? 70 : 38;
+    const bg = this.add.rectangle(x, -40 - r - 10, bw, 6, 0x000000, 0.5).setDepth(4);
+    const bar = this.add.rectangle(x - bw / 2, -40 - r - 10, bw, 6, COLORS.accent).setOrigin(0, 0.5).setDepth(4);
+    body.setData('barBg', bg); body.setData('bar', bar); body.setData('barW', bw);
+    if (boss) { body.setData('bar').setFillStyle(COLORS.orange); SoundLib.play('boss');
+      this.cameras.main.flash(220, 255, 122, 60, false); }
+    this.enemies.push(body);
+  }
+
+  /* ----- Loop ----- */
+  update(time, delta) {
+    if (this.gameIsOver || !this.started) return;
+    const dt = delta / 1000;
+
+    // Inimigos
+    for (const e of this.enemies) {
+      if (!e.active) continue;
+      e.y += e.getData('speed') * dt;
+      const r = e.width / 2, bw = e.getData('barW');
+      e.getData('barBg').setPosition(e.x, e.y - r - 12);
+      e.getData('bar').setPosition(e.x - bw / 2, e.y - r - 12);
+      if (e.y > 624) { this.gameOver(); return; }
+    }
+
+    // Torres atiram
+    for (const t of this.towers) {
+      let cool = t.getData('cool') - delta;
+      if (cool > 0) { t.setData('cool', cool); continue; }
+      let target = null, min = 170;
+      for (const e of this.enemies) {
+        if (!e.active) continue;
+        const d = Phaser.Math.Distance.Between(t.x, t.y, e.x, e.y);
+        if (d < min) { min = d; target = e; }
+      }
+      if (target) { this.shoot(t, target); t.setData('cool', this.towerRate(t.getData('level'))); }
+    }
+
+    // Projéteis (homing)
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const p = this.projectiles[i];
+      const tgt = p.getData('target');
+      if (!tgt || !tgt.active) { p.destroy(); this.projectiles.splice(i, 1); continue; }
+      const ang = Phaser.Math.Angle.Between(p.x, p.y, tgt.x, tgt.y);
+      p.x += Math.cos(ang) * 560 * dt; p.y += Math.sin(ang) * 560 * dt;
+      if (Phaser.Math.Distance.Between(p.x, p.y, tgt.x, tgt.y) < tgt.width / 2 + 6) {
+        this.hitEnemy(tgt, p.getData('dmg'));
+        p.destroy(); this.projectiles.splice(i, 1);
+      }
+    }
+
+    // Fim da onda
+    if (this.waveActive && this.enemies.length === 0 && this.enemiesSpawned >= this.waveTotal) {
+      this.waveActive = false;
+      this.nextWave();
+    }
+  }
+
+  shoot(tower, target) {
+    const p = this.add.circle(tower.x, tower.y, 7, COLORS.gold).setStrokeStyle(2, COLORS.white, 0.7).setDepth(6);
+    p.setData('target', target); p.setData('dmg', this.towerDamage(tower.getData('level')));
+    this.projectiles.push(p);
+    tower.setScale(0.88);
+    this.tweens.add({ targets: tower, scale: 1, duration: 110, ease: 'Back.easeOut' });
+  }
+
+  hitEnemy(enemy, dmg) {
+    const hp = enemy.getData('hp') - dmg;
+    enemy.setData('hp', hp);
+    enemy.getData('bar').scaleX = Math.max(0, hp / enemy.getData('maxHp'));
+    this.shake(40, 0.003);
+    const t = this.add.text(enemy.x, enemy.y - 6, String(Math.floor(dmg)), {
+      fontFamily: 'Arial Black', fontSize: '22px', color: '#fff', stroke: '#000', strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(15);
+    this.tweens.add({ targets: t, y: enemy.y - 52, alpha: 0, duration: 480, ease: 'Quad.easeOut', onComplete: () => t.destroy() });
+    SoundLib.play('hit');
+    if (hp <= 0) this.killEnemy(enemy);
+  }
+
+  killEnemy(enemy) {
+    const x = enemy.x, y = enemy.y, boss = enemy.getData('boss');
+    this.explosion.emitParticleAt(x, y, boss ? 40 : 15);
+    this.shake(boss ? 160 : 80, boss ? 0.012 : 0.005);
+    SoundLib.play('kill');
+    enemy.getData('barBg').destroy(); enemy.getData('bar').destroy(); enemy.destroy();
+    this.enemies = this.enemies.filter(e => e !== enemy);
+    const amount = boss ? CONFIG.COIN_VALUE * 12 : CONFIG.COIN_VALUE;
+    this.dropCoin(x, y, amount);
+  }
+
+  dropCoin(x, y, amount) {
+    const coin = this.add.circle(x, y, 11, COLORS.gold).setStrokeStyle(2, COLORS.white, 0.9).setDepth(8);
+    this.tweens.add({
+      targets: coin, x: 44, y: 38, duration: 600, ease: 'Quad.easeIn',
+      onComplete: () => {
+        coin.destroy();
+        this.coins += amount; this.updateCoins();
+        this.coinFx.emitParticleAt(44, 38, 8);
+        this.cameras.main.flash(50, 255, 215, 0, false);
+        SoundLib.play('coin');
+        const t = this.add.text(80, 38, '+' + amount, {
+          fontFamily: 'Arial', fontSize: '18px', color: '#FFD700', fontStyle: 'bold',
+        }).setOrigin(0, 0.5).setDepth(13);
+        this.tweens.add({ targets: t, y: 16, alpha: 0, duration: 420, ease: 'Quad.easeOut', onComplete: () => t.destroy() });
+        this.saveGame();
+      },
+    });
+  }
+
+  updateCoins() {
+    this.coinText.setText(String(this.coins));
+    this.tweens.add({ targets: this.coinText, scale: 1.3, duration: 100, yoyo: true, ease: 'Back.easeOut' });
+    this.updateBuyButton();
+  }
+
+  nextWave() {
+    this.wave++;
+    SaveManager.setBest(this.wave - 1);
+    this.best = SaveManager.best();
+    this.bestText.setText('Recorde: ' + this.best);
+    this.waveText.setText('Onda ' + this.wave);
+    this.cameras.main.flash(220, 157, 78, 221, false);
+    SoundLib.play('wave');
+    this.saveGame();
+    this.time.delayedCall(1400, () => this.startWave());
+  }
+
+  gameOver() {
+    if (this.gameIsOver) return;
+    this.gameIsOver = true; this.waveActive = false;
+    SaveManager.setBest(this.wave - 1);
+    SaveManager.clearRun();
+    SoundLib.play('over');
+    this.shake(300, 0.02);
+
+    this.add.rectangle(200, 350, 400, 700, 0x000000, 0.72).setDepth(20);
+    this.add.text(200, 280, 'GAME OVER', {
+      fontFamily: 'Arial Black', fontSize: '46px', color: '#FF5D8F', stroke: '#000', strokeThickness: 6,
+    }).setOrigin(0.5).setDepth(21);
+    this.add.text(200, 345, 'Chegou à onda ' + this.wave + '\nRecorde: ' + SaveManager.best(), {
+      fontFamily: 'Arial', fontSize: '18px', color: '#cfd6e6', align: 'center', lineSpacing: 6,
+    }).setOrigin(0.5).setDepth(21);
+    const again = this.roundedButton(200, 440, 240, 62, COLORS.primary, 'JOGAR NOVAMENTE', 22).setDepth(21);
+    this.tweens.add({ targets: again, scale: 1.05, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    again.on('pointerdown', () => this.scene.restart());
+  }
+
+  /* ----- Persistência ----- */
+  saveGame() {
+    if (this.gameIsOver) return;
+    SaveManager.save({
+      coins: this.coins, wave: this.wave,
+      towers: this.towers.map(t => ({ row: t.getData('gridPos').row, col: t.getData('gridPos').col, level: t.getData('level') })),
+    });
+    SaveManager.setBest(this.wave - 1);
+  }
+
+  shake(d, i) { this.cameras.main.shake(d, i); }
+}
+
+/* ===== Boot ===== */
+const game = new Phaser.Game({
+  type: Phaser.AUTO,
+  backgroundColor: '#1a1a2e',
+  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: 400, height: 700 },
+  scene: [GameScene],
+});
+</script>
+</body>
+</html>

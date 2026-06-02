@@ -16,6 +16,18 @@ Roda 100% no navegador, sem dependências e sem etapa de build — é só abrir 
 
 ---
 
+## 🎮 Dois jogos neste repositório
+
+| Jogo | Estilo | Onde |
+|---|---|---|
+| **🏰 Frontier Bastion** | Estratégia de sobrevivência (base + tropas + heróis + defesa por tiro) | raiz (`index.html`) — descrito abaixo |
+| **🎯 Bastion Rush** | **Merge tower-defense "juicy"** (Phaser 3 + Howler.js, single-file, pronto para APK via Capacitor) | [`bastion-rush/`](bastion-rush/) |
+
+Ambos são **originais**, apenas *inspirados* no gênero. Veja o
+[`bastion-rush/README.md`](bastion-rush/README.md) para jogar e gerar o APK.
+
+---
+
 ## 🎮 Como jogar
 
 1. **Fortaleza** 🏰 — construa e melhore edifícios:
