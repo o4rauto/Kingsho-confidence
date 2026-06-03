@@ -355,6 +355,13 @@ main.js` (scripts clássicos compartilham escopo léxico global).
 
 ## 8. Roadmap
 
+> 🧭 **Plano-mestre:** ver [`ROADMAP.md`](ROADMAP.md) — visão **unificada** (1 jogo
+> só; fusão **Archero × Kingdom Rush**) com milestones **M0–M9** (herói mago que
+> atira parado, fase=10 hordas, 3 caminhos, 4 classes de torre, sinergias
+> roguelike, diretor de IA adaptativo, chefes bullet-hell, visual PS2, 2 moedas).
+> A lista abaixo é **histórico**; o ROADMAP é a **fonte da verdade** do que vem.
+> Já feito do M0: clamp do herói à tela (perspectiva) + hook `BR.hero`.
+
 - **✅ Feito:** Bastion Rush 3D; herói móvel (joystick/WASD); campanha procedural
   2500 fases (vencer p/ avançar, recompensa única, 3–7 hordas, monstro novo a
   cada 4 níveis até ~52); 13 monstros + 3 bosses com comportamentos (heal/split/

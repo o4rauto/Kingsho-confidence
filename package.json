@@ -1,7 +1,7 @@
 {
-  "name": "frontier-bastion",
+  "name": "kingsho-confidence",
   "version": "1.0.0",
-  "description": "Frontier Bastion — jogo web original de estratégia de sobrevivência (construção de fortaleza + defesa por tiro). HTML/CSS/JS puro, sem build.",
+  "description": "Bastion Rush — jogo de ação/tower-defense 3D low-poly (herói + hordas), inspirado no gênero; fusão Archero × Kingdom Rush em desenvolvimento. Inclui o protótipo Frontier Bastion (estratégia). HTML/CSS/JS puro, sem build, 0 dependências.",
   "private": true,
   "scripts": {
     "test": "node test/smoke.test.js",
@@ -10,12 +10,15 @@
   },
   "keywords": [
     "game",
-    "strategy",
-    "survival",
-    "canvas",
-    "idle",
+    "action",
     "tower-defense",
-    "vanilla-js"
+    "3d",
+    "canvas",
+    "roguelike",
+    "archero-like",
+    "kingdom-rush-like",
+    "vanilla-js",
+    "mobile"
   ],
   "license": "MIT"
 }
