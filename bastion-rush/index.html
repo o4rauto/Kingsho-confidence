@@ -295,7 +295,7 @@ const pauseRect = () => ({ x: cw - 58, y: ch - 122, w: 46, h: 46 });
 
 canvas.addEventListener('pointerdown', (ev) => {
   const p = toCss(ev); SND.resume();
-  if (G.state === 'story') { if (G.story.page >= STORY.length - 1) { META.seenStory = true; saveMeta(); G.state = 'select'; } else G.story.page++; return; }
+  if (G.state === 'story') { if (G.story.page >= STORY.length - 1) { META.seenStory = true; saveMeta(); startLevel(META.clearedMax + 1); } else G.story.page++; return; }
   if (G.state === 'playing') {
     if (inR(p, pauseRect())) { G.state = 'paused'; G.joy = null; return; }
     if (inR(p, skillRect())) return useSkill();
@@ -327,7 +327,7 @@ function doAction(act) {
   else if (act === 'soon') { toast(t('soon')); }
   else if (act === 'gacha') { doGacha(); }
   else if (act === 'daily') { claimDaily(); }
-  else if (act === 'battle') { startLevel(META.clearedMax + 1); }
+  else if (act === 'battle') { if (!META.seenStory) { G.story = { page: 0 }; G.state = 'story'; } else startLevel(META.clearedMax + 1); }
   else if (act === 'bestiary') { G.state = 'bestiary'; }
   else if (act === 'campaign') { G.state = 'campaign'; G.campSel = Math.min(META.clearedMax + 1, TOTAL_LEVELS); }
   else if (act === 'camp:prev') { G.campSel = Math.max(1, (G.campSel || 1) - 1); }
@@ -531,7 +531,6 @@ function drawMenu() {
   btn('battle', CX - 130, ch * 0.6, 260, 70, t('play'), 'Fase ' + next, 'rgba(232,170,40,0.98)'); ctx.restore();
   btn('campaign', CX - 130, ch * 0.6 + 82, 125, 46, 'FASES', '', 'rgba(50,60,95,0.96)');
   btn('bestiary', CX + 5, ch * 0.6 + 82, 125, 46, 'BESTIÁRIO', '', 'rgba(50,60,95,0.96)');
-  btn('story', CX - 130, ch * 0.6 + 134, 260, 38, t('story'), '', 'rgba(40,44,58,0.92)');
   drawChestRow();
 }
 function drawCampaign() {
