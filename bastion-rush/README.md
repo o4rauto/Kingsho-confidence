@@ -1,9 +1,9 @@
 # 🎯 Bastion Rush
 
-Jogo **3D low-poly** de **horde/lane defense**, single-file (`index.html`), feito
-em **Canvas puro — sem nenhuma biblioteca** (motor 3D próprio). Você defende a
-base de uma horda que avança **em fila pelo caminho**; herói e torres atiram
-sozinhos. Visão ¾ de cima, no estilo do gênero.
+Jogo **3D low-poly** de **ação/defesa**, single-file (`index.html`), feito em
+**Canvas puro — sem nenhuma biblioteca** (motor 3D próprio). Você **controla um
+herói** pelo campo (invulnerável) que ataca sozinho os inimigos no alcance,
+enquanto a horda avança **em fila pelo caminho** até a sua base. Visão ¾ de cima.
 
 > ⚠️ **Original.** Motor 3D, modelos (herói, inimigos, boss, torres, base,
 > cenário) e arte são criados por código, do zero. Apenas *inspirado* no gênero —
@@ -17,12 +17,22 @@ sozinhos. Visão ¾ de cima, no estilo do gênero.
 - Roda **100% offline** (não depende de CDN), ideal para empacotar como APK.
 
 ## 🕹️ Como jogar
-- A horda surge ao fundo e segue o caminho até a **base** (canto inferior).
-- O **herói** e as **torres** miram e atiram automaticamente; inimigos explodem e
-  soltam **moedas** (que voam até o contador).
+- **Mova o herói**: arraste na tela (joystick flutuante) ou **WASD/setas**. Ele
+  ataca sozinho o inimigo mais próximo no alcance.
+- **HAB** (habilidade em área, com recarga) e **ULT** (ultimate que carrega
+  conforme você causa dano) — botões na lateral direita.
 - Toque nos **slots** (círculos tracejados) para **construir/melhorar torres**.
-- Use os botões **DANO**, **CADÊNCIA** e **CURAR** para evoluir.
-- A cada **5 ondas** vem um **BOSS**. Se o HP da base zerar, fim de jogo.
+- **7 fases** com composições próprias de inimigos: **saqueador, batedor,
+  brutamonte, escudeiro, voador** e **bosses variados** (colosso, algoz, rei).
+- **Menu, seleção de fases e pause**. Vença a fase para desbloquear a próxima.
+
+## 🧩 Sistemas
+- 🔊 **Áudio** (sintetizado, sem arquivos) + **vibração** no celular.
+- 👑 **Intro narrativa do Guardião** + dica de tutorial.
+- 💎 **Gemas + moedas**, **recompensa diária**, **invocação (gacha)** e
+  **melhorias permanentes** (dano/cadência) na seleção de fases.
+- ⚙️ **Ajustes**: som, vibração, idioma (PT/EN).
+- 🔒 **Em breve** (Alianças/PvP/Eventos) — placeholders de FOMO.
 
 ## ✨ Juice
 Tremida de câmera nos impactos, flashes, partículas de explosão, números de dano

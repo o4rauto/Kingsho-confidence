@@ -119,6 +119,7 @@ const TYPES = {
   runner: { hp: 9, speed: 2.2, scale: 0.78, dmg: 6, value: 5, color: '#f0a83c' },
   brute:  { hp: 70, speed: 0.78, scale: 1.45, dmg: 20, value: 14, color: '#6a3d8f' },
   shield: { hp: 30, speed: 1.0, scale: 1.08, dmg: 11, value: 10, color: '#9aa7bd', armor: 0.5 },
+  flier:  { hp: 13, speed: 2.0, scale: 0.7, dmg: 9, value: 7, color: '#7ad0e0', fly: 1 },
   boss_tank:  { hp: 520, speed: 0.7, scale: 2.0, dmg: 50, value: 90, boss: 1, color: '#b23bc0' },
   boss_swift: { hp: 340, speed: 1.55, scale: 1.7, dmg: 40, value: 90, boss: 1, color: '#3cb0c0' },
   boss_king:  { hp: 1000, speed: 0.62, scale: 2.3, dmg: 75, value: 180, boss: 1, color: '#c0405c' },
@@ -128,11 +129,12 @@ const MODELS = {
   runner: humanoid('#f0a83c', '#d68a2a', { bulk: 0.85, horns: 1 }),
   brute: humanoid('#6a3d8f', '#542f73', { bulk: 1.5 }),
   shield: humanoid('#9aa7bd', '#76859c', { plate: 1 }),
+  flier: [{ x: 0, y: 0.2, z: 0, w: 0.3, h: 0.28, d: 0.42, c: '#7ad0e0' }, { x: 0, y: 0.42, z: 0.04, w: 0.22, h: 0.2, d: 0.22, c: '#5fb6c8' }, { x: -0.12, y: 0.45, z: 0.13, w: 0.07, h: 0.07, d: 0.04, c: '#ffffff' }, { x: 0.12, y: 0.45, z: 0.13, w: 0.07, h: 0.07, d: 0.04, c: '#ffffff' }, { x: -0.34, y: 0.26, z: -0.04, w: 0.3, h: 0.06, d: 0.34, c: '#9fe0ee' }, { x: 0.34, y: 0.26, z: -0.04, w: 0.3, h: 0.06, d: 0.34, c: '#9fe0ee' }],
   boss_tank: bossModel('#b23bc0', '#9a2fa8'),
   boss_swift: bossModel('#3cb0c0', '#2f8fa0'),
   boss_king: bossModel('#c0405c', '#a02f49'),
 };
-const TYPE_LABEL = { grunt: 'Saqueadores', runner: 'Batedores', brute: 'Brutamontes', shield: 'Escudeiros', boss_tank: 'Colosso', boss_swift: 'Algoz Veloz', boss_king: 'Rei da Horda' };
+const TYPE_LABEL = { grunt: 'Saqueadores', runner: 'Batedores', brute: 'Brutamontes', shield: 'Escudeiros', flier: 'Voadores', boss_tank: 'Colosso', boss_swift: 'Algoz Veloz', boss_king: 'Rei da Horda' };
 
 /* ===== Caminho / cenário ===== */
 const PW = [[0, -13.5], [0, -8], [-5, -6], [-5, -1], [4.2, 0.5], [4.2, 4], [0, 5.6]];
@@ -150,9 +152,9 @@ const LEVELS = [
   { name: 'Os Velozes', groups: [{ type: 'runner', count: 12, gap: 0.45 }] },
   { name: 'Emboscada', groups: [{ type: 'grunt', count: 7, gap: 0.55 }, { type: 'runner', count: 9, gap: 0.4 }] },
   { name: 'A Muralha', groups: [{ type: 'grunt', count: 8, gap: 0.5 }, { type: 'brute', count: 3, gap: 1.3 }, { type: 'boss_tank', count: 1, gap: 1 }] },
-  { name: 'Sentinelas', groups: [{ type: 'shield', count: 7, gap: 0.8 }, { type: 'grunt', count: 8, gap: 0.4 }] },
+  { name: 'Sentinelas', groups: [{ type: 'shield', count: 7, gap: 0.8 }, { type: 'flier', count: 5, gap: 0.7 }, { type: 'grunt', count: 8, gap: 0.4 }] },
   { name: 'Fúria', groups: [{ type: 'runner', count: 12, gap: 0.35 }, { type: 'brute', count: 4, gap: 1.0 }, { type: 'boss_swift', count: 1, gap: 1 }] },
-  { name: 'Cerco Final', groups: [{ type: 'grunt', count: 10, gap: 0.4 }, { type: 'shield', count: 7, gap: 0.6 }, { type: 'brute', count: 5, gap: 0.9 }, { type: 'boss_king', count: 1, gap: 1 }] },
+  { name: 'Cerco Final', groups: [{ type: 'grunt', count: 10, gap: 0.4 }, { type: 'flier', count: 6, gap: 0.55 }, { type: 'shield', count: 7, gap: 0.6 }, { type: 'brute', count: 5, gap: 0.9 }, { type: 'boss_king', count: 1, gap: 1 }] },
 ];
 const levelTotal = (l) => LEVELS[l].groups.reduce((s, g) => s + g.count, 0);
 
@@ -163,9 +165,29 @@ const SAVE = {
   save(d) { try { localStorage.setItem(this.K, JSON.stringify(d)); } catch (e) {} },
 };
 let META;
-function loadMeta() { const s = SAVE.load(); META = { coins: s ? s.coins : 0, dmgLvl: s ? s.dmgLvl : 1, rateLvl: s ? s.rateLvl : 1, unlocked: s ? s.unlocked : 0 }; }
+function loadMeta() { const s = SAVE.load() || {}; META = { coins: s.coins || 0, gems: s.gems || 0, dmgLvl: s.dmgLvl || 1, rateLvl: s.rateLvl || 1, unlocked: s.unlocked || 0, sound: s.sound !== false, vibe: s.vibe !== false, lang: s.lang || 'pt', lastDaily: s.lastDaily || '', seenStory: !!s.seenStory }; }
 function saveMeta() { SAVE.save(META); }
 loadMeta();
+const today = () => new Date().toISOString().slice(0, 10);
+
+/* ===== Áudio (WebAudio, gerado em runtime) + vibração ===== */
+const SND = (function () {
+  let ac = null, master = null;
+  function ensure() { if (ac) return; try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = 0.22; master.connect(ac.destination); } catch (e) { ac = null; } }
+  function tone(freq, dur, type, vol, slideTo) { if (!META.sound || !ac) return; const o = ac.createOscillator(), g = ac.createGain(); o.type = type || 'square'; o.frequency.setValueAtTime(freq, ac.currentTime); if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), ac.currentTime + dur); g.gain.setValueAtTime(vol || 0.3, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur); o.connect(g); g.connect(master); o.start(); o.stop(ac.currentTime + dur + 0.02); }
+  function noise(dur, vol) { if (!META.sound || !ac) return; const n = (ac.sampleRate * dur) | 0, b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2); const s = ac.createBufferSource(); s.buffer = b; const g = ac.createGain(); g.gain.value = vol || 0.3; s.connect(g); g.connect(master); s.start(); }
+  return {
+    resume() { ensure(); if (ac && ac.state === 'suspended') ac.resume(); },
+    shoot() { tone(720, 0.05, 'square', 0.10, 520); }, hit() { tone(500, 0.04, 'square', 0.08, 380); },
+    kill() { noise(0.16, 0.22); tone(170, 0.18, 'sawtooth', 0.14, 55); }, coin() { tone(1046, 0.08, 'sine', 0.16, 1568); },
+    boss() { tone(110, 0.5, 'sawtooth', 0.3, 48); }, ui() { tone(620, 0.05, 'square', 0.10, 760); },
+    skill() { tone(300, 0.2, 'sawtooth', 0.18, 900); }, ult() { noise(0.4, 0.28); [200, 400, 800].forEach((f, i) => setTimeout(() => tone(f, 0.25, 'sawtooth', 0.22), i * 60)); },
+    win() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.18, 'triangle', 0.22), i * 120)); },
+    lose() { [440, 330, 220].forEach((f, i) => setTimeout(() => tone(f, 0.3, 'triangle', 0.22), i * 160)); },
+  };
+})();
+function vibe(ms) { if (META.vibe && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) {} }
+function toast(msg) { G.toast = { msg, life: 2.2 }; }
 const heroDmg = () => 8 + (META.dmgLvl - 1) * 5;
 const heroCD = () => Math.max(150, 560 - (META.rateLvl - 1) * 40);
 const costDmg = () => Math.floor(50 * Math.pow(1.5, META.dmgLvl - 1));
@@ -180,12 +202,13 @@ function startLevel(i) {
     state: 'playing', t: 0, level: i, baseHpMax: 100, baseHp: 100,
     enemies: [], shots: [], coins3: [], parts: [], texts: [],
     gi: 0, gc: 0, gtimer: 0.6, spawnedAll: false, total: levelTotal(i), killed: 0,
-    hero: { x: 0, z: 3.5, ang: Math.PI, vx: 0, vz: 0 }, heroCool: 0,
+    hero: { x: 0, z: 3.5, ang: Math.PI, vx: 0, vz: 0 }, heroCool: 0, skillCD: 0, ultCharge: 0,
     towers: [0, 0, 0, 0], tCool: [0, 0, 0, 0], runCoins: 0,
     shake: 0, flash: 0, flashC: '255,255,255', coinPulse: 0, slotScr: [], ui: [],
     joy: null, keys: {},
   };
   banner(LEVELS[i].name);
+  if (i === 0) G.texts.push({ x: CX, y: ch * 0.46, v: 'Arraste p/ mover • use HAB e ULT', life: 4.5, col: '#fff', vy: -3, sz: 16 });
 }
 
 /* ===== Efeitos ===== */
@@ -198,21 +221,23 @@ const wScreen = (x, z) => project([x, 0.6, z]);
 
 function spawnEnemy(type) {
   const t = TYPES[type], mul = 1 + G.level * 0.2, hp = Math.round(t.hp * mul);
-  G.enemies.push({ type, hp, maxHp: hp, speed: t.speed, scale: t.scale, dmg: t.dmg, value: t.value, armor: t.armor || 0, boss: !!t.boss, d: -rand(0, 1.2), x: PW[0][0], z: PW[0][1], ang: 0, hit: 0, bob: rand(0, 6.3) });
-  if (t.boss) { flash('255,200,80', 0.4); shake(8); }
+  const e = { type, hp, maxHp: hp, speed: t.speed, scale: t.scale, dmg: t.dmg, value: t.value, armor: t.armor || 0, boss: !!t.boss, fly: !!t.fly, d: -rand(0, 1.2), x: PW[0][0], z: PW[0][1], ang: 0, hit: 0, bob: rand(0, 6.3) };
+  if (t.fly) { e.x = rand(-7, 7); e.z = -13; }
+  G.enemies.push(e);
+  if (t.boss) { flash('255,200,80', 0.4); shake(8); SND.boss(); vibe(40); }
 }
 function damageEnemy(e, dmg) {
-  dmg = dmg * (1 - e.armor); e.hp -= dmg; e.hit = 0.12;
+  dmg = dmg * (1 - e.armor); e.hp -= dmg; e.hit = 0.12; SND.hit(); if (G.ultCharge != null) G.ultCharge = clamp(G.ultCharge + dmg * 0.0012, 0, 1);
   const s = wScreen(e.x, e.z); if (s.vis) dtext(s.x, s.y - 22 * e.scale, Math.floor(dmg), e.boss ? '#ffd23f' : '#fff');
   if (e.hp <= 0) killEnemy(e);
 }
 function killEnemy(e) {
-  e.dead = true; G.killed++;
+  e.dead = true; G.killed++; SND.kill(); vibe(e.boss ? 60 : 15); if (e.boss) { META.gems += 15; saveMeta(); }
   const s = wScreen(e.x, e.z); if (s.vis) { burst(s.x, s.y, TYPES[e.type].color, e.boss ? 28 : 10); G.coins3.push({ x: e.x, z: e.z, sx: s.x, sy: s.y, t: 0, amount: e.value }); }
   shake(e.boss ? 9 : 3);
 }
-function shoot(fx, fz, target, dmg, color) { G.shots.push({ x: fx, z: fz, y: 0.7, target, dmg, color, life: 1.5 }); }
-function collectCoin(a) { G.runCoins += a; META.coins += a; G.coinPulse = 1; burst(cw - 60, 40, '#ffd23f', 6); dtext(cw - 64, 58, '+' + a, '#ffcf5e', 16); saveMeta(); }
+function shoot(fx, fz, target, dmg, color) { G.shots.push({ x: fx, z: fz, y: 0.7, target, dmg, color, life: 1.5 }); SND.shoot(); }
+function collectCoin(a) { G.runCoins += a; META.coins += a; G.coinPulse = 1; burst(cw - 60, 40, '#ffd23f', 6); dtext(cw - 64, 58, '+' + a, '#ffcf5e', 16); saveMeta(); SND.coin(); }
 
 /* ===== Input ===== */
 const toCss = (ev) => { const r = canvas.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; };
@@ -220,9 +245,12 @@ const inR = (p, b) => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y
 const pauseRect = () => ({ x: cw - 58, y: ch - 122, w: 46, h: 46 });
 
 canvas.addEventListener('pointerdown', (ev) => {
-  const p = toCss(ev);
+  const p = toCss(ev); SND.resume();
+  if (G.state === 'story') { if (G.story.page >= STORY.length - 1) { META.seenStory = true; saveMeta(); G.state = 'select'; } else G.story.page++; return; }
   if (G.state === 'playing') {
     if (inR(p, pauseRect())) { G.state = 'paused'; G.joy = null; return; }
+    if (inR(p, skillRect())) return useSkill();
+    if (inR(p, ultRect())) return useUlt();
     for (let i = 0; i < SLOTS.length; i++) { const s = G.slotScr[i]; if (s && s.vis && Math.hypot(p.x - s.x, p.y - s.y) < 34) return buyTower(i); }
     G.joy = { id: ev.pointerId, ox: p.x, oy: p.y, dx: 0, dy: 0 }; return;
   }
@@ -240,7 +268,16 @@ addEventListener('keydown', (e) => { if (G.keys) G.keys[e.code] = 1; });
 addEventListener('keyup', (e) => { if (G.keys) G.keys[e.code] = 0; });
 
 function doAction(act) {
-  if (act === 'play') { G.state = 'select'; }
+  SND.ui();
+  if (act === 'play') { G.state = META.seenStory ? 'select' : 'story'; if (!META.seenStory) G.story = { page: 0 }; }
+  else if (act === 'story') { G.story = { page: 0 }; G.state = 'story'; }
+  else if (act === 'settings') { G.state = 'settings'; }
+  else if (act === 'set:sound') { META.sound = !META.sound; saveMeta(); }
+  else if (act === 'set:vibe') { META.vibe = !META.vibe; saveMeta(); vibe(30); }
+  else if (act === 'set:lang') { META.lang = META.lang === 'pt' ? 'en' : 'pt'; saveMeta(); }
+  else if (act === 'soon') { toast(t('soon')); }
+  else if (act === 'gacha') { doGacha(); }
+  else if (act === 'daily') { claimDaily(); }
   else if (act === 'menu') { G.state = 'menu'; }
   else if (act === 'select') { G.state = 'select'; }
   else if (act.startsWith('level:')) startLevel(+act.slice(6));
@@ -254,7 +291,7 @@ function buyTower(i) { const l = G.towers[i]; if (G.runCoins + 0 >= 0 && META.co
 
 /* ===== Loop ===== */
 let last = performance.now();
-function frame(now) { let dt = (now - last) / 1000; last = now; if (dt > 0.05) dt = 0.05; update(dt); render(); requestAnimationFrame(frame); }
+function frame(now) { let dt = (now - last) / 1000; last = now; if (dt > 0.05) dt = 0.05; if (G.toast) { G.toast.life -= dt; if (G.toast.life <= 0) G.toast = null; } update(dt); render(); requestAnimationFrame(frame); }
 requestAnimationFrame(frame);
 
 function update(dt) {
@@ -263,6 +300,7 @@ function update(dt) {
   if (G.shake > 0) G.shake = Math.max(0, G.shake - dt * 26);
   if (G.flash > 0) G.flash = Math.max(0, G.flash - dt * 1.4);
   if (G.coinPulse > 0) G.coinPulse = Math.max(0, G.coinPulse - dt * 4);
+  if (G.skillCD > 0) G.skillCD = Math.max(0, G.skillCD - dt);
   for (const p of G.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 90 * dt; p.life -= dt; }
   G.parts = G.parts.filter(p => p.life > 0);
   for (const t of G.texts) { t.y += t.vy * dt; t.life -= dt; }
@@ -304,8 +342,10 @@ function update(dt) {
   // inimigos andam até a base
   for (const e of G.enemies) {
     if (e.dead) continue;
-    e.d += e.speed * dt; e.bob += dt * 9; const pt = pathAt(e.d); e.x = pt.x; e.z = pt.z; e.ang = pt.ang; if (e.hit > 0) e.hit -= dt;
-    if (e.d >= PLEN) { G.baseHp -= e.dmg; e.dead = true; const s = wScreen(BASEP[0], BASEP[1]); if (s.vis) burst(s.x, s.y, '#e8595a', 14); shake(8); flash('232,89,90', 0.4); if (G.baseHp <= 0) return gameOver(); }
+    e.bob += dt * 9; if (e.hit > 0) e.hit -= dt; let arrived = false;
+    if (e.fly) { const ddx = BASEP[0] - e.x, ddz = BASEP[1] - e.z, L = Math.hypot(ddx, ddz) || 1; e.x += ddx / L * e.speed * dt; e.z += ddz / L * e.speed * dt; e.ang = Math.atan2(ddx, ddz); if (L < 0.8) arrived = true; }
+    else { e.d += e.speed * dt; const pt = pathAt(e.d); e.x = pt.x; e.z = pt.z; e.ang = pt.ang; if (e.d >= PLEN) arrived = true; }
+    if (arrived) { G.baseHp -= e.dmg; e.dead = true; const s = wScreen(BASEP[0], BASEP[1]); if (s.vis) burst(s.x, s.y, '#e8595a', 14); shake(8); flash('232,89,90', 0.4); if (G.baseHp <= 0) return gameOver(); }
   }
   G.enemies = G.enemies.filter(e => !e.dead);
   // moedas voando
@@ -313,8 +353,8 @@ function update(dt) {
   G.coins3 = G.coins3.filter(c => !c.done);
 }
 function nearestTo(x, z, range) { let b = null, bd = range; for (const e of G.enemies) { if (e.dead) continue; const d = Math.hypot(x - e.x, z - e.z); if (d < bd) { bd = d; b = e; } } return b; }
-function win() { G.state = 'won'; const reward = 40 + G.level * 25; META.coins += reward; G.reward = reward; if (G.level + 1 > META.unlocked) META.unlocked = Math.min(LEVELS.length - 1, G.level + 1); saveMeta(); }
-function gameOver() { G.state = 'over'; shake(12); flash('0,0,0', 0.3); }
+function win() { G.state = 'won'; const reward = 40 + G.level * 25, gr = 5 + G.level * 2; META.coins += reward; META.gems += gr; G.reward = reward; G.greward = gr; if (G.level + 1 > META.unlocked) META.unlocked = Math.min(LEVELS.length - 1, G.level + 1); saveMeta(); SND.win(); }
+function gameOver() { G.state = 'over'; shake(12); flash('0,0,0', 0.3); SND.lose(); vibe(120); }
 
 /* ===== Render ===== */
 function paint(arr) { for (const f of arr) { const l = f.light, r = f.rgb, s = f.s; ctx.fillStyle = 'rgb(' + (r[0] * l | 0) + ',' + (r[1] * l | 0) + ',' + (r[2] * l | 0) + ')'; ctx.beginPath(); ctx.moveTo(s[0].x, s[0].y); ctx.lineTo(s[1].x, s[1].y); ctx.lineTo(s[2].x, s[2].y); ctx.lineTo(s[3].x, s[3].y); ctx.closePath(); ctx.fill(); ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = 1; ctx.stroke(); } }
@@ -337,7 +377,7 @@ function renderScene() {
   BUF = FLOOR; buildFloor(); BUF = FACES; buildDeco(); buildBase();
   if (G.towers) for (let i = 0; i < SLOTS.length; i++) if (G.towers[i] > 0) drawModel(M_TOWER, SLOTS[i][0], 0, SLOTS[i][1], 0, 1);
   if (G.hero) drawModel(M_HERO, G.hero.x, 0, G.hero.z, G.hero.ang, 1);
-  if (G.enemies) for (const e of G.enemies) { const bob = Math.sin(e.bob) * 0.05; drawModel(MODELS[e.type], e.x, bob, e.z, e.ang, e.scale); }
+  if (G.enemies) for (const e of G.enemies) { const fy = e.fly ? 1.5 + Math.sin(e.bob) * 0.2 : Math.sin(e.bob) * 0.05; drawModel(MODELS[e.type], e.x, fy, e.z, e.ang, e.scale); }
   if (G.shots) for (const s of G.shots) box(s.x, s.y, s.z, 0.18, 0.18, 0.18, s.color, 1, 0, [s.x, 0, s.z]);
   FLOOR.sort((a, b) => b.z - a.z); paint(FLOOR); FACES.sort((a, b) => b.z - a.z); paint(FACES);
 }
@@ -350,9 +390,12 @@ function render() {
   if (G.state === 'playing' && G.flash > 0) { ctx.fillStyle = 'rgba(' + G.flashC + ',' + G.flash + ')'; ctx.fillRect(0, 0, cw, ch); }
   if (G.state === 'menu') drawMenu();
   else if (G.state === 'select') drawSelect();
+  else if (G.state === 'story') drawStory();
+  else if (G.state === 'settings') drawSettings();
   else if (G.state === 'paused') drawPause();
   else if (G.state === 'won') drawWon();
   else if (G.state === 'over') drawOver();
+  drawToast();
 }
 
 /* ===== UI helpers ===== */
@@ -364,7 +407,7 @@ function btn(act, x, y, w, h, label, sub, color, enabled) {
   if (sub) { ctx.fillStyle = '#aab3c5'; ctx.font = '700 11px system-ui'; ctx.fillText(sub, x + w / 2, y + h / 2 + 15); }
   ctx.textAlign = 'left'; if (enabled) G.ui.push({ x, y, w, h, act });
 }
-function coinHud() { const p = 1 + (G.coinPulse || 0) * 0.3; panel(cw - 156, 12, 144, 50, 14); coin(cw - 134, 38, 11); ctx.save(); ctx.translate(cw - 62, 40); ctx.scale(p, p); ctx.fillStyle = '#ffcf5e'; ctx.font = '800 22px system-ui'; ctx.textAlign = 'center'; ctx.fillText(fmt(META.coins), 0, 8); ctx.restore(); ctx.textAlign = 'left'; }
+function coinHud() { const p = 1 + (G.coinPulse || 0) * 0.3; panel(cw - 188, 12, 176, 50, 14); coin(cw - 166, 38, 11); ctx.save(); ctx.translate(cw - 124, 40); ctx.scale(p, p); ctx.fillStyle = '#ffcf5e'; ctx.font = '800 19px system-ui'; ctx.textAlign = 'center'; ctx.fillText(fmt(META.coins), 0, 7); ctx.restore(); gem(cw - 70, 38, 9); ctx.fillStyle = '#bff0ff'; ctx.font = '800 18px system-ui'; ctx.textAlign = 'center'; ctx.fillText(fmt(META.gems), cw - 40, 45); ctx.textAlign = 'left'; }
 
 function drawPlayHud() {
   const lvl = LEVELS[G.level];
@@ -376,6 +419,7 @@ function drawPlayHud() {
   ctx.fillStyle = '#fff'; ctx.font = '700 10px system-ui'; ctx.textAlign = 'center'; ctx.fillText(G.killed + '/' + G.total + ' inimigos', cw / 2, 52); ctx.textAlign = 'left';
   // pause
   const pb = pauseRect(); panel(pb.x, pb.y, pb.w, pb.h, 12); ctx.fillStyle = '#fff'; ctx.fillRect(pb.x + 15, pb.y + 13, 5, 20); ctx.fillRect(pb.x + 26, pb.y + 13, 5, 20);
+  drawSkillUlt();
 }
 function drawSlots() {
   G.slotScr = [];
@@ -398,21 +442,30 @@ function drawMenu() {
   overlay(); ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '900 52px system-ui'; ctx.lineWidth = 8; ctx.strokeStyle = '#9D4EDD';
   ctx.strokeText('BASTION', CX, ch * 0.3); ctx.fillText('BASTION', CX, ch * 0.3); ctx.strokeText('RUSH', CX, ch * 0.3 + 56); ctx.fillText('RUSH', CX, ch * 0.3 + 56);
   ctx.fillStyle = '#cdd6e6'; ctx.font = '600 15px system-ui'; ctx.fillText('Mova o herói e defenda a base!', CX, ch * 0.3 + 96); ctx.textAlign = 'left';
-  const pl = 1 + Math.sin(G.t * 4) * 0.04; ctx.save(); ctx.translate(CX, ch * 0.52 + 32); ctx.scale(pl, pl); ctx.translate(-CX, -(ch * 0.52 + 32)); btn('play', CX - 130, ch * 0.52, 260, 64, 'JOGAR'); ctx.restore();
+  const pl = 1 + Math.sin(G.t * 4) * 0.04; ctx.save(); ctx.translate(CX, ch * 0.52 + 32); ctx.scale(pl, pl); ctx.translate(-CX, -(ch * 0.52 + 32)); btn('play', CX - 130, ch * 0.52, 260, 64, t('play')); ctx.restore();
+  const yy = ch * 0.52 + 84;
+  btn('story', CX - 130, yy, 125, 44, t('story'), '', 'rgba(50,60,95,0.96)');
+  btn('settings', CX + 5, yy, 125, 44, t('settings'), '', 'rgba(50,60,95,0.96)');
+  ctx.textAlign = 'center'; ctx.fillStyle = '#8b93a5'; ctx.font = '700 12px system-ui'; ctx.fillText('— ' + (META.lang === 'pt' ? 'EM BREVE' : 'COMING SOON') + ' —', CX, yy + 72); ctx.textAlign = 'left';
+  const bw = (260 - 16) / 3;
+  btn('soon', CX - 130, yy + 84, bw, 40, t('alli'), '', 'rgba(40,44,58,0.9)');
+  btn('soon', CX - 130 + bw + 8, yy + 84, bw, 40, t('pvp'), '', 'rgba(40,44,58,0.9)');
+  btn('soon', CX - 130 + (bw + 8) * 2, yy + 84, bw, 40, t('events'), '', 'rgba(40,44,58,0.9)');
 }
 function drawSelect() {
-  overlay(); title('FASES', 64); coinHud();
-  const cols = 2, bw = (cw - 48) / cols, bh = 62, gx = 16, gy = 96;
+  overlay(); title('FASES', 52); coinHud(); btn('menu', 16, 28, 88, 36, t('back'), '', 'rgba(40,44,58,0.95)');
+  let gy = 86;
+  if (META.lastDaily !== today()) { btn('daily', 16, gy, cw - 32, 42, '🎁 ' + t('daily') + '  +200 / +20💎', '', 'rgba(74,58,26,0.96)'); gy += 52; }
+  const cols = 2, bw = (cw - 48) / cols, bh = 56;
   for (let i = 0; i < LEVELS.length; i++) {
-    const r = Math.floor(i / cols), c = i % cols, x = gx + c * (bw + 16), y = gy + r * (bh + 12);
+    const r = Math.floor(i / cols), c = i % cols, x = 16 + c * (bw + 16), y = gy + r * (bh + 10);
     const locked = i > META.unlocked;
-    btn(locked ? 'lock' : ('level:' + i), x, y, bw, bh, locked ? '🔒 Fase ' + (i + 1) : 'Fase ' + (i + 1), locked ? '' : LEVELS[i].name, locked ? 'rgba(40,44,58,0.92)' : 'rgba(50,60,95,0.96)', !locked);
+    btn(locked ? 'lock' : ('level:' + i), x, y, bw, bh, 'Fase ' + (i + 1), locked ? '🔒' : LEVELS[i].name, locked ? 'rgba(40,44,58,0.92)' : 'rgba(50,60,95,0.96)', !locked);
   }
-  const sy = gy + Math.ceil(LEVELS.length / cols) * (bh + 12) + 8;
-  ctx.textAlign = 'center'; ctx.fillStyle = '#cdd6e6'; ctx.font = '800 14px system-ui'; ctx.fillText('MELHORIAS (permanentes)', CX, sy + 4); ctx.textAlign = 'left';
-  btn('buy:dmg', 16, sy + 16, (cw - 48) / 2, 56, 'DANO Nv ' + META.dmgLvl, '🪙 ' + costDmg(), 'rgba(60,40,90,0.96)', META.coins >= costDmg());
-  btn('buy:rate', 16 + (cw - 48) / 2 + 16, sy + 16, (cw - 48) / 2, 56, 'CADÊNCIA Nv ' + META.rateLvl, '🪙 ' + costRate(), 'rgba(60,40,90,0.96)', META.coins >= costRate());
-  btn('menu', CX - 80, sy + 86, 160, 46, 'VOLTAR', '', 'rgba(40,44,58,0.95)');
+  let sy = gy + Math.ceil(LEVELS.length / cols) * (bh + 10) + 6;
+  btn('buy:dmg', 16, sy, bw, 50, 'DANO Nv ' + META.dmgLvl, '🪙 ' + costDmg(), 'rgba(60,40,90,0.96)', META.coins >= costDmg());
+  btn('buy:rate', 16 + bw + 16, sy, bw, 50, 'CADÊNCIA Nv ' + META.rateLvl, '🪙 ' + costRate(), 'rgba(60,40,90,0.96)', META.coins >= costRate());
+  btn('gacha', 16, sy + 60, cw - 32, 46, '🎲 ' + t('summon') + ' (100💎)', '', META.gems >= 100 ? 'rgba(40,90,80,0.96)' : 'rgba(40,44,58,0.92)', META.gems >= 100);
 }
 function drawPause() {
   overlay(); title('PAUSA', ch * 0.32);
@@ -434,7 +487,84 @@ function drawOver() {
   btn('select', CX - 120, ch * 0.46 + 70, 240, 54, 'FASES', '', 'rgba(50,60,95,0.96)');
 }
 
-window.BR = { start: startLevel, spawn: (t) => { if (G.state === 'playing') spawnEnemy(t); }, state: () => G.state };
+/* ===== Localização (PT/EN) ===== */
+const STRINGS = {
+  pt: { play: 'JOGAR', story: 'HISTÓRIA', settings: 'AJUSTES', alli: 'Alianças', pvp: 'PvP', events: 'Eventos', sound: 'Som', vibe: 'Vibração', lang: 'Idioma', back: 'VOLTAR', daily: 'Recompensa diária', summon: 'Invocar', on: 'ON', off: 'OFF', soon: 'Em breve! 🔒', nogems: 'Gemas insuficientes' },
+  en: { play: 'PLAY', story: 'STORY', settings: 'SETTINGS', alli: 'Alliances', pvp: 'PvP', events: 'Events', sound: 'Sound', vibe: 'Vibration', lang: 'Language', back: 'BACK', daily: 'Daily reward', summon: 'Summon', on: 'ON', off: 'OFF', soon: 'Coming soon! 🔒', nogems: 'Not enough gems' },
+};
+function t(k) { return (STRINGS[META.lang] || STRINGS.pt)[k] || k; }
+
+/* ===== Narrativa (texto original) ===== */
+const STORY = [
+  'O inverno chegou cedo — e trouxe a horda. As vilas arderam uma a uma.',
+  'Sou o último Guardião do Bastião. Reúno os sobreviventes atrás destes muros.',
+  'Pegue sua arma, comandante. Enquanto eu respirar, a base não cai. Avante!',
+];
+
+/* ===== Habilidade ativa + Ultimate ===== */
+const skillRect = () => ({ x: cw - 58, y: ch - 230, w: 46, h: 46 });
+const ultRect = () => ({ x: cw - 58, y: ch - 176, w: 46, h: 46 });
+function useSkill() {
+  if (G.state !== 'playing' || (G.skillCD || 0) > 0) return;
+  G.skillCD = 6; SND.skill(); vibe(25); const h = G.hero, sc = wScreen(h.x, h.z);
+  if (sc.vis) for (let i = 0; i < 22; i++) { const a = i / 22 * 6.28; G.parts.push({ x: sc.x + Math.cos(a) * 12, y: sc.y + Math.sin(a) * 7, vx: Math.cos(a) * 200, vy: Math.sin(a) * 120, life: 0.5, col: '#ffd23f', r: 3 }); }
+  shake(7); flash('255,210,90', 0.28);
+  for (const e of G.enemies) if (!e.dead && Math.hypot(e.x - h.x, e.z - h.z) < 3.3) damageEnemy(e, heroDmg() * 2.6);
+}
+function useUlt() {
+  if (G.state !== 'playing' || (G.ultCharge || 0) < 1) return;
+  G.ultCharge = 0; SND.ult(); vibe(70); shake(16); flash('120,200,255', 0.55);
+  for (const e of G.enemies.slice()) if (!e.dead) damageEnemy(e, heroDmg() * 6 + 40);
+}
+function drawSkillUlt() {
+  const sk = skillRect(); rr(sk.x, sk.y, sk.w, sk.h, 12); ctx.fillStyle = (G.skillCD > 0) ? 'rgba(40,44,58,0.92)' : 'rgba(120,90,30,0.96)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#ffcf5e'; ctx.stroke();
+  ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '800 14px system-ui'; ctx.fillText(G.skillCD > 0 ? Math.ceil(G.skillCD) : 'HAB', sk.x + sk.w / 2, sk.y + 29);
+  const ub = ultRect(), c = clamp(G.ultCharge || 0, 0, 1); rr(ub.x, ub.y, ub.w, ub.h, 12); ctx.fillStyle = 'rgba(30,40,60,0.92)'; ctx.fill();
+  ctx.save(); rr(ub.x, ub.y, ub.w, ub.h, 12); ctx.clip(); ctx.fillStyle = c >= 1 ? '#00e0ff' : '#2f6f9a'; ctx.fillRect(ub.x, ub.y + ub.h * (1 - c), ub.w, ub.h * c); ctx.restore();
+  ctx.lineWidth = 2; ctx.strokeStyle = c >= 1 ? '#00e0ff' : '#39425c'; rr(ub.x, ub.y, ub.w, ub.h, 12); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = '800 13px system-ui'; ctx.fillText('ULT', ub.x + ub.w / 2, ub.y + 29); ctx.textAlign = 'left';
+}
+
+/* ===== Gemas / diária / invocação ===== */
+function gem(x, y, r) { ctx.fillStyle = '#7fe0ff'; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.8, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.8, y); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#bff0ff'; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.4, y - r * 0.2); ctx.lineTo(x - r * 0.4, y - r * 0.2); ctx.closePath(); ctx.fill(); }
+function claimDaily() { if (META.lastDaily === today()) return; META.lastDaily = today(); META.coins += 200; META.gems += 20; saveMeta(); toast('+200 moedas, +20 gemas! 🎁'); }
+function doGacha() {
+  if (META.gems < 100) { toast(t('nogems')); return; }
+  META.gems -= 100; const r = Math.random(); let msg;
+  if (r < 0.4) { const c = Math.floor(rand(150, 400)); META.coins += c; msg = '+' + c + ' moedas'; }
+  else if (r < 0.7) { const g = Math.floor(rand(60, 140)); META.gems += g; msg = '+' + g + ' gemas'; }
+  else if (r < 0.88) { META.dmgLvl++; msg = 'Fragmento: DANO +1'; }
+  else { META.rateLvl++; msg = 'Fragmento: CADÊNCIA +1'; }
+  saveMeta(); toast('🎁 ' + msg); SND.coin();
+}
+
+/* ===== Telas: História, Ajustes, Toast ===== */
+function wrapText(txt, x, y, maxw, lh) { const ws = txt.split(' '); let line = '', yy = y; for (const w of ws) { const test = line + w + ' '; if (ctx.measureText(test).width > maxw && line) { ctx.fillText(line, x, yy); line = w + ' '; yy += lh; } else line = test; } ctx.fillText(line, x, yy); }
+function drawKing(cx, cy, s) {
+  ctx.fillStyle = '#ffcf5e'; rr(cx - 24 * s, cy - 30 * s, 48 * s, 12 * s, 3 * s); ctx.fill();
+  for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(cx + i * 16 * s - 6 * s, cy - 30 * s); ctx.lineTo(cx + i * 16 * s, cy - 46 * s); ctx.lineTo(cx + i * 16 * s + 6 * s, cy - 30 * s); ctx.closePath(); ctx.fill(); }
+  ctx.fillStyle = '#f0c39a'; rr(cx - 22 * s, cy - 18 * s, 44 * s, 42 * s, 10 * s); ctx.fill();
+  ctx.fillStyle = '#e8e2d0'; rr(cx - 20 * s, cy + 8 * s, 40 * s, 18 * s, 7 * s); ctx.fill();
+  ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(cx - 9 * s, cy - 3 * s, 3 * s, 0, 6.28); ctx.arc(cx + 9 * s, cy - 3 * s, 3 * s, 0, 6.28); ctx.fill();
+  ctx.fillStyle = '#3f6fb0'; rr(cx - 32 * s, cy + 22 * s, 64 * s, 24 * s, 10 * s); ctx.fill();
+}
+function drawStory() {
+  overlay(); drawKing(CX, ch * 0.3, 1.7);
+  const x = 26, y = ch * 0.5, w = cw - 52, h = 150; panel(x, y, w, h, 16);
+  ctx.fillStyle = '#ffcf5e'; ctx.font = '800 18px system-ui'; ctx.textAlign = 'left'; ctx.fillText('O Guardião', x + 18, y + 32);
+  ctx.fillStyle = '#fff'; ctx.font = '500 16px system-ui'; wrapText(STORY[Math.min(G.story.page, STORY.length - 1)], x + 18, y + 62, w - 36, 24);
+  ctx.fillStyle = '#8b93a5'; ctx.font = '700 13px system-ui'; ctx.textAlign = 'right'; ctx.fillText('toque para continuar >', x + w - 16, y + h - 14); ctx.textAlign = 'left';
+}
+function drawSettings() {
+  overlay(); title(t('settings'), ch * 0.24); const x = CX - 130, w = 260;
+  btn('set:sound', x, ch * 0.34, w, 52, t('sound') + ': ' + (META.sound ? t('on') : t('off')), '', META.sound ? 'rgba(50,80,60,0.96)' : 'rgba(40,44,58,0.95)');
+  btn('set:vibe', x, ch * 0.34 + 64, w, 52, t('vibe') + ': ' + (META.vibe ? t('on') : t('off')), '', META.vibe ? 'rgba(50,80,60,0.96)' : 'rgba(40,44,58,0.95)');
+  btn('set:lang', x, ch * 0.34 + 128, w, 52, t('lang') + ': ' + (META.lang === 'pt' ? 'Português' : 'English'), '', 'rgba(50,60,95,0.96)');
+  btn('menu', x, ch * 0.34 + 200, w, 50, t('back'), '', 'rgba(40,44,58,0.95)');
+}
+function drawToast() { if (!G.toast) return; ctx.font = '800 16px system-ui'; const tw = ctx.measureText(G.toast.msg).width, w = tw + 40, x = CX - w / 2, y = ch * 0.8; ctx.globalAlpha = clamp(G.toast.life * 1.6, 0, 1); rr(x, y, w, 44, 16); ctx.fillStyle = 'rgba(20,26,38,0.96)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#9D4EDD'; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(G.toast.msg, CX, y + 28); ctx.textAlign = 'left'; ctx.globalAlpha = 1; }
+
+window.BR = { start: startLevel, spawn: (ty) => { if (G.state === 'playing') spawnEnemy(ty); }, skill: useSkill, ult: useUlt, go: (s) => { G.state = s; if (s === 'story') G.story = { page: 0 }; }, charge: () => { if (G.ultCharge != null) G.ultCharge = 1; }, money: () => { META.coins += 9999; META.gems += 999; saveMeta(); }, state: () => G.state };
 </script>
 </body>
 </html>
