@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#3f8f3a">
-  <title>Bastion Rush 3D</title>
+  <title>Bastion Rush</title>
   <style>
     html, body { margin: 0; height: 100%; background: #0e1410; overflow: hidden; touch-action: none; }
     body { display: flex; align-items: center; justify-content: center; }
@@ -15,7 +15,7 @@
 <canvas id="c"></canvas>
 <script>
 /* ============================================================================
- * BASTION RUSH 3D — horde/lane defense em 3D low-poly (Canvas puro, 0 libs).
+ * BASTION RUSH — horde/lane defense em 3D low-poly (Canvas puro, 0 libs).
  * Motor 3D próprio: modelos feitos de caixas (vértices+faces), câmera em
  * perspectiva ¾, iluminação flat e ordenação por profundidade (painter).
  * Todos os modelos/arte são ORIGINAIS, criados por código. Inspirado no gênero.
@@ -407,7 +407,7 @@ function bigBtn(x, y, w, h, label) { rr(x, y, w, h, 18); ctx.fillStyle = '#9D4ED
 function drawMenu() {
   overlay(); ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '900 50px system-ui'; ctx.lineWidth = 8; ctx.strokeStyle = '#9D4EDD';
   ctx.strokeText('BASTION', CX, ch * 0.32); ctx.fillText('BASTION', CX, ch * 0.32);
-  ctx.strokeText('RUSH 3D', CX, ch * 0.32 + 56); ctx.fillText('RUSH 3D', CX, ch * 0.32 + 56);
+  ctx.strokeText('RUSH', CX, ch * 0.32 + 56); ctx.fillText('RUSH', CX, ch * 0.32 + 56);
   ctx.fillStyle = '#cdd6e6'; ctx.font = '600 16px system-ui'; ctx.fillText('Defenda a base da horda!', CX, ch * 0.32 + 96);
   const pl = 1 + Math.sin(G.t * 4) * 0.04; ctx.save(); ctx.translate(CX, ch * 0.5 + 32); ctx.scale(pl, pl); ctx.translate(-CX, -(ch * 0.5 + 32));
   bigBtn(CX - 130, ch * 0.5, 260, 64, SAVE.load() ? 'CONTINUAR' : 'JOGAR'); ctx.restore(); ctx.textAlign = 'left';

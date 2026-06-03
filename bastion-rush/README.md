@@ -1,4 +1,4 @@
-# 🎯 Bastion Rush 3D
+# 🎯 Bastion Rush
 
 Jogo **3D low-poly** de **horde/lane defense**, single-file (`index.html`), feito
 em **Canvas puro — sem nenhuma biblioteca** (motor 3D próprio). Você defende a

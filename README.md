@@ -21,7 +21,7 @@ Roda 100% no navegador, sem dependências e sem etapa de build — é só abrir 
 | Jogo | Estilo | Onde |
 |---|---|---|
 | **🏰 Frontier Bastion** | Estratégia de sobrevivência (base + tropas + heróis + defesa por tiro) | raiz (`index.html`) — descrito abaixo |
-| **🎯 Bastion Rush 3D** | **Horde/lane defense em 3D low-poly** (motor 3D próprio em Canvas, sem libs, modelos originais, pronto para APK) | [`bastion-rush/`](bastion-rush/) |
+| **🎯 Bastion Rush** | **Horde/lane defense em 3D low-poly** (motor 3D próprio em Canvas, sem libs, modelos originais, pronto para APK) | [`bastion-rush/`](bastion-rush/) |
 
 Ambos são **originais**, apenas *inspirados* no gênero. Veja o
 [`bastion-rush/README.md`](bastion-rush/README.md) para jogar e gerar o APK.
