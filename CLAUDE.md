@@ -112,16 +112,19 @@ input → update → render → telas/UI → habilidades → narrativa.
 - Câmera fixa: `camPos=[0,15.5,15]`, `camTarget=[0,0.5,-2.5]`. `setupCam(shx,shy)`
   monta a base (`fwd/rgt/upv`); `project(p)` → `{vis,x,y,depth}` (perspectiva).
 - `pushQuad(a,b,c,d,rgb,center)`: calcula normal, orienta p/ fora pelo `center`,
-  **backface cull**, **iluminação flat** (`light = 0.42 + 0.58·max(0, n·LIGHT)`),
-  empilha em `BUF` (`FLOOR` ou `FACES`) com `z` médio.
+  **backface cull**, **iluminação flat** (`light = 0.38 + 0.62·max(0, n·LIGHT)`
+  — ambiente baixo p/ o clima de arena escura), empilha em `BUF` (`FLOOR`,
+  `SHADOWS` ou `FACES`) com `z` médio.
 - `box(cx,cy,cz, w,h,d, hex, cosA,sinA, pivot)`: cuboide (com rotação Y em torno
   do pivô) → 6 quads.
 - `drawModel(parts, wx,wy,wz, ang, sc, tint?)`: desenha um modelo (lista de
   caixas). `tint` (hex) opcional mistura cada cor (fator 0.42, via `tintHex` com
   cache) — usado p/ recolorir as **variantes de elite**.
-- **Painter em 2 passadas** (`paint`): `FLOOR` (chão+caminho) ordenado e pintado
-  **primeiro**, depois `FACES` (tudo acima do chão). **Por quê:** o chão é
-  desenhado como **mosaico de tiles** (`buildFloor`, 7×7) — se fosse 1 quadradão,
+- **Painter em 3 passadas** (`paint`): `FLOOR` (chão+caminho) → `SHADOWS`
+  (sombras de contato) → `FACES` (tudo acima do chão), cada uma ordenada por `z`.
+  As **sombras** são quads escuros achatados no chão (`addShadow(x,z,r)`, y≈0.03)
+  pintados entre o piso e os modelos → dá "pé no chão" sem alpha. **Por quê o chão
+  é mosaico:** desenhado como **tiles** (`buildFloor`, 7×7) — se fosse 1 quadradão,
   a média de profundidade dele cobriria inimigos distantes (bug que já ocorreu e
   foi corrigido assim). **Não volte a usar 1 quad gigante p/ o chão.**
 
@@ -203,7 +206,16 @@ inimigo aplicando o afixo. Render: `drawModel(...tint)` recolore o modelo +
   > segurança, mas não crie novos caminhos para `'select'`.
 
 ### 3.6 UI 2D sobre o 3D
-- `render()` desenha: fundo (gradiente), `renderScene()` (3D), depois a UI 2D.
+- **Tema "arena escura" (estilo Archero):** fundo e chão escuros (pedra), caminho
+  de pedra clara, **muralhas** ao redor com portão no fundo (`buildWalls`),
+  braseiros no lugar das árvores (`buildDeco`), base/decor recoloridos. `render()`
+  aplica uma **vinheta** radial (escurece as bordas) logo após `renderScene()`.
+- **Juice de combate** (no `drawFx`, projetado em 3D→2D): **glow quente** dos
+  braseiros, **projéteis brilhantes** (bolas de energia com `globalCompositeOperation
+  'lighter'`), e **barra de vida** sobre cada inimigo (chefe sempre; demais quando
+  feridos) além da aura/marca das elites.
+- `render()` desenha: fundo (gradiente escuro), `renderScene()` (3D), vinheta,
+  depois a UI 2D.
 - **Menu estilo Clash Royale** (`drawMenu` + `drawTopBar` + `drawChestRow`):
   barra de topo (nível=clearedMax, moedas, gemas, hamburger→ajustes), título,
   **herói girando no centro** (em `renderScene`, `menuMode = menu||bestiary`,
@@ -350,15 +362,21 @@ main.js` (scripts clássicos compartilham escopo léxico global).
   central + baús; HAB+ULT; áudio (WebAudio) + vibração; diária + gemas + gacha;
   ajustes (PT/EN); história do Guardião (1º play); botões "Em Breve" (FOMO);
   **variantes de elite** (4 afixos: recolor + buffs + habilidade extra, a partir
-  da fase 24, com aura/marca e aviso na Campanha).
+  da fase 24, com aura/marca e aviso na Campanha); **visual estilo Archero**
+  (arena escura + muralhas + braseiros, sombras de contato, vinheta, projéteis
+  brilhantes, barras de vida sobre inimigos).
 - **🔜 Próximo (dá p/ fazer aqui, single-player):**
-  1. **Heróis colecionáveis** (coleção/níveis/skills, casa com o gacha).
-  2. **Capítulos + estrelas por fase + dificuldades + auto/2x**.
-  3. **Fusão com Frontier Bastion** (modo cidade/recursos/pesquisa entre
+  1. **Loop estilo Archero — "salas fechadas"** (pedido pelo usuário): trocar a
+     horda-até-a-base por salas que liberam a saída ao limpar os inimigos. Muda o
+     LOOP (não só a estética) e mexe na estrutura da campanha de 2500 fases — por
+     isso ficou como passo dedicado, depois do overhaul visual.
+  2. **Heróis colecionáveis** (coleção/níveis/skills, casa com o gacha).
+  3. **Capítulos + estrelas por fase + dificuldades + auto/2x**.
+  4. **Fusão com Frontier Bastion** (modo cidade/recursos/pesquisa entre
      batalhas).
-  4. Missões diárias/semanais + conquistas + passe; mais comportamentos
-     (summoner, multi-lane, perigos no caminho); animação esqueletal + sombras.
-  5. **Afixos de elite no bestiário** (entradas/legenda explicando os 4 tipos).
+  5. Missões diárias/semanais + conquistas + passe; mais comportamentos
+     (summoner, multi-lane, perigos no caminho); animação esqueletal.
+  6. **Afixos de elite no bestiário** (entradas/legenda explicando os 4 tipos).
 - **🌐 Precisa de servidor (manter como "Em Breve"/FOMO):** IAP real, login
   Google/Apple + save na nuvem + multi-dispositivo, push, social/PvP/alianças.
 
