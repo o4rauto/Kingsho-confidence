@@ -3,588 +3,422 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#1a1a2e">
-  <title>Bastion Rush</title>
-  <!-- Engine e áudio via CDN (sem assets locais) -->
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/howler@2.2.4/dist/howler.min.js"></script>
+  <meta name="theme-color" content="#3f8f3a">
+  <title>Bastion Rush 3D</title>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; background: #14121f; overflow: hidden; }
-    body { display: flex; justify-content: center; align-items: center; touch-action: none; }
-    canvas { border-radius: 24px; box-shadow: 0 12px 40px rgba(157, 78, 221, 0.45); }
+    html, body { margin: 0; height: 100%; background: #0e1410; overflow: hidden; touch-action: none; }
+    body { display: flex; align-items: center; justify-content: center; }
+    canvas { display: block; }
   </style>
 </head>
 <body>
+<canvas id="c"></canvas>
 <script>
 /* ============================================================================
- * BASTION RUSH — merge tower-defense "juicy" (single-file)
- * Jogo original inspirado no GÊNERO (merge + tower defense + feedback
- * dopaminérgico). Arte desenhada por código; nada de assets/marcas de terceiros.
+ * BASTION RUSH 3D — horde/lane defense em 3D low-poly (Canvas puro, 0 libs).
+ * Motor 3D próprio: modelos feitos de caixas (vértices+faces), câmera em
+ * perspectiva ¾, iluminação flat e ordenação por profundidade (painter).
+ * Todos os modelos/arte são ORIGINAIS, criados por código. Inspirado no gênero.
  * ==========================================================================*/
 
-/* ===== BALANCEAMENTO — ajuste à vontade ===== */
-const CONFIG = {
-  GRID_SIZE: 3,        // grade 3x3 para as torres
-  CELL_SIZE: 112,      // tamanho da célula (px)
-  START_COINS: 100,    // moedas iniciais
-  TOWER_COST: 50,      // custo da torre nível 1
-  MERGE_BONUS: 1.6,    // fator de dano por nível ao fazer merge
-  ENEMY_HP: 90,        // vida base do inimigo
-  ENEMY_SPEED: 78,     // velocidade base (px/s)
-  WAVE_BASE: 5,        // inimigos na onda 1
-  WAVE_GROWTH: 2,      // inimigos extras por onda
-  WAVE_DELAY: 750,     // ms entre spawns
-  COIN_VALUE: 10,      // moedas por kill
-  BOSS_EVERY: 5,       // boss a cada N ondas
-  MAX_LEVEL: 6,        // nível máximo de torre
-};
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let cw, ch, dpr, CX, CY, F;
+const FOV = 46 * Math.PI / 180;
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  cw = window.innerWidth; ch = window.innerHeight;
+  canvas.width = Math.floor(cw * dpr); canvas.height = Math.floor(ch * dpr);
+  canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px';
+  CX = cw / 2; CY = ch / 2;
+  F = (ch / 2) / Math.tan(FOV / 2);
+}
+window.addEventListener('resize', resize); resize();
 
-/* ===== Paleta ===== */
-const COLORS = {
-  bg: 0x1a1a2e, panel: 0x16213e, line: 0x0f3460,
-  primary: 0x9D4EDD, secondary: 0xFF5D8F, accent: 0x00BBF9,
-  gold: 0xFFD700, green: 0x00F5A0, orange: 0xFF7A3C, white: 0xFFFFFF,
-};
+/* ===== Util / mini-álgebra 3D ===== */
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const norm = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+function fmt(n) { n = Math.floor(n); return n < 1000 ? '' + n : n < 1e6 ? (n / 1e3).toFixed(n < 1e4 ? 1 : 0) + 'K' : (n / 1e6).toFixed(1) + 'M'; }
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 
-/* ============================================================================
- * SOM — Howler.js alimentado por WAVs gerados em runtime (sem arquivos).
- * Cada efeito é sintetizado (tom + envelope + ruído) e vira um data URI.
- * Se o Howler não carregar (offline), tudo vira no-op silencioso.
- * ==========================================================================*/
-const SoundLib = (function () {
-  const SR = 22050;
-  function encodeWav(samples) {
-    const n = samples.length, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
-    const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
-    str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE');
-    str(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
-    v.setUint32(24, SR, true); v.setUint32(28, SR * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
-    str(36, 'data'); v.setUint32(40, n * 2, true);
-    let o = 44;
-    for (let i = 0; i < n; i++) { const s = Math.max(-1, Math.min(1, samples[i])); v.setInt16(o, s * 32767, true); o += 2; }
-    const bytes = new Uint8Array(buf); let bin = ''; const c = 0x8000;
-    for (let i = 0; i < bytes.length; i += c) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + c));
-    return 'data:audio/wav;base64,' + btoa(bin);
-  }
-  function tone(o) {
-    const dur = o.dur, n = Math.floor(dur * SR), out = new Float32Array(n);
-    const f0 = o.freq, f1 = o.freq2 != null ? o.freq2 : o.freq;
-    const decay = o.decay != null ? o.decay : 16, noise = o.noise || 0, gain = o.gain != null ? o.gain : 0.5;
-    for (let i = 0; i < n; i++) {
-      const t = i / SR, f = f0 + (f1 - f0) * (t / dur), ph = 2 * Math.PI * f * t;
-      let s;
-      if (o.wave === 'square') s = Math.sin(ph) >= 0 ? 1 : -1;
-      else if (o.wave === 'saw') s = 2 * ((f * t) % 1) - 1;
-      else if (o.wave === 'triangle') s = 2 * Math.abs(2 * ((f * t) % 1) - 1) - 1;
-      else s = Math.sin(ph);
-      if (noise > 0) s = s * (1 - noise) + (Math.random() * 2 - 1) * noise;
-      out[i] = s * Math.exp(-decay * t) * gain;
-    }
-    return out;
-  }
-  const ok = (typeof Howl !== 'undefined');
-  const mk = (o) => ok ? new Howl({ src: [encodeWav(tone(o))], format: ['wav'], volume: 0.55 }) : { play() {} };
-  const lib = {
-    coin:  mk({ freq: 1046, freq2: 1568, dur: 0.12, decay: 22, wave: 'sine', gain: 0.5 }),
-    buy:   mk({ freq: 440,  freq2: 880,  dur: 0.10, decay: 28, wave: 'square', gain: 0.3 }),
-    merge: mk({ freq: 330,  freq2: 1100, dur: 0.34, decay: 7,  wave: 'triangle', gain: 0.45 }),
-    hit:   mk({ freq: 620,  dur: 0.05, decay: 40, noise: 0.35, wave: 'square', gain: 0.22 }),
-    kill:  mk({ freq: 200,  freq2: 60,  dur: 0.28, decay: 12, noise: 0.6, wave: 'saw', gain: 0.5 }),
-    wave:  mk({ freq: 300,  freq2: 760, dur: 0.38, decay: 6,  wave: 'sine', gain: 0.4 }),
-    boss:  mk({ freq: 130,  freq2: 48,  dur: 0.7,  decay: 4,  noise: 0.3, wave: 'saw', gain: 0.6 }),
-    error: mk({ freq: 150,  dur: 0.14, decay: 18, wave: 'square', gain: 0.28 }),
-    over:  mk({ freq: 440,  freq2: 110, dur: 0.7,  decay: 5,  wave: 'triangle', gain: 0.5 }),
-  };
-  return {
-    available: ok,
-    play(name) { if (lib[name]) try { lib[name].play(); } catch (e) {} },
-    toggleMute() { if (ok) { const m = !Howler._muted; Howler.mute(m); return m; } return false; },
-  };
-})();
-
-/* ============================================================================
- * SAVE — progresso em localStorage (estado da run + recorde de onda).
- * ==========================================================================*/
-const SaveManager = {
-  KEY: 'bastion-rush-save', BEST: 'bastion-rush-best',
-  load() { try { const r = localStorage.getItem(this.KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; } },
-  save(d) { try { localStorage.setItem(this.KEY, JSON.stringify(d)); } catch (e) {} },
-  clearRun() { try { localStorage.removeItem(this.KEY); } catch (e) {} },
-  best() { try { return parseInt(localStorage.getItem(this.BEST) || '0', 10) || 0; } catch (e) { return 0; } },
-  setBest(w) { try { if (w > this.best()) localStorage.setItem(this.BEST, String(w)); } catch (e) {} },
-};
-
-/* ============================================================================
- * CENA PRINCIPAL
- * ==========================================================================*/
-class GameScene extends Phaser.Scene {
-  constructor() { super('GameScene'); }
-
-  create() {
-    // Estado é resetado AQUI (e não no construtor) para funcionar no restart.
-    this.towers = []; this.enemies = []; this.projectiles = [];
-    this.grid = []; this.enemiesSpawned = 0; this.waveTotal = 0;
-    this.waveActive = false; this.gameIsOver = false; this.started = false;
-    this.buyPulse = null;
-
-    this.cameras.main.setBackgroundColor(COLORS.bg);
-
-    // Textura de partícula ANTES dos emitters (bug clássico do MVP).
-    if (!this.textures.exists('spark')) {
-      const g = this.add.graphics();
-      g.fillStyle(0xffffff, 1); g.fillCircle(8, 8, 8);
-      g.generateTexture('spark', 16, 16); g.destroy();
-    }
-    this.explosion = this.add.particles(0, 0, 'spark', {
-      speed: { min: 90, max: 320 }, scale: { start: 0.7, end: 0 },
-      blendMode: 'ADD', lifespan: 460, tint: COLORS.gold, emitting: false,
-    }).setDepth(7);
-    this.coinFx = this.add.particles(0, 0, 'spark', {
-      speed: { min: 120, max: 280 }, scale: { start: 0.55, end: 0 },
-      blendMode: 'ADD', lifespan: 480, tint: COLORS.gold, emitting: false,
-    }).setDepth(12);
-
-    // Carrega save (estado da run).
-    const save = SaveManager.load();
-    this.coins = save ? save.coins : CONFIG.START_COINS;
-    this.wave = save ? save.wave : 1;
-    this.best = SaveManager.best();
-
-    this.createGrid();
-    this.createHUD();
-    this.createWaveBar();
-    this.createBuyButton();
-    this.createMuteButton();
-
-    if (save && Array.isArray(save.towers)) {
-      save.towers.forEach(t => this.createTower(t.row, t.col, t.level, true));
-    }
-
-    this.setupDrag();
-    this.showStartOverlay(!!save);
-  }
-
-  /* ----- Grade ----- */
-  createGrid() {
-    const gs = CONFIG.GRID_SIZE, cs = CONFIG.CELL_SIZE;
-    const startX = 200 - (gs * cs) / 2 + cs / 2;
-    const startY = 320;
-    for (let r = 0; r < gs; r++) {
-      this.grid[r] = [];
-      for (let c = 0; c < gs; c++) {
-        const x = startX + c * cs, y = startY + r * cs;
-        const cell = this.add.rectangle(x, y, cs - 12, cs - 12, COLORS.panel)
-          .setStrokeStyle(2, COLORS.line, 0.6).setDepth(1);
-        this.grid[r][c] = { x, y, cell, tower: null };
-      }
-    }
-  }
-
-  /* ----- HUD ----- */
-  createHUD() {
-    const g = this.add.graphics().setDepth(10);
-    g.fillStyle(COLORS.primary, 0.92); g.fillRoundedRect(12, 12, 168, 52, 24);
-    this.add.circle(44, 38, 14, COLORS.gold).setStrokeStyle(2, COLORS.white, 0.9).setDepth(11);
-    this.coinText = this.add.text(70, 38, String(this.coins), {
-      fontFamily: 'Arial', fontSize: '24px', color: '#fff', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11);
-
-    this.waveText = this.add.text(388, 26, 'Onda ' + this.wave, {
-      fontFamily: 'Arial', fontSize: '20px', color: '#fff', fontStyle: 'bold',
-    }).setOrigin(1, 0.5).setDepth(11);
-    this.bestText = this.add.text(388, 50, 'Recorde: ' + this.best, {
-      fontFamily: 'Arial', fontSize: '13px', color: '#9aa6c0',
-    }).setOrigin(1, 0.5).setDepth(11);
-  }
-
-  /* ----- Barra de onda ----- */
-  createWaveBar() {
-    const g = this.add.graphics().setDepth(9);
-    g.fillStyle(0x000000, 0.35); g.fillRoundedRect(12, 74, 376, 18, 9);
-    this.waveBar = this.add.graphics().setDepth(9);
-  }
-  updateWaveBar(p) {
-    this.waveBar.clear();
-    if (p <= 0) return;
-    this.waveBar.fillStyle(COLORS.accent, 1);
-    this.waveBar.fillRoundedRect(12, 74, Math.max(6, 376 * p), 18, 9);
-    const sh = this.add.graphics().setDepth(9);
-    sh.fillStyle(0xffffff, 0.35); sh.fillRoundedRect(12, 74, Math.max(6, 376 * p), 18, 9);
-    this.tweens.add({ targets: sh, alpha: 0, duration: 220, onComplete: () => sh.destroy() });
-  }
-
-  /* ----- Botões (containers com cantos arredondados) ----- */
-  roundedButton(x, y, w, h, color, label, fontSize) {
-    const g = this.add.graphics();
-    g.fillStyle(color, 1); g.fillRoundedRect(-w / 2, -h / 2, w, h, 22);
-    const txt = this.add.text(0, 0, label, {
-      fontFamily: 'Arial', fontSize: (fontSize || 20) + 'px', color: '#fff', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    const cont = this.add.container(x, y, [g, txt]);
-    cont.setSize(w, h);
-    cont.setInteractive(new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h), Phaser.Geom.Rectangle.Contains);
-    cont.label = txt;
-    return cont;
-  }
-
-  createBuyButton() {
-    this.buyBtn = this.roundedButton(200, 650, 220, 60, COLORS.secondary, 'COMPRAR', 20).setDepth(10);
-    this.buyBtn.on('pointerdown', () => {
-      this.tweens.killTweensOf(this.buyBtn); this.buyPulse = null;
-      this.tweens.add({ targets: this.buyBtn, scale: 0.93, duration: 80, yoyo: true, ease: 'Quad.easeOut',
-        onComplete: () => this.updateBuyButton() });
-      if (!this.started) return;
-      if (this.coins >= CONFIG.TOWER_COST) { this.buyTower(); }
-      else { this.shake(60, 0.004); SoundLib.play('error'); this.cameras.main.flash(80, 255, 60, 90, false); }
-    });
-    this.updateBuyButton();
-  }
-
-  updateBuyButton() {
-    const can = this.coins >= CONFIG.TOWER_COST;
-    this.buyBtn.label.setText(can ? ('COMPRAR · ' + CONFIG.TOWER_COST + ' 🪙') : 'SEM MOEDAS');
-    if (can && !this.buyPulse) {
-      this.buyPulse = this.tweens.add({ targets: this.buyBtn, scale: 1.06, duration: 450,
-        yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    } else if (!can && this.buyPulse) {
-      this.buyPulse.stop(); this.buyPulse = null; this.buyBtn.setScale(1);
-    }
-  }
-
-  createMuteButton() {
-    if (!SoundLib.available) return;
-    this.muteBtn = this.roundedButton(372, 116, 44, 40, COLORS.panel, '🔊', 18).setDepth(10);
-    this.muteBtn.on('pointerdown', () => {
-      const muted = SoundLib.toggleMute();
-      this.muteBtn.label.setText(muted ? '🔇' : '🔊');
-    });
-  }
-
-  /* ----- Overlay inicial (desbloqueia o áudio no 1º toque) ----- */
-  showStartOverlay(hasSave) {
-    const ov = this.add.rectangle(200, 350, 400, 700, 0x0a0a14, 0.82).setDepth(20).setInteractive();
-    const title = this.add.text(200, 250, 'BASTION\nRUSH', {
-      fontFamily: 'Arial Black', fontSize: '54px', color: '#fff', align: 'center',
-      stroke: '#9D4EDD', strokeThickness: 8,
-    }).setOrigin(0.5).setDepth(21);
-    const sub = this.add.text(200, 360, 'Arraste torres iguais para fundir.\nNão deixe os invasores passarem!', {
-      fontFamily: 'Arial', fontSize: '16px', color: '#cfd6e6', align: 'center', lineSpacing: 6,
-    }).setOrigin(0.5).setDepth(21);
-    const btn = this.roundedButton(200, 470, 240, 64, COLORS.primary, hasSave ? 'CONTINUAR' : 'JOGAR', 24).setDepth(21);
-    this.tweens.add({ targets: btn, scale: 1.06, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    const start = () => {
-      this.started = true;
-      [ov, title, sub, btn].forEach(o => o.destroy());
-      this.time.delayedCall(400, () => this.startWave());
-    };
-    btn.on('pointerdown', start);
-    ov.on('pointerdown', start);
-  }
-
-  /* ----- Drag & merge ----- */
-  setupDrag() {
-    this.input.on('dragstart', (p, obj) => { if (obj.getData && obj.getData('type') === 'tower') this.children.bringToTop(obj); });
-    this.input.on('drag', (p, obj, dx, dy) => { if (obj.getData && obj.getData('type') === 'tower') { obj.x = dx; obj.y = dy; } });
-    this.input.on('dragend', (p, obj) => { if (obj.getData && obj.getData('type') === 'tower') this.handleTowerDrop(obj); });
-  }
-
-  /* ----- Torres ----- */
-  towerColor(level) {
-    const c = [COLORS.primary, COLORS.secondary, COLORS.accent, COLORS.gold, COLORS.green, COLORS.orange];
-    return c[(level - 1) % c.length];
-  }
-  towerSize(level) { return Math.min(28 + level * 7, 56); }
-  towerDamage(level) { return Math.round(16 * Math.pow(CONFIG.MERGE_BONUS, level - 1) * level); }
-  towerRate(level) { return Math.max(180, 520 - level * 45); }
-
-  buyTower() {
-    for (let r = 0; r < CONFIG.GRID_SIZE; r++)
-      for (let c = 0; c < CONFIG.GRID_SIZE; c++)
-        if (!this.grid[r][c].tower) {
-          this.coins -= CONFIG.TOWER_COST;
-          this.updateCoins();
-          this.createTower(r, c, 1);
-          SoundLib.play('buy');
-          this.saveGame();
-          return;
-        }
-    this.shake(60, 0.004); SoundLib.play('error'); // grade cheia
-  }
-
-  createTower(row, col, level, silent) {
-    const pos = this.grid[row][col];
-    const size = this.towerSize(level);
-    const tower = this.add.circle(pos.x, pos.y, size, this.towerColor(level)).setDepth(5);
-    tower.setStrokeStyle(level >= 4 ? 5 : 3, COLORS.white, level >= 4 ? 1 : 0.8);
-    tower.setData('type', 'tower');
-    tower.setData('level', level);
-    tower.setData('cool', 0);
-    tower.setData('gridPos', { row, col });
-    tower.setInteractive(); this.input.setDraggable(tower);
-    pos.tower = tower;
-    this.towers.push(tower);
-    if (!silent) {
-      this.cameras.main.flash(110, 255, 255, 255, false);
-      this.explosion.emitParticleAt(pos.x, pos.y, 16);
-      tower.setScale(0.4);
-      this.tweens.add({ targets: tower, scale: 1, duration: 260, ease: 'Back.easeOut' });
-    }
-    return tower;
-  }
-
-  cellFromWorld(x, y) {
-    for (let r = 0; r < CONFIG.GRID_SIZE; r++)
-      for (let c = 0; c < CONFIG.GRID_SIZE; c++)
-        if (Phaser.Math.Distance.Between(x, y, this.grid[r][c].x, this.grid[r][c].y) < CONFIG.CELL_SIZE / 2)
-          return { row: r, col: c };
-    return null;
-  }
-
-  snapBack(tower) {
-    const p = tower.getData('gridPos'), cell = this.grid[p.row][p.col];
-    this.tweens.add({ targets: tower, x: cell.x, y: cell.y, duration: 200, ease: 'Back.easeOut' });
-  }
-
-  handleTowerDrop(tower) {
-    const target = this.cellFromWorld(tower.x, tower.y);
-    if (!target) return this.snapBack(tower);
-    const dest = this.grid[target.row][target.col];
-    const from = tower.getData('gridPos');
-
-    if (dest.tower && dest.tower !== tower) {
-      if (dest.tower.getData('level') === tower.getData('level') && tower.getData('level') < CONFIG.MAX_LEVEL) {
-        this.mergeTowers(tower, dest.tower, target.row, target.col);
-        this.grid[from.row][from.col].tower = null;
-      } else {
-        return this.snapBack(tower); // níveis diferentes ou nível máximo
-      }
-    } else if (!dest.tower) {
-      this.grid[from.row][from.col].tower = null;
-      dest.tower = tower; tower.setData('gridPos', target);
-      this.tweens.add({ targets: tower, x: dest.x, y: dest.y, duration: 200, ease: 'Back.easeOut' });
-      this.saveGame();
-    } else {
-      this.snapBack(tower); // soltou em cima de si mesmo
-    }
-  }
-
-  mergeTowers(a, b, row, col) {
-    const newLevel = a.getData('level') + 1;
-    const pos = this.grid[row][col];
-    this.towers = this.towers.filter(t => t !== a && t !== b);
-    a.destroy(); b.destroy();
-
-    // JUICE de merge
-    this.cameras.main.flash(150, 255, 215, 0, false);
-    this.shake(150, 0.011);
-    this.explosion.emitParticleAt(pos.x, pos.y, 30);
-    SoundLib.play('merge');
-
-    this.createTower(row, col, newLevel);
-
-    const txt = this.add.text(pos.x, pos.y - 36, 'NÍVEL ' + newLevel + '!', {
-      fontFamily: 'Arial Black', fontSize: '28px', color: '#FFD700', stroke: '#000', strokeThickness: 6,
-    }).setOrigin(0.5).setDepth(15);
-    this.tweens.add({ targets: txt, y: pos.y - 84, alpha: 0, duration: 850, ease: 'Quad.easeOut', onComplete: () => txt.destroy() });
-    this.saveGame();
-  }
-
-  /* ----- Ondas / inimigos ----- */
-  startWave() {
-    if (this.gameIsOver) return;
-    this.waveActive = true;
-    this.enemiesSpawned = 0;
-    this.waveTotal = CONFIG.WAVE_BASE + (this.wave - 1) * CONFIG.WAVE_GROWTH;
-    this.isBossWave = (this.wave % CONFIG.BOSS_EVERY === 0);
-    this.updateWaveBar(0);
-    this.spawnLoop();
-  }
-
-  spawnLoop() {
-    if (this.gameIsOver) return;
-    const last = this.enemiesSpawned === this.waveTotal - 1;
-    this.spawnEnemy(this.isBossWave && last);
-    this.enemiesSpawned++;
-    this.updateWaveBar(this.enemiesSpawned / this.waveTotal);
-    if (this.enemiesSpawned < this.waveTotal)
-      this.time.delayedCall(CONFIG.WAVE_DELAY, () => this.spawnLoop());
-  }
-
-  spawnEnemy(boss) {
-    const x = 90 + Math.random() * 220;
-    const r = boss ? 34 : 20;
-    const hp = boss ? CONFIG.ENEMY_HP * this.wave * 9 : Math.round(CONFIG.ENEMY_HP * (1 + (this.wave - 1) * 0.5));
-    const body = this.add.circle(x, -40, r, boss ? COLORS.orange : COLORS.secondary)
-      .setStrokeStyle(3, 0x000000, 0.25).setDepth(4);
-    body.setData('hp', hp); body.setData('maxHp', hp); body.setData('boss', !!boss);
-    body.setData('speed', (boss ? CONFIG.ENEMY_SPEED * 0.6 : CONFIG.ENEMY_SPEED + this.wave * 3));
-
-    const bw = boss ? 70 : 38;
-    const bg = this.add.rectangle(x, -40 - r - 10, bw, 6, 0x000000, 0.5).setDepth(4);
-    const bar = this.add.rectangle(x - bw / 2, -40 - r - 10, bw, 6, COLORS.accent).setOrigin(0, 0.5).setDepth(4);
-    body.setData('barBg', bg); body.setData('bar', bar); body.setData('barW', bw);
-    if (boss) { body.setData('bar').setFillStyle(COLORS.orange); SoundLib.play('boss');
-      this.cameras.main.flash(220, 255, 122, 60, false); }
-    this.enemies.push(body);
-  }
-
-  /* ----- Loop ----- */
-  update(time, delta) {
-    if (this.gameIsOver || !this.started) return;
-    const dt = delta / 1000;
-
-    // Inimigos
-    for (const e of this.enemies) {
-      if (!e.active) continue;
-      e.y += e.getData('speed') * dt;
-      const r = e.width / 2, bw = e.getData('barW');
-      e.getData('barBg').setPosition(e.x, e.y - r - 12);
-      e.getData('bar').setPosition(e.x - bw / 2, e.y - r - 12);
-      if (e.y > 624) { this.gameOver(); return; }
-    }
-
-    // Torres atiram
-    for (const t of this.towers) {
-      let cool = t.getData('cool') - delta;
-      if (cool > 0) { t.setData('cool', cool); continue; }
-      let target = null, min = 170;
-      for (const e of this.enemies) {
-        if (!e.active) continue;
-        const d = Phaser.Math.Distance.Between(t.x, t.y, e.x, e.y);
-        if (d < min) { min = d; target = e; }
-      }
-      if (target) { this.shoot(t, target); t.setData('cool', this.towerRate(t.getData('level'))); }
-    }
-
-    // Projéteis (homing)
-    for (let i = this.projectiles.length - 1; i >= 0; i--) {
-      const p = this.projectiles[i];
-      const tgt = p.getData('target');
-      if (!tgt || !tgt.active) { p.destroy(); this.projectiles.splice(i, 1); continue; }
-      const ang = Phaser.Math.Angle.Between(p.x, p.y, tgt.x, tgt.y);
-      p.x += Math.cos(ang) * 560 * dt; p.y += Math.sin(ang) * 560 * dt;
-      if (Phaser.Math.Distance.Between(p.x, p.y, tgt.x, tgt.y) < tgt.width / 2 + 6) {
-        this.hitEnemy(tgt, p.getData('dmg'));
-        p.destroy(); this.projectiles.splice(i, 1);
-      }
-    }
-
-    // Fim da onda
-    if (this.waveActive && this.enemies.length === 0 && this.enemiesSpawned >= this.waveTotal) {
-      this.waveActive = false;
-      this.nextWave();
-    }
-  }
-
-  shoot(tower, target) {
-    const p = this.add.circle(tower.x, tower.y, 7, COLORS.gold).setStrokeStyle(2, COLORS.white, 0.7).setDepth(6);
-    p.setData('target', target); p.setData('dmg', this.towerDamage(tower.getData('level')));
-    this.projectiles.push(p);
-    tower.setScale(0.88);
-    this.tweens.add({ targets: tower, scale: 1, duration: 110, ease: 'Back.easeOut' });
-  }
-
-  hitEnemy(enemy, dmg) {
-    const hp = enemy.getData('hp') - dmg;
-    enemy.setData('hp', hp);
-    enemy.getData('bar').scaleX = Math.max(0, hp / enemy.getData('maxHp'));
-    this.shake(40, 0.003);
-    const t = this.add.text(enemy.x, enemy.y - 6, String(Math.floor(dmg)), {
-      fontFamily: 'Arial Black', fontSize: '22px', color: '#fff', stroke: '#000', strokeThickness: 4,
-    }).setOrigin(0.5).setDepth(15);
-    this.tweens.add({ targets: t, y: enemy.y - 52, alpha: 0, duration: 480, ease: 'Quad.easeOut', onComplete: () => t.destroy() });
-    SoundLib.play('hit');
-    if (hp <= 0) this.killEnemy(enemy);
-  }
-
-  killEnemy(enemy) {
-    const x = enemy.x, y = enemy.y, boss = enemy.getData('boss');
-    this.explosion.emitParticleAt(x, y, boss ? 40 : 15);
-    this.shake(boss ? 160 : 80, boss ? 0.012 : 0.005);
-    SoundLib.play('kill');
-    enemy.getData('barBg').destroy(); enemy.getData('bar').destroy(); enemy.destroy();
-    this.enemies = this.enemies.filter(e => e !== enemy);
-    const amount = boss ? CONFIG.COIN_VALUE * 12 : CONFIG.COIN_VALUE;
-    this.dropCoin(x, y, amount);
-  }
-
-  dropCoin(x, y, amount) {
-    const coin = this.add.circle(x, y, 11, COLORS.gold).setStrokeStyle(2, COLORS.white, 0.9).setDepth(8);
-    this.tweens.add({
-      targets: coin, x: 44, y: 38, duration: 600, ease: 'Quad.easeIn',
-      onComplete: () => {
-        coin.destroy();
-        this.coins += amount; this.updateCoins();
-        this.coinFx.emitParticleAt(44, 38, 8);
-        this.cameras.main.flash(50, 255, 215, 0, false);
-        SoundLib.play('coin');
-        const t = this.add.text(80, 38, '+' + amount, {
-          fontFamily: 'Arial', fontSize: '18px', color: '#FFD700', fontStyle: 'bold',
-        }).setOrigin(0, 0.5).setDepth(13);
-        this.tweens.add({ targets: t, y: 16, alpha: 0, duration: 420, ease: 'Quad.easeOut', onComplete: () => t.destroy() });
-        this.saveGame();
-      },
-    });
-  }
-
-  updateCoins() {
-    this.coinText.setText(String(this.coins));
-    this.tweens.add({ targets: this.coinText, scale: 1.3, duration: 100, yoyo: true, ease: 'Back.easeOut' });
-    this.updateBuyButton();
-  }
-
-  nextWave() {
-    this.wave++;
-    SaveManager.setBest(this.wave - 1);
-    this.best = SaveManager.best();
-    this.bestText.setText('Recorde: ' + this.best);
-    this.waveText.setText('Onda ' + this.wave);
-    this.cameras.main.flash(220, 157, 78, 221, false);
-    SoundLib.play('wave');
-    this.saveGame();
-    this.time.delayedCall(1400, () => this.startWave());
-  }
-
-  gameOver() {
-    if (this.gameIsOver) return;
-    this.gameIsOver = true; this.waveActive = false;
-    SaveManager.setBest(this.wave - 1);
-    SaveManager.clearRun();
-    SoundLib.play('over');
-    this.shake(300, 0.02);
-
-    this.add.rectangle(200, 350, 400, 700, 0x000000, 0.72).setDepth(20);
-    this.add.text(200, 280, 'GAME OVER', {
-      fontFamily: 'Arial Black', fontSize: '46px', color: '#FF5D8F', stroke: '#000', strokeThickness: 6,
-    }).setOrigin(0.5).setDepth(21);
-    this.add.text(200, 345, 'Chegou à onda ' + this.wave + '\nRecorde: ' + SaveManager.best(), {
-      fontFamily: 'Arial', fontSize: '18px', color: '#cfd6e6', align: 'center', lineSpacing: 6,
-    }).setOrigin(0.5).setDepth(21);
-    const again = this.roundedButton(200, 440, 240, 62, COLORS.primary, 'JOGAR NOVAMENTE', 22).setDepth(21);
-    this.tweens.add({ targets: again, scale: 1.05, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    again.on('pointerdown', () => this.scene.restart());
-  }
-
-  /* ----- Persistência ----- */
-  saveGame() {
-    if (this.gameIsOver) return;
-    SaveManager.save({
-      coins: this.coins, wave: this.wave,
-      towers: this.towers.map(t => ({ row: t.getData('gridPos').row, col: t.getData('gridPos').col, level: t.getData('level') })),
-    });
-    SaveManager.setBest(this.wave - 1);
-  }
-
-  shake(d, i) { this.cameras.main.shake(d, i); }
+/* ===== Câmera ===== */
+const LIGHT = norm([-0.4, 1.0, 0.35]);
+let camPos = [0, 15.5, 15], camTarget = [0, 0.5, -2.5];
+let fwd, rgt, upv;
+function setupCam(shx, shy) {
+  const cp = [camPos[0] + shx, camPos[1] + shy, camPos[2]];
+  fwd = norm(sub(camTarget, cp));
+  rgt = norm(cross(fwd, [0, 1, 0]));
+  upv = cross(rgt, fwd);
+  CAM = cp;
+}
+let CAM = camPos;
+function project(p) {
+  const r = sub(p, CAM);
+  const depth = dot(r, fwd);          // >0 = na frente
+  if (depth < 0.05) return { vis: false };
+  const x = dot(r, rgt), y = dot(r, upv);
+  return { vis: true, x: CX + x * F / depth, y: CY - y * F / depth, depth };
 }
 
-/* ===== Boot ===== */
-const game = new Phaser.Game({
-  type: Phaser.AUTO,
-  backgroundColor: '#1a1a2e',
-  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: 400, height: 700 },
-  scene: [GameScene],
+/* ===== Buffer de faces (dois: chão e objetos, p/ ordenação correta) ===== */
+let FACES = [], FLOOR = [], BUF = FACES;
+const RGB = {};
+function rgbOf(hex) { if (RGB[hex]) return RGB[hex]; const n = parseInt(hex.slice(1), 16); const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255]; RGB[hex] = c; return c; }
+function pushQuad(a, b, c, d, rgb, center) {
+  const n = norm(cross(sub(b, a), sub(c, a)));
+  // garante normal apontando para fora (do centro do objeto para a face)
+  const fc = [(a[0] + b[0] + c[0] + d[0]) / 4, (a[1] + b[1] + c[1] + d[1]) / 4, (a[2] + b[2] + c[2] + d[2]) / 4];
+  if (center && dot(n, sub(fc, center)) < 0) { n[0] = -n[0]; n[1] = -n[1]; n[2] = -n[2]; }
+  // backface cull
+  if (dot(n, sub(fc, CAM)) >= 0) return;
+  const pa = project(a), pb = project(b), pc = project(c), pd = project(d);
+  if (!pa.vis || !pb.vis || !pc.vis || !pd.vis) return;
+  const light = 0.42 + 0.58 * Math.max(0, dot(n, LIGHT));
+  BUF.push({ s: [pa, pb, pc, pd], rgb, light, z: (pa.depth + pb.depth + pc.depth + pd.depth) / 4 });
+}
+// caixa: centro (cx,cy,cz) já em mundo, dims (w,h,d), rot Y (cos/sin) em torno de `pivot`
+function box(cx, cy, cz, w, h, d, hex, cosA, sinA, pivot) {
+  const rgb = rgbOf(hex);
+  const hw = w / 2, hh = h / 2, hd = d / 2;
+  const C = [];
+  for (let sx = -1; sx <= 1; sx += 2) for (let sy = -1; sy <= 1; sy += 2) for (let sz = -1; sz <= 1; sz += 2) {
+    let lx = cx + sx * hw - pivot[0], lz = cz + sz * hd - pivot[2];
+    const wx = lx * cosA + lz * sinA, wz = -lx * sinA + lz * cosA;
+    C.push([pivot[0] + wx, cy + sy * hh, pivot[2] + wz]);
+  }
+  // índices: bit sx(4),sy(2),sz(1): 0:---,1:--+,2:-+-,3:-++,4:+--,5:+-+,6:++-,7:+++
+  const ctr = [cx + (cosA * 0 + 0), cy, cz];
+  const cw2 = [ (function(){ let lx=cx-pivot[0], lz=cz-pivot[2]; return [pivot[0]+lx*cosA+lz*sinA, cy, pivot[2]+(-lx*sinA+lz*cosA)]; })() ][0];
+  pushQuad(C[1], C[5], C[7], C[3], rgb, cw2); // frente z+
+  pushQuad(C[4], C[0], C[2], C[6], rgb, cw2); // tras  z-
+  pushQuad(C[0], C[1], C[3], C[2], rgb, cw2); // esq   x-
+  pushQuad(C[5], C[4], C[6], C[7], rgb, cw2); // dir   x+
+  pushQuad(C[3], C[7], C[6], C[2], rgb, cw2); // topo  y+
+  pushQuad(C[0], C[4], C[5], C[1], rgb, cw2); // base  y-
+}
+
+/* ===== Modelos (listas de caixas, em coords locais; +z = frente) ===== */
+const M_HERO = [
+  { x: -0.18, y: 0.22, z: 0, w: 0.22, h: 0.45, d: 0.26, c: '#34527e' }, // perna
+  { x: 0.18, y: 0.22, z: 0, w: 0.22, h: 0.45, d: 0.26, c: '#34527e' },
+  { x: 0, y: 0.72, z: 0, w: 0.62, h: 0.6, d: 0.42, c: '#3f6fb0' },      // tronco
+  { x: 0, y: 0.78, z: 0.2, w: 0.5, h: 0.4, d: 0.08, c: '#2f568f' },     // peitoral
+  { x: -0.42, y: 0.74, z: 0, w: 0.18, h: 0.5, d: 0.22, c: '#365f97' },  // braços
+  { x: 0.42, y: 0.74, z: 0, w: 0.18, h: 0.5, d: 0.22, c: '#365f97' },
+  { x: 0, y: 1.16, z: 0, w: 0.36, h: 0.32, d: 0.34, c: '#f0c39a' },     // cabeça
+  { x: 0, y: 1.3, z: 0, w: 0.42, h: 0.18, d: 0.4, c: '#cfd3db' },       // elmo
+  { x: 0, y: 1.46, z: 0, w: 0.1, h: 0.16, d: 0.1, c: '#ffcf5e' },       // crista
+  { x: 0.5, y: 0.95, z: 0.18, w: 0.08, h: 0.7, d: 0.08, c: '#7a5230' }, // lança
+  { x: 0.5, y: 1.34, z: 0.18, w: 0.12, h: 0.16, d: 0.04, c: '#cfd3db' },
+];
+const M_GRUNT = [
+  { x: 0, y: 0.2, z: 0, w: 0.4, h: 0.4, d: 0.34, c: '#e0524a' },        // corpo
+  { x: 0, y: 0.52, z: 0, w: 0.3, h: 0.26, d: 0.28, c: '#c2433c' },      // cabeça
+  { x: -0.12, y: 0.55, z: 0.16, w: 0.08, h: 0.08, d: 0.04, c: '#ffffff' }, // olhos
+  { x: 0.12, y: 0.55, z: 0.16, w: 0.08, h: 0.08, d: 0.04, c: '#ffffff' },
+  { x: -0.13, y: 0.04, z: 0, w: 0.12, h: 0.12, d: 0.14, c: '#7a2f2a' }, // pés
+  { x: 0.13, y: 0.04, z: 0, w: 0.12, h: 0.12, d: 0.14, c: '#7a2f2a' },
+];
+const M_BOSS = [
+  { x: 0, y: 0.34, z: 0, w: 0.78, h: 0.7, d: 0.6, c: '#b23bc0' },
+  { x: 0, y: 0.86, z: 0, w: 0.5, h: 0.42, d: 0.44, c: '#9a2fa8' },
+  { x: -0.16, y: 0.92, z: 0.24, w: 0.12, h: 0.12, d: 0.05, c: '#ffffff' },
+  { x: 0.16, y: 0.92, z: 0.24, w: 0.12, h: 0.12, d: 0.05, c: '#ffffff' },
+  { x: -0.22, y: 1.16, z: 0, w: 0.1, h: 0.16, d: 0.1, c: '#ffcf5e' },   // coroa
+  { x: 0, y: 1.2, z: 0, w: 0.1, h: 0.2, d: 0.1, c: '#ffcf5e' },
+  { x: 0.22, y: 1.16, z: 0, w: 0.1, h: 0.16, d: 0.1, c: '#ffcf5e' },
+  { x: -0.34, y: 0.34, z: 0, w: 0.18, h: 0.5, d: 0.22, c: '#9a2fa8' },
+  { x: 0.34, y: 0.34, z: 0, w: 0.18, h: 0.5, d: 0.22, c: '#9a2fa8' },
+];
+const M_TOWER = [
+  { x: 0, y: 0.3, z: 0, w: 0.5, h: 0.6, d: 0.5, c: '#8a5a32' },
+  { x: 0, y: 0.66, z: 0, w: 0.62, h: 0.16, d: 0.62, c: '#6e4525' },
+  { x: 0, y: 0.86, z: 0, w: 0.3, h: 0.3, d: 0.3, c: '#aab0bd' },
+  { x: 0, y: 0.9, z: 0.18, w: 0.34, h: 0.08, d: 0.08, c: '#3a3f4a' },
+];
+function drawModel(parts, wx, wy, wz, ang, sc) {
+  const cosA = Math.cos(ang), sinA = Math.sin(ang), pivot = [wx, wy, wz];
+  for (const p of parts) {
+    box(wx + p.x * sc, wy + p.y * sc, wz + p.z * sc, p.w * sc, p.h * sc, p.d * sc, p.c, cosA, sinA, pivot);
+  }
+}
+
+/* ===== Caminho (no plano XZ) ===== */
+const PW = [
+  [0, -13.5], [0, -8], [-5, -6], [-5, -1], [4.2, 0.5], [4.2, 4], [0, 5.6],
+];
+const PSEG = []; let PLEN = 0;
+for (let i = 0; i < PW.length - 1; i++) { const a = PW[i], b = PW[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]); PSEG.push({ a, b, L, acc: PLEN }); PLEN += L; }
+function pathAt(d) {
+  d = clamp(d, 0, PLEN);
+  for (const s of PSEG) if (d <= s.acc + s.L) { const t = (d - s.acc) / s.L; return { x: s.a[0] + (s.b[0] - s.a[0]) * t, z: s.a[1] + (s.b[1] - s.a[1]) * t, ang: Math.atan2(s.b[0] - s.a[0], s.b[1] - s.a[1]) }; }
+  const e = PW[PW.length - 1]; return { x: e[0], z: e[1], ang: 0 };
+}
+const BASEP = PW[PW.length - 1];
+const HEROP = [1.8, 6.0];
+const SLOTS = [[-7.5, -3.5], [7.2, -1.5], [-2.2, 2.6], [7.5, 4.5]];
+const ROCKS = []; for (let i = 0; i < 9; i++) ROCKS.push([rand(-11, 11), rand(-15, 8), rand(0.5, 1.1)]);
+const TREES = [[-9, 3], [9, -6], [-8, -10], [8, 6], [-3, -3.5]];
+
+/* ===== Save / Estado ===== */
+const SAVE = {
+  K: 'bastion-3d', B: 'bastion-3d-best',
+  load() { try { return JSON.parse(localStorage.getItem(this.K)); } catch (e) { return null; } },
+  save(d) { try { localStorage.setItem(this.K, JSON.stringify(d)); } catch (e) {} },
+  clear() { try { localStorage.removeItem(this.K); } catch (e) {} },
+  best() { try { return +localStorage.getItem(this.B) || 0; } catch (e) { return 0; } },
+  setBest(w) { try { if (w > this.best()) localStorage.setItem(this.B, '' + w); } catch (e) {} },
+};
+let G;
+function newGame(fromSave) {
+  const s = fromSave ? SAVE.load() : null;
+  G = {
+    state: 'menu', coins: s ? s.coins : 80, wave: s ? s.wave : 1,
+    baseHpMax: 100, baseHp: s ? s.baseHp : 100,
+    dmgLvl: s ? s.dmgLvl : 1, rateLvl: s ? s.rateLvl : 1, towers: s ? s.towers : [0, 0, 0, 0],
+    best: SAVE.best(), enemies: [], shots: [], coins3: [], parts: [], texts: [],
+    heroCool: 0, tCool: [0, 0, 0, 0], spawnLeft: 0, spawnT: 0, waveSize: 0, breather: 0, boss: false,
+    shake: 0, flash: 0, flashC: '255,255,255', t: 0, coinPulse: 0, slotScr: [],
+  };
+}
+newGame(!!SAVE.load());
+const heroDmg = () => 7 + (G.dmgLvl - 1) * 5;
+const heroCD = () => Math.max(170, 620 - (G.rateLvl - 1) * 45);
+const towerDmg = (l) => 5 + (l - 1) * 6;
+const costDmg = () => Math.floor(40 * Math.pow(1.55, G.dmgLvl - 1));
+const costRate = () => Math.floor(45 * Math.pow(1.55, G.rateLvl - 1));
+const costHeal = () => 30;
+const costTower = (l) => l === 0 ? 60 : Math.floor(50 * Math.pow(1.6, l));
+function persist() { if (G.state === 'over') return; SAVE.save({ coins: G.coins, wave: G.wave, baseHp: G.baseHp, dmgLvl: G.dmgLvl, rateLvl: G.rateLvl, towers: G.towers }); }
+
+/* ===== Ondas / efeitos ===== */
+function startWave() { G.boss = (G.wave % 5 === 0); G.waveSize = 6 + G.wave * 2; G.spawnLeft = G.waveSize; G.spawnT = 0; G.breather = 0; banner('ONDA ' + G.wave); }
+function spawnEnemy(boss) {
+  const hp = boss ? Math.round(40 * G.wave * 4) : Math.round(16 * (1 + (G.wave - 1) * 0.42));
+  G.enemies.push({ d: -rand(0, 1.4), hp, maxHp: hp, boss: !!boss, speed: boss ? 0.9 : 1.25 + G.wave * 0.04, r: boss ? 0.9 : 0.45, dmg: boss ? 45 : 8, value: boss ? 70 : 5, x: PW[0][0], z: PW[0][1], ang: 0, hit: 0, bob: rand(0, 6.3) });
+}
+function burst(x, y, color, n) { for (let i = 0; i < n; i++) { const a = rand(0, 6.28), sp = rand(50, 200); G.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rand(0.3, 0.6), col: color, r: rand(2, 4) }); } }
+function dtext(x, y, v, col, sz) { G.texts.push({ x, y, v: '' + v, life: 0.7, col: col || '#fff', vy: -46, sz: sz || 18 }); }
+function banner(t) { G.texts.push({ x: CX, y: ch * 0.34, v: t, life: 1.4, col: '#ffcf5e', vy: -12, sz: 34, big: 1 }); }
+function shake(v) { G.shake = Math.max(G.shake, v); }
+function flash(c, v) { G.flash = Math.max(G.flash, v); G.flashC = c; }
+function worldScreen(x, z) { return project([x, 0.6, z]); }
+function damageEnemy(e, dmg) { e.hp -= dmg; e.hit = 0.12; const s = worldScreen(e.x, e.z); if (s.vis) dtext(s.x, s.y - 24, Math.floor(dmg), e.boss ? '#ffd23f' : '#fff'); if (e.hp <= 0) killEnemy(e); }
+function killEnemy(e) { e.dead = true; const s = worldScreen(e.x, e.z); if (s.vis) { burst(s.x, s.y, e.boss ? '#b23bc0' : '#e0524a', e.boss ? 26 : 10); G.coins3.push({ x: e.x, z: e.z, sx: s.x, sy: s.y, t: 0, amount: e.value }); } shake(e.boss ? 9 : 3); }
+function shoot(fx, fz, target, dmg, color) { G.shots.push({ x: fx, z: fz, y: 0.7, target, dmg, color, life: 1.5 }); }
+
+/* ===== Input ===== */
+function toCss(ev) { const r = canvas.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; }
+function btnRects() {
+  const w = Math.min(150, (cw - 48) / 3), h = 58, y = ch - h - 14, gap = (cw - w * 3) / 4;
+  return { dmg: { x: gap, y, w, h }, rate: { x: gap * 2 + w, y, w, h }, heal: { x: gap * 3 + w * 2, y, w, h } };
+}
+const inR = (p, b) => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h;
+canvas.addEventListener('pointerdown', (ev) => {
+  const p = toCss(ev);
+  if (G.state === 'menu') { G.state = 'playing'; startWave(); return; }
+  if (G.state === 'over') { const b = { x: CX - 130, y: ch * 0.5, w: 260, h: 64 }; if (inR(p, b)) { newGame(false); SAVE.clear(); G.state = 'playing'; startWave(); } return; }
+  const B = btnRects();
+  if (inR(p, B.dmg)) return buy('dmg');
+  if (inR(p, B.rate)) return buy('rate');
+  if (inR(p, B.heal)) return buy('heal');
+  for (let i = 0; i < SLOTS.length; i++) { const s = G.slotScr[i]; if (s && s.vis && Math.hypot(p.x - s.x, p.y - s.y) < 36) return buyTower(i); }
 });
+function buy(k) {
+  if (k === 'dmg' && G.coins >= costDmg()) { G.coins -= costDmg(); G.dmgLvl++; ok(); }
+  else if (k === 'rate' && G.coins >= costRate()) { G.coins -= costRate(); G.rateLvl++; ok(); }
+  else if (k === 'heal' && G.coins >= costHeal() && G.baseHp < G.baseHpMax) { G.coins -= costHeal(); G.baseHp = Math.min(G.baseHpMax, G.baseHp + 30); ok(); flash('79,207,114', 0.22); }
+  else shake(4);
+}
+function buyTower(i) { const l = G.towers[i]; if (G.coins >= costTower(l) && l < 5) { G.coins -= costTower(l); G.towers[i]++; ok(); const s = G.slotScr[i]; if (s && s.vis) burst(s.x, s.y, '#00BBF9', 14); } else shake(4); }
+function ok() { flash('255,255,255', 0.16); persist(); }
+
+/* ===== Loop ===== */
+let last = performance.now();
+function frame(now) { let dt = (now - last) / 1000; last = now; if (dt > 0.05) dt = 0.05; update(dt); render(); requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+
+function update(dt) {
+  G.t += dt;
+  if (G.shake > 0) G.shake = Math.max(0, G.shake - dt * 26);
+  if (G.flash > 0) G.flash = Math.max(0, G.flash - dt * 1.4);
+  if (G.coinPulse > 0) G.coinPulse = Math.max(0, G.coinPulse - dt * 4);
+  for (const p of G.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 90 * dt; p.life -= dt; }
+  G.parts = G.parts.filter(p => p.life > 0);
+  for (const t of G.texts) { t.y += t.vy * dt; t.life -= dt; }
+  G.texts = G.texts.filter(t => t.life > 0);
+  if (G.state !== 'playing') return;
+
+  if (G.spawnLeft > 0) { G.spawnT -= dt; if (G.spawnT <= 0) { const boss = G.boss && G.spawnLeft === 1; spawnEnemy(boss); G.spawnLeft--; G.spawnT = boss ? 0.7 : 0.5; } }
+  else if (G.enemies.length === 0 && G.breather <= 0) G.breather = 2.3;
+  if (G.breather > 0) { G.breather -= dt; if (G.breather <= 0) { G.wave++; SAVE.setBest(G.wave - 1); G.best = SAVE.best(); persist(); startWave(); } }
+
+  for (const e of G.enemies) {
+    if (e.dead) continue;
+    e.d += e.speed * dt; e.bob += dt * 9;
+    const pt = pathAt(e.d); e.x = pt.x; e.z = pt.z; e.ang = pt.ang;
+    if (e.hit > 0) e.hit -= dt;
+    if (e.d >= PLEN) { G.baseHp -= e.dmg; e.dead = true; const s = worldScreen(BASEP[0], BASEP[1]); if (s.vis) burst(s.x, s.y, '#e8595a', 14); shake(8); flash('232,89,90', 0.4); if (G.baseHp <= 0) return gameOver(); }
+  }
+  G.heroCool -= dt * 1000;
+  if (G.heroCool <= 0) { const tg = mostAdvanced(); if (tg) { shoot(HEROP[0], HEROP[1], tg, heroDmg(), '#ffd23f'); G.heroCool = heroCD(); } }
+  for (let i = 0; i < SLOTS.length; i++) {
+    if (G.towers[i] <= 0) continue;
+    G.tCool[i] -= dt * 1000;
+    if (G.tCool[i] <= 0) { const tg = nearestTo(SLOTS[i][0], SLOTS[i][1], 6.5); if (tg) { shoot(SLOTS[i][0], SLOTS[i][1], tg, towerDmg(G.towers[i]), '#00BBF9'); G.tCool[i] = 900; } }
+  }
+  for (const s of G.shots) {
+    if (!s.target || s.target.dead) { s.life = 0; continue; }
+    const dx = s.target.x - s.x, dz = s.target.z - s.z, L = Math.hypot(dx, dz) || 1, sp = 16 * dt;
+    s.x += dx / L * sp; s.z += dz / L * sp; s.life -= dt;
+    if (L < 0.6) { damageEnemy(s.target, s.dmg); const sc = worldScreen(s.x, s.z); if (sc.vis) burst(sc.x, sc.y, s.color, 4); s.life = 0; }
+  }
+  G.shots = G.shots.filter(s => s.life > 0);
+  G.enemies = G.enemies.filter(e => !e.dead);
+  for (const c of G.coins3) { c.t += dt / 0.55; if (c.t >= 1) { c.done = true; collectCoin(c.amount); } else { const e = 1 - Math.pow(1 - c.t, 3); c.cx = c.sx + (cw - 60 - c.sx) * e; c.cy = c.sy + (40 - c.sy) * e; } }
+  G.coins3 = G.coins3.filter(c => !c.done);
+}
+function collectCoin(a) { G.coins += a; G.coinPulse = 1; burst(cw - 60, 40, '#ffd23f', 6); dtext(cw - 64, 58, '+' + a, '#ffcf5e', 16); persist(); }
+function mostAdvanced() { let b = null, bd = -1; for (const e of G.enemies) if (!e.dead && e.d > bd) { bd = e.d; b = e; } return b; }
+function nearestTo(x, z, range) { let b = null, bd = range; for (const e of G.enemies) { if (e.dead) continue; const d = Math.hypot(x - e.x, z - e.z); if (d < bd) { bd = d; b = e; } } return b; }
+function gameOver() { G.state = 'over'; SAVE.setBest(G.wave - 1); G.best = SAVE.best(); SAVE.clear(); shake(12); flash('0,0,0', 0.3); }
+
+/* ===== Cenário 3D ===== */
+function buildFloor() {
+  // gramado em mosaico (tiles) p/ ordenação correta + leve variação de tom
+  const N = 7, x0 = -13, x1 = 13, z0 = -16, z1 = 9;
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    const ax = x0 + (x1 - x0) * i / N, bx = x0 + (x1 - x0) * (i + 1) / N;
+    const az = z0 + (z1 - z0) * j / N, bz = z0 + (z1 - z0) * (j + 1) / N;
+    const c = (i + j) % 2 ? '#5aa84a' : '#56a247';
+    pushQuad([ax, 0, az], [bx, 0, az], [bx, 0, bz], [ax, 0, bz], rgbOf(c), [(ax + bx) / 2, -1, (az + bz) / 2]);
+  }
+  // caminho
+  for (const s of PSEG) {
+    const a = s.a, b = s.b; const dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz) || 1;
+    const nx = -dz / L * 0.95, nz = dx / L * 0.95; const y = 0.04;
+    pushQuad([a[0] - nx, y, a[1] - nz], [a[0] + nx, y, a[1] + nz], [b[0] + nx, y, b[1] + nz], [b[0] - nx, y, b[1] - nz], rgbOf('#e0c08a'), [(a[0] + b[0]) / 2, -1, (a[1] + b[1]) / 2]);
+  }
+}
+function buildDeco() {
+  for (const r of ROCKS) box(r[0], r[2] * 0.4, r[1], r[2], r[2] * 0.8, r[2], '#8e8eaa', 1, 0, [r[0], 0, r[1]]);
+  for (const t of TREES) { box(t[0], 0.4, t[1], 0.22, 0.8, 0.22, '#7a5230', 1, 0, [t[0], 0, t[1]]); box(t[0], 1.1, t[1], 1.1, 1.1, 1.1, '#4e9942', 1, 0, [t[0], 0, t[1]]); box(t[0], 1.7, t[1], 0.7, 0.7, 0.7, '#5fb04e', 1, 0, [t[0], 0, t[1]]); }
+}
+function buildBase() {
+  const x = BASEP[0], z = BASEP[1];
+  box(x, 0.35, z, 2.4, 0.7, 1.0, '#aab0bd', 1, 0, [x, 0, z]);          // muralha
+  for (let i = -1; i <= 1; i++) box(x + i * 0.8, 0.8, z - 0.4, 0.4, 0.4, 0.3, '#7f8696', 1, 0, [x, 0, z]); // ameias
+  box(x, 0.9, z + 0.2, 1.0, 1.2, 0.9, '#9aa0ad', 1, 0, [x, 0, z]);     // torre
+  box(x, 1.7, z + 0.2, 1.2, 0.5, 1.1, '#2f568f', 1, 0, [x, 0, z]);     // telhado base
+  box(x, 2.1, z + 0.2, 0.5, 0.5, 0.5, '#3f6fb0', 1, 0, [x, 0, z]);     // telhado topo
+  box(x, 2.7, z + 0.2, 0.06, 0.6, 0.06, '#5a4632', 1, 0, [x, 0, z]);   // mastro
+  box(x + 0.22, 2.85, z + 0.2, 0.4, 0.26, 0.04, '#e8595a', 1, 0, [x, 0, z]); // bandeira
+}
+
+/* ===== Render ===== */
+function paint(arr) {
+  for (const f of arr) {
+    const l = f.light, r = f.rgb;
+    ctx.fillStyle = 'rgb(' + (r[0] * l | 0) + ',' + (r[1] * l | 0) + ',' + (r[2] * l | 0) + ')';
+    const s = f.s;
+    ctx.beginPath(); ctx.moveTo(s[0].x, s[0].y); ctx.lineTo(s[1].x, s[1].y); ctx.lineTo(s[2].x, s[2].y); ctx.lineTo(s[3].x, s[3].y); ctx.closePath();
+    ctx.fill(); ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = 1; ctx.stroke();
+  }
+}
+function render() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // céu/fundo
+  const g = ctx.createLinearGradient(0, 0, 0, ch);
+  g.addColorStop(0, '#2b3b56'); g.addColorStop(0.45, '#3f6e57'); g.addColorStop(1, '#477f3f');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch);
+
+  const shx = G.shake ? rand(-G.shake, G.shake) * 0.02 : 0, shy = G.shake ? rand(-G.shake, G.shake) * 0.02 : 0;
+  setupCam(shx, shy);
+  FACES = []; FLOOR = [];
+  BUF = FLOOR; buildFloor();                       // chão + caminho (passada de trás)
+  BUF = FACES;                                     // tudo que fica acima do chão
+  buildDeco();
+  buildBase();
+  for (let i = 0; i < SLOTS.length; i++) if (G.towers[i] > 0) drawModel(M_TOWER, SLOTS[i][0], 0, SLOTS[i][1], 0, 1);
+  drawModel(M_HERO, HEROP[0], 0, HEROP[1], Math.PI, 1);
+  for (const e of G.enemies) { const m = e.boss ? M_BOSS : M_GRUNT; const bob = Math.sin(e.bob) * 0.05; drawModel(m, e.x, bob, e.z, e.ang, e.boss ? 1.5 : 1.1); }
+  for (const s of G.shots) box(s.x, s.y, s.z, 0.18, 0.18, 0.18, s.color, 1, 0, [s.x, 0, s.z]);
+
+  FLOOR.sort((a, b) => b.z - a.z); paint(FLOOR);
+  FACES.sort((a, b) => b.z - a.z); paint(FACES);
+
+  // slots vazios (marcador projetado) + guarda screen pos
+  G.slotScr = [];
+  for (let i = 0; i < SLOTS.length; i++) {
+    const sc = project([SLOTS[i][0], 0.1, SLOTS[i][1]]); G.slotScr[i] = sc;
+    if (G.towers[i] <= 0 && sc.vis) {
+      const can = G.coins >= costTower(0), pulse = can ? 3 + Math.sin(G.t * 5) * 2 : 0;
+      ctx.strokeStyle = can ? '#ffcf5e' : 'rgba(255,255,255,.5)'; ctx.lineWidth = 3; ctx.setLineDash([6, 5]);
+      ctx.beginPath(); ctx.arc(sc.x, sc.y, 22 + pulse, 0, 6.28); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = can ? '#ffcf5e' : 'rgba(255,255,255,.6)'; ctx.font = '800 24px system-ui'; ctx.textAlign = 'center'; ctx.fillText('+', sc.x, sc.y + 8);
+      coinIcon(sc.x - 14, sc.y + 24, 6); ctx.fillStyle = '#fff'; ctx.font = '700 12px system-ui'; ctx.fillText(costTower(0), sc.x + 6, sc.y + 28);
+    }
+  }
+  ctx.textAlign = 'left';
+
+  // partículas
+  for (const p of G.parts) { ctx.globalAlpha = clamp(p.life * 2.2, 0, 1); ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, p.r, p.r); } ctx.globalAlpha = 1;
+  // moedas voando
+  for (const c of G.coins3) coinIcon(c.cx != null ? c.cx : c.sx, c.cy != null ? c.cy : c.sy, 9);
+  // textos
+  for (const t of G.texts) { ctx.globalAlpha = clamp(t.life * 1.6, 0, 1); ctx.font = '800 ' + t.sz + 'px system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.strokeText(t.v, t.x, t.y); ctx.fillStyle = t.col; ctx.fillText(t.v, t.x, t.y); }
+  ctx.globalAlpha = 1; ctx.textAlign = 'left';
+
+  drawHUD();
+  if (G.flash > 0) { ctx.fillStyle = 'rgba(' + G.flashC + ',' + G.flash + ')'; ctx.fillRect(0, 0, cw, ch); }
+  if (G.state === 'menu') drawMenu();
+  if (G.state === 'over') drawOver();
+}
+
+function coinIcon(x, y, r) { ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.28); ctx.fill(); ctx.fillStyle = '#ffe98a'; ctx.beginPath(); ctx.arc(x, y, r * 0.55, 0, 6.28); ctx.fill(); }
+function panel(x, y, w, h, r) { rr(x, y, w, h, r); ctx.fillStyle = 'rgba(18,24,36,0.9)'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = '#39425c'; ctx.stroke(); }
+function drawHUD() {
+  panel(12, 12, 150, 56, 14);
+  ctx.fillStyle = '#fff'; ctx.font = '800 18px system-ui'; ctx.textAlign = 'left'; ctx.fillText('Onda ' + G.wave, 24, 35);
+  const bw = 120, hp = clamp(G.baseHp / G.baseHpMax, 0, 1); rr(24, 46, bw, 9, 4); ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fill();
+  rr(24, 46, bw * hp, 9, 4); ctx.fillStyle = hp > 0.3 ? '#4fcf72' : '#e8595a'; ctx.fill();
+  // moedas
+  const p = 1 + G.coinPulse * 0.3; panel(cw - 156, 12, 144, 50, 14); coinIcon(cw - 134, 38, 11);
+  ctx.save(); ctx.translate(cw - 62, 40); ctx.scale(p, p); ctx.fillStyle = '#ffcf5e'; ctx.font = '800 22px system-ui'; ctx.textAlign = 'center'; ctx.fillText(fmt(G.coins), 0, 8); ctx.restore(); ctx.textAlign = 'left';
+  // botões
+  const B = btnRects();
+  upBtn(B.dmg, 'DANO', 'Nv ' + G.dmgLvl, costDmg(), G.coins >= costDmg());
+  upBtn(B.rate, 'CADÊNCIA', 'Nv ' + G.rateLvl, costRate(), G.coins >= costRate());
+  upBtn(B.heal, 'CURAR', '+30 HP', costHeal(), G.coins >= costHeal() && G.baseHp < G.baseHpMax);
+}
+function upBtn(b, title, sub, cost, can) {
+  rr(b.x, b.y, b.w, b.h, 14); ctx.fillStyle = can ? 'rgba(60,40,90,0.95)' : 'rgba(40,44,58,0.92)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = can ? '#9D4EDD' : '#39425c'; ctx.stroke();
+  ctx.textAlign = 'center'; ctx.fillStyle = can ? '#fff' : '#8b93a5'; ctx.font = '800 14px system-ui'; ctx.fillText(title, b.x + b.w / 2, b.y + 22);
+  ctx.fillStyle = '#aab3c5'; ctx.font = '700 11px system-ui'; ctx.fillText(sub, b.x + b.w / 2, b.y + 37);
+  coinIcon(b.x + b.w / 2 - 18, b.y + 47, 6); ctx.fillStyle = can ? '#ffcf5e' : '#8b93a5'; ctx.font = '800 12px system-ui'; ctx.fillText(fmt(cost), b.x + b.w / 2 + 6, b.y + 51); ctx.textAlign = 'left';
+}
+function overlay() { ctx.fillStyle = 'rgba(8,12,8,0.72)'; ctx.fillRect(0, 0, cw, ch); }
+function bigBtn(x, y, w, h, label) { rr(x, y, w, h, 18); ctx.fillStyle = '#9D4EDD'; ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = '800 22px system-ui'; ctx.textAlign = 'center'; ctx.fillText(label, x + w / 2, y + h / 2 + 8); ctx.textAlign = 'left'; }
+function drawMenu() {
+  overlay(); ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '900 50px system-ui'; ctx.lineWidth = 8; ctx.strokeStyle = '#9D4EDD';
+  ctx.strokeText('BASTION', CX, ch * 0.32); ctx.fillText('BASTION', CX, ch * 0.32);
+  ctx.strokeText('RUSH 3D', CX, ch * 0.32 + 56); ctx.fillText('RUSH 3D', CX, ch * 0.32 + 56);
+  ctx.fillStyle = '#cdd6e6'; ctx.font = '600 16px system-ui'; ctx.fillText('Defenda a base da horda!', CX, ch * 0.32 + 96);
+  const pl = 1 + Math.sin(G.t * 4) * 0.04; ctx.save(); ctx.translate(CX, ch * 0.5 + 32); ctx.scale(pl, pl); ctx.translate(-CX, -(ch * 0.5 + 32));
+  bigBtn(CX - 130, ch * 0.5, 260, 64, SAVE.load() ? 'CONTINUAR' : 'JOGAR'); ctx.restore(); ctx.textAlign = 'left';
+}
+function drawOver() {
+  overlay(); ctx.textAlign = 'center'; ctx.fillStyle = '#e8595a'; ctx.font = '900 44px system-ui'; ctx.lineWidth = 7; ctx.strokeStyle = '#000';
+  ctx.strokeText('A BASE CAIU', CX, ch * 0.36); ctx.fillText('A BASE CAIU', CX, ch * 0.36);
+  ctx.fillStyle = '#fff'; ctx.font = '700 20px system-ui'; ctx.fillText('Você chegou à onda ' + G.wave, CX, ch * 0.36 + 44);
+  ctx.fillStyle = '#aab3c5'; ctx.font = '600 15px system-ui'; ctx.fillText('Recorde: onda ' + SAVE.best(), CX, ch * 0.36 + 70);
+  bigBtn(CX - 130, ch * 0.5, 260, 64, 'JOGAR NOVAMENTE'); ctx.textAlign = 'left';
+}
 </script>
 </body>
 </html>

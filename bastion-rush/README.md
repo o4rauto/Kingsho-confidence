@@ -1,61 +1,58 @@
-# 🎯 Bastion Rush
+# 🎯 Bastion Rush 3D
 
-Jogo **mobile-first** de **merge tower-defense "juicy"**, single-file
-(`index.html`), com **Phaser 3** + **Howler.js**. Jogo **original** inspirado
-no *gênero* (merge de torres + tower defense + feedback dopaminérgico) — toda a
-arte é desenhada por código; nada de assets ou marcas de terceiros.
+Jogo **3D low-poly** de **horde/lane defense**, single-file (`index.html`), feito
+em **Canvas puro — sem nenhuma biblioteca** (motor 3D próprio). Você defende a
+base de uma horda que avança **em fila pelo caminho**; herói e torres atiram
+sozinhos. Visão ¾ de cima, no estilo do gênero.
+
+> ⚠️ **Original.** Motor 3D, modelos (herói, inimigos, boss, torres, base,
+> cenário) e arte são criados por código, do zero. Apenas *inspirado* no gênero —
+> nada de assets/marcas de terceiros.
+
+## 🧱 Motor 3D próprio (0 dependências)
+- Modelos montados a partir de **caixas** (vértices + faces) — cada personagem é
+  "modelado" no código.
+- **Câmera em perspectiva** ¾, **iluminação flat** (direcional) e **ordenação por
+  profundidade** em duas passadas (chão atrás, objetos na frente).
+- Roda **100% offline** (não depende de CDN), ideal para empacotar como APK.
 
 ## 🕹️ Como jogar
-- **COMPRAR** gera uma torre nível 1 numa célula livre da grade 3×3.
-- **Arraste** uma torre em cima de **outra do mesmo nível** para **fundir**
-  (merge) e subir de nível — com flash, partículas e tremida de tela.
-- Torres atiram sozinhas nos invasores no alcance. Inimigos que passam pela base
-  = **Game Over**.
-- A cada **5 ondas** aparece um **BOSS**. Mate inimigos para coletar **moedas**
-  (que voam até o contador).
+- A horda surge ao fundo e segue o caminho até a **base** (canto inferior).
+- O **herói** e as **torres** miram e atiram automaticamente; inimigos explodem e
+  soltam **moedas** (que voam até o contador).
+- Toque nos **slots** (círculos tracejados) para **construir/melhorar torres**.
+- Use os botões **DANO**, **CADÊNCIA** e **CURAR** para evoluir.
+- A cada **5 ondas** vem um **BOSS**. Se o HP da base zerar, fim de jogo.
 
-## ✨ "Juice" implementado
-Merge com flash dourado + 30 partículas + camera shake · moedas com física de
-arco até o HUD + número flutuante + som · barras de onda com shimmer (0.2s) ·
-números de dano com contorno · botões com cantos 24px que "pulsam" quando há
-saldo · HP bar por inimigo · boss com flash · sons sintetizados (sem arquivos).
-
-## 🔊 Som (Howler.js, sem assets)
-Os efeitos são **gerados em runtime**: cada som é sintetizado (tom + envelope +
-ruído), codificado como WAV em `data:` URI e tocado pelo Howler. Há botão de
-**mudo** 🔊. Se o Howler não carregar (offline), o jogo roda sem som.
+## ✨ Juice
+Tremida de câmera nos impactos, flashes, partículas de explosão, números de dano
+flutuantes, moedas em arco até o HUD com pulso no contador, botões e painéis
+arredondados, marcadores de torre pulsando quando há saldo.
 
 ## 💾 Save
-Progresso salvo em `localStorage` (moedas, onda e o **layout das torres**) — ao
-reabrir, você **continua de onde parou**. Guarda também o **recorde de onda**.
+Progresso em `localStorage` (moedas, onda, upgrades, torres, HP) — você
+**continua de onde parou** — além do **recorde de onda**.
 
-## ▶️ Rodar no navegador
+## ▶️ Rodar
 ```bash
-# Basta abrir o arquivo:
-xdg-open index.html      # Linux
-open index.html          # macOS
-start index.html         # Windows
-
-# ou servir localmente:
-python3 -m http.server 8000   # acesse http://localhost:8000
+# abrir direto:
+xdg-open index.html      # Linux   (open / start no macOS / Windows)
+# ou servir (recomendado p/ o save):
+python3 -m http.server 8000   # http://localhost:8000/
 ```
 
-## 📱 Gerar APK (Android) com Capacitor
-A partir da **pasta `bastion-rush/`** (ela já contém só o `index.html`, ideal
-como `webDir`):
-
+## 📱 Gerar APK (Capacitor)
+Da pasta `bastion-rush/` (ela já contém só o `index.html`):
 ```bash
 npm install -g @capacitor/cli @capacitor/core
-npm init -y
-npm install @capacitor/core @capacitor/android
+npm init -y && npm install @capacitor/core @capacitor/android
 npx cap init "Bastion Rush" "com.frontierbastion.rush" --web-dir .
 npx cap add android
-npx cap copy
-npx cap open android   # abre no Android Studio para gerar o APK/AAB
+npx cap copy && npx cap open android
 ```
-> Sempre que editar o `index.html`, rode `npx cap copy` de novo.
+Como não usa CDN, o jogo funciona **offline** dentro do app.
 
 ## ⚙️ Balanceamento
-Todas as variáveis ficam no objeto **`CONFIG`** no topo do `<script>` em
-`index.html` (custo da torre, dano/merge, vida e velocidade do inimigo, tamanho
-da onda, frequência do boss, etc.). Ajuste para calibrar a dificuldade.
+No topo do `<script>` (custos, dano, vida/velocidade dos inimigos, tamanho da
+onda, boss). Modelos em `M_HERO`, `M_GRUNT`, `M_BOSS`, `M_TOWER`. Câmera em
+`camPos`/`camTarget`. Ajuste à vontade.
