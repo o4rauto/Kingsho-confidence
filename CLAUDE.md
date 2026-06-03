@@ -1,7 +1,7 @@
 # CLAUDE.md — Contexto completo do projeto
 
 Guia para agentes (Claude) que pegam este repositório do zero (após `/clear`).
-**Leia inteiro antes de editar.** Última atualização: SHA `3fb3474`, branch
+**Leia inteiro antes de editar.** Última atualização: SHA `37cabc9`, branch
 `claude/ecstatic-gauss-nCtxQ`.
 
 ---
@@ -381,5 +381,5 @@ main.js` (scripts clássicos compartilham escopo léxico global).
 
 ## 10. Links úteis
 
-- Jogar (último SHA): `https://raw.githack.com/o4rauto/Kingsho-confidence/3fb34740a788d739540f5aaa58fca3d5c89a6941/bastion-rush/index.html`
+- Jogar (último SHA): `https://raw.githack.com/o4rauto/Kingsho-confidence/37cabc9febd2a5e2075acd94a123a3a1aef9f2d1/bastion-rush/index.html`
 - PR draft: #1 (base `main` ← `claude/ecstatic-gauss-nCtxQ`).
