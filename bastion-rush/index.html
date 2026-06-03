@@ -98,6 +98,7 @@ function humanoid(body, head, o) {
   ];
   if (o.plate) p.push({ x: 0, y: 0.28, z: 0.21, w: 0.46, h: 0.42, d: 0.06, c: '#c9ccd4' });
   if (o.horns) { p.push({ x: -0.13, y: 0.7, z: 0, w: 0.07, h: 0.16, d: 0.07, c: '#2c2c2c' }); p.push({ x: 0.13, y: 0.7, z: 0, w: 0.07, h: 0.16, d: 0.07, c: '#2c2c2c' }); }
+  if (o.staff) { p.push({ x: 0.34, y: 0.5, z: 0.05, w: 0.06, h: 0.72, d: 0.06, c: '#6e4525' }); p.push({ x: 0.34, y: 0.88, z: 0.05, w: 0.16, h: 0.16, d: 0.16, c: '#bfffe0' }); }
   return p;
 }
 function bossModel(c1, c2) {
@@ -120,6 +121,14 @@ const TYPES = {
   brute:  { hp: 70, speed: 0.78, scale: 1.45, dmg: 20, value: 14, color: '#6a3d8f' },
   shield: { hp: 30, speed: 1.0, scale: 1.08, dmg: 11, value: 10, color: '#9aa7bd', armor: 0.5 },
   flier:  { hp: 13, speed: 2.0, scale: 0.7, dmg: 9, value: 7, color: '#7ad0e0', fly: 1 },
+  healer:  { hp: 26, speed: 0.95, scale: 1.0, dmg: 8, value: 9, color: '#5fd08a', heal: { cd: 1.6, amount: 8, radius: 3 } },
+  splitter:{ hp: 40, speed: 1.0, scale: 1.2, dmg: 12, value: 11, color: '#c08a3c', split: { into: 'swarm', count: 3 } },
+  revenant:{ hp: 34, speed: 1.1, scale: 1.0, dmg: 10, value: 10, color: '#7a9b6a', regen: 6 },
+  dasher:  { hp: 18, speed: 1.25, scale: 0.9, dmg: 8, value: 8, color: '#e85a9a', burst: { cd: 2.2, mult: 2.6, dur: 0.5 } },
+  swarm:   { hp: 6, speed: 1.8, scale: 0.55, dmg: 4, value: 3, color: '#d8d048' },
+  armored: { hp: 50, speed: 0.85, scale: 1.1, dmg: 12, value: 12, color: '#8893a8', armor: 0.6 },
+  ogre:    { hp: 160, speed: 0.6, scale: 1.8, dmg: 30, value: 22, color: '#7a5a3a' },
+  wraith:  { hp: 24, speed: 1.7, scale: 0.95, dmg: 9, value: 11, color: '#9a7ad0', regen: 5 },
   boss_tank:  { hp: 520, speed: 0.7, scale: 2.0, dmg: 50, value: 90, boss: 1, color: '#b23bc0' },
   boss_swift: { hp: 340, speed: 1.55, scale: 1.7, dmg: 40, value: 90, boss: 1, color: '#3cb0c0' },
   boss_king:  { hp: 1000, speed: 0.62, scale: 2.3, dmg: 75, value: 180, boss: 1, color: '#c0405c' },
@@ -130,6 +139,14 @@ const MODELS = {
   brute: humanoid('#6a3d8f', '#542f73', { bulk: 1.5 }),
   shield: humanoid('#9aa7bd', '#76859c', { plate: 1 }),
   flier: [{ x: 0, y: 0.2, z: 0, w: 0.3, h: 0.28, d: 0.42, c: '#7ad0e0' }, { x: 0, y: 0.42, z: 0.04, w: 0.22, h: 0.2, d: 0.22, c: '#5fb6c8' }, { x: -0.12, y: 0.45, z: 0.13, w: 0.07, h: 0.07, d: 0.04, c: '#ffffff' }, { x: 0.12, y: 0.45, z: 0.13, w: 0.07, h: 0.07, d: 0.04, c: '#ffffff' }, { x: -0.34, y: 0.26, z: -0.04, w: 0.3, h: 0.06, d: 0.34, c: '#9fe0ee' }, { x: 0.34, y: 0.26, z: -0.04, w: 0.3, h: 0.06, d: 0.34, c: '#9fe0ee' }],
+  healer: humanoid('#5fd08a', '#46a86e', { staff: 1 }),
+  splitter: humanoid('#c08a3c', '#9a6e2e', { bulk: 1.25 }),
+  revenant: humanoid('#7a9b6a', '#5e7a50', {}),
+  dasher: humanoid('#e85a9a', '#c2447e', { bulk: 0.85 }),
+  swarm: humanoid('#d8d048', '#b0a830', { bulk: 0.7 }),
+  armored: humanoid('#8893a8', '#6f7a90', { plate: 1 }),
+  ogre: humanoid('#7a5a3a', '#5e442b', { bulk: 1.9 }),
+  wraith: humanoid('#9a7ad0', '#7a5eb0', { bulk: 0.85, horns: 1 }),
   boss_tank: bossModel('#b23bc0', '#9a2fa8'),
   boss_swift: bossModel('#3cb0c0', '#2f8fa0'),
   boss_king: bossModel('#c0405c', '#a02f49'),
@@ -146,17 +163,39 @@ const SLOTS = [[-7.5, -3.5], [7.2, -1.5], [-2.6, 2.4], [7.5, 4.2]];
 const ROCKS = []; for (let i = 0; i < 9; i++) ROCKS.push([rand(-11, 11), rand(-15, 8), rand(0.5, 1.1)]);
 const TREES = [[-9, 3], [9, -6], [-8, -10], [8, 6], [-3, -3.5]];
 
-/* ===== Fases ===== */
-const LEVELS = [
-  { name: 'Fronteira', groups: [{ type: 'grunt', count: 8, gap: 0.7 }] },
-  { name: 'Os Velozes', groups: [{ type: 'runner', count: 12, gap: 0.45 }] },
-  { name: 'Emboscada', groups: [{ type: 'grunt', count: 7, gap: 0.55 }, { type: 'runner', count: 9, gap: 0.4 }] },
-  { name: 'A Muralha', groups: [{ type: 'grunt', count: 8, gap: 0.5 }, { type: 'brute', count: 3, gap: 1.3 }, { type: 'boss_tank', count: 1, gap: 1 }] },
-  { name: 'Sentinelas', groups: [{ type: 'shield', count: 7, gap: 0.8 }, { type: 'flier', count: 5, gap: 0.7 }, { type: 'grunt', count: 8, gap: 0.4 }] },
-  { name: 'Fúria', groups: [{ type: 'runner', count: 12, gap: 0.35 }, { type: 'brute', count: 4, gap: 1.0 }, { type: 'boss_swift', count: 1, gap: 1 }] },
-  { name: 'Cerco Final', groups: [{ type: 'grunt', count: 10, gap: 0.4 }, { type: 'flier', count: 6, gap: 0.55 }, { type: 'shield', count: 7, gap: 0.6 }, { type: 'brute', count: 5, gap: 0.9 }, { type: 'boss_king', count: 1, gap: 1 }] },
-];
-const levelTotal = (l) => LEVELS[l].groups.reduce((s, g) => s + g.count, 0);
+/* ===== Campanha procedural (2500 fases) =====
+ * genLevel(n) é determinístico (semente = n). Cada fase tem 3–7 hordas, cada
+ * horda com uma combinação diferente de monstros. A cada 4 níveis um novo
+ * monstro entra no pool. Boss a cada 10 níveis. Dificuldade escala com n. */
+const TOTAL_LEVELS = 2500;
+const ROSTER = ['grunt', 'runner', 'shield', 'brute', 'flier', 'healer', 'splitter', 'revenant', 'dasher', 'swarm', 'armored', 'ogre', 'wraith'];
+const BESTIARY_LIST = ROSTER.concat(['boss_tank', 'boss_swift', 'boss_king']);
+const MONSTER_DESC = {
+  grunt: { n: 'Saqueador', a: 'Básico. Avança em fila.' }, runner: { n: 'Batedor', a: 'Muito rápido, pouca vida.' },
+  shield: { n: 'Escudeiro', a: 'Armadura: -50% de dano.' }, brute: { n: 'Brutamonte', a: 'Tanque lento e resistente.' },
+  flier: { n: 'Voador', a: 'Voa reto até a base.' }, healer: { n: 'Curandeiro', a: 'Cura aliados próximos.' },
+  splitter: { n: 'Divisor', a: 'Ao morrer, libera enxames.' }, revenant: { n: 'Espectro', a: 'Regenera vida.' },
+  dasher: { n: 'Investidor', a: 'Dispara arrancadas de velocidade.' }, swarm: { n: 'Enxame', a: 'Fraco, vem em massa.' },
+  armored: { n: 'Couraçado', a: 'Armadura pesada (-60%).' }, ogre: { n: 'Ogro', a: 'Enorme, muita vida.' },
+  wraith: { n: 'Assombração', a: 'Veloz e regenera.' }, boss_tank: { n: 'Colosso', a: 'CHEFE: vida imensa.' },
+  boss_swift: { n: 'Algoz Veloz', a: 'CHEFE: rápido e forte.' }, boss_king: { n: 'Rei da Horda', a: 'CHEFE FINAL.' },
+};
+function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function shuffle(arr, r) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const tmp = a[i]; a[i] = a[j]; a[j] = tmp; } return a; }
+function genLevel(n) {
+  const r = mulberry((n * 2654435761) >>> 0);
+  const maxIdx = Math.min(ROSTER.length - 1, Math.floor((n - 1) / 4));
+  const pool = ROSTER.slice(0, maxIdx + 1);
+  const hordeCount = 3 + Math.floor(r() * 5);
+  const groups = [];
+  for (let h = 0; h < hordeCount; h++) {
+    const k = 1 + Math.floor(r() * Math.min(3, pool.length));
+    const types = shuffle(pool, r).slice(0, k);
+    for (const ty of types) { let count = 3 + Math.floor(r() * 4) + Math.floor(n / 40); if (ty === 'swarm') count += 4; groups.push({ type: ty, count: Math.min(24, count), gap: 0.32 + r() * 0.4 }); }
+  }
+  if (n % 10 === 0) { const b = ['boss_tank', 'boss_swift', 'boss_king']; groups.push({ type: b[((n / 10) | 0) % 3], count: 1, gap: 1 }); }
+  return { name: 'Fase ' + n, groups, diff: 1 + (n - 1) * 0.05 };
+}
 
 /* ===== Save / Estado ===== */
 const SAVE = {
@@ -165,7 +204,7 @@ const SAVE = {
   save(d) { try { localStorage.setItem(this.K, JSON.stringify(d)); } catch (e) {} },
 };
 let META;
-function loadMeta() { const s = SAVE.load() || {}; META = { coins: s.coins || 0, gems: s.gems || 0, dmgLvl: s.dmgLvl || 1, rateLvl: s.rateLvl || 1, unlocked: s.unlocked || 0, sound: s.sound !== false, vibe: s.vibe !== false, lang: s.lang || 'pt', lastDaily: s.lastDaily || '', seenStory: !!s.seenStory }; }
+function loadMeta() { const s = SAVE.load() || {}; META = { coins: s.coins || 0, gems: s.gems || 0, dmgLvl: s.dmgLvl || 1, rateLvl: s.rateLvl || 1, clearedMax: s.clearedMax || 0, seen: s.seen || {}, sound: s.sound !== false, vibe: s.vibe !== false, lang: s.lang || 'pt', lastDaily: s.lastDaily || '', seenStory: !!s.seenStory }; }
 function saveMeta() { SAVE.save(META); }
 loadMeta();
 const today = () => new Date().toISOString().slice(0, 10);
@@ -196,19 +235,22 @@ const costTower = (l) => l === 0 ? 60 : Math.floor(50 * Math.pow(1.6, l));
 const towerDmg = (l) => 5 + (l - 1) * 6;
 
 let G = { state: 'menu', t: 0 };
-function startLevel(i) {
-  if (i > META.unlocked || i >= LEVELS.length) return;
+function startLevel(n) {
+  n = clamp(n | 0, 1, TOTAL_LEVELS);
+  if (n > META.clearedMax + 1) return;
+  const gen = genLevel(n);
   G = {
-    state: 'playing', t: 0, level: i, baseHpMax: 100, baseHp: 100,
+    state: 'playing', t: 0, level: n, gen, diff: gen.diff, firstClear: n > META.clearedMax,
+    baseHpMax: 100, baseHp: 100,
     enemies: [], shots: [], coins3: [], parts: [], texts: [],
-    gi: 0, gc: 0, gtimer: 0.6, spawnedAll: false, total: levelTotal(i), killed: 0,
-    hero: { x: 0, z: 3.5, ang: Math.PI, vx: 0, vz: 0 }, heroCool: 0, skillCD: 0, ultCharge: 0,
+    gi: 0, gc: 0, gtimer: 0.6, spawnedAll: false, total: gen.groups.reduce((s, g) => s + g.count, 0), killed: 0,
+    hero: { x: 0, z: 3.5, ang: Math.PI }, heroCool: 0, skillCD: 0, ultCharge: 0,
     towers: [0, 0, 0, 0], tCool: [0, 0, 0, 0], runCoins: 0,
     shake: 0, flash: 0, flashC: '255,255,255', coinPulse: 0, slotScr: [], ui: [],
     joy: null, keys: {},
   };
-  banner(LEVELS[i].name);
-  if (i === 0) G.texts.push({ x: CX, y: ch * 0.46, v: 'Arraste p/ mover • use HAB e ULT', life: 4.5, col: '#fff', vy: -3, sz: 16 });
+  banner('Fase ' + n);
+  if (n === 1) G.texts.push({ x: CX, y: ch * 0.46, v: 'Arraste p/ mover • use HAB e ULT', life: 4.5, col: '#fff', vy: -3, sz: 16 });
 }
 
 /* ===== Efeitos ===== */
@@ -220,11 +262,16 @@ function flash(c, v) { G.flash = Math.max(G.flash, v); G.flashC = c; }
 const wScreen = (x, z) => project([x, 0.6, z]);
 
 function spawnEnemy(type) {
-  const t = TYPES[type], mul = 1 + G.level * 0.2, hp = Math.round(t.hp * mul);
+  const t = TYPES[type], mul = G.diff || 1, hp = Math.round(t.hp * mul);
+  if (!META.seen[type]) { META.seen[type] = true; saveMeta(); }
   const e = { type, hp, maxHp: hp, speed: t.speed, scale: t.scale, dmg: t.dmg, value: t.value, armor: t.armor || 0, boss: !!t.boss, fly: !!t.fly, d: -rand(0, 1.2), x: PW[0][0], z: PW[0][1], ang: 0, hit: 0, bob: rand(0, 6.3) };
   if (t.fly) { e.x = rand(-7, 7); e.z = -13; }
   G.enemies.push(e);
   if (t.boss) { flash('255,200,80', 0.4); shake(8); SND.boss(); vibe(40); }
+}
+function spawnAt(type, d) {
+  const t = TYPES[type], hp = Math.round(t.hp * (G.diff || 1)), pt = pathAt(d);
+  G.enemies.push({ type, hp, maxHp: hp, speed: t.speed, scale: t.scale, dmg: t.dmg, value: t.value, armor: t.armor || 0, boss: false, fly: !!t.fly, d, x: pt.x, z: pt.z, ang: pt.ang, hit: 0, bob: rand(0, 6.3) });
 }
 function damageEnemy(e, dmg) {
   dmg = dmg * (1 - e.armor); e.hp -= dmg; e.hit = 0.12; SND.hit(); if (G.ultCharge != null) G.ultCharge = clamp(G.ultCharge + dmg * 0.0012, 0, 1);
@@ -232,9 +279,11 @@ function damageEnemy(e, dmg) {
   if (e.hp <= 0) killEnemy(e);
 }
 function killEnemy(e) {
-  e.dead = true; G.killed++; SND.kill(); vibe(e.boss ? 60 : 15); if (e.boss) { META.gems += 15; saveMeta(); }
-  const s = wScreen(e.x, e.z); if (s.vis) { burst(s.x, s.y, TYPES[e.type].color, e.boss ? 28 : 10); G.coins3.push({ x: e.x, z: e.z, sx: s.x, sy: s.y, t: 0, amount: e.value }); }
+  e.dead = true; G.killed++; SND.kill(); vibe(e.boss ? 60 : 15); if (e.boss && G.firstClear) { META.gems += 15; saveMeta(); }
+  const s = wScreen(e.x, e.z); if (s.vis) burst(s.x, s.y, TYPES[e.type].color, e.boss ? 28 : 10);
+  if (G.firstClear && s.vis) G.coins3.push({ x: e.x, z: e.z, sx: s.x, sy: s.y, t: 0, amount: e.value });
   shake(e.boss ? 9 : 3);
+  const sp = TYPES[e.type].split; if (sp) for (let i = 0; i < sp.count; i++) spawnAt(sp.into, Math.max(0, e.d - rand(0.1, 0.6)));
 }
 function shoot(fx, fz, target, dmg, color) { G.shots.push({ x: fx, z: fz, y: 0.7, target, dmg, color, life: 1.5 }); SND.shoot(); }
 function collectCoin(a) { G.runCoins += a; META.coins += a; G.coinPulse = 1; burst(cw - 60, 40, '#ffd23f', 6); dtext(cw - 64, 58, '+' + a, '#ffcf5e', 16); saveMeta(); SND.coin(); }
@@ -278,9 +327,15 @@ function doAction(act) {
   else if (act === 'soon') { toast(t('soon')); }
   else if (act === 'gacha') { doGacha(); }
   else if (act === 'daily') { claimDaily(); }
+  else if (act === 'battle') { startLevel(META.clearedMax + 1); }
+  else if (act === 'bestiary') { G.state = 'bestiary'; }
+  else if (act === 'campaign') { G.state = 'campaign'; G.campSel = Math.min(META.clearedMax + 1, TOTAL_LEVELS); }
+  else if (act === 'camp:prev') { G.campSel = Math.max(1, (G.campSel || 1) - 1); }
+  else if (act === 'camp:next') { G.campSel = Math.min(META.clearedMax + 1, (G.campSel || 1) + 1); }
+  else if (act === 'camp:play') { startLevel(G.campSel || 1); }
   else if (act === 'menu') { G.state = 'menu'; }
-  else if (act === 'select') { G.state = 'select'; }
-  else if (act.startsWith('level:')) startLevel(+act.slice(6));
+  else if (act === 'select') { G.state = 'campaign'; }
+  else if (act.startsWith('level:')) startLevel(+act.slice(6) + 1);
   else if (act === 'resume') G.state = 'playing';
   else if (act === 'restart') startLevel(G.level);
   else if (act === 'next') startLevel(G.level + 1);
@@ -310,9 +365,9 @@ function update(dt) {
   if (!G.spawnedAll) {
     G.gtimer -= dt;
     if (G.gtimer <= 0) {
-      const lvl = LEVELS[G.level], grp = lvl.groups[G.gi];
+      const grp = G.gen.groups[G.gi];
       spawnEnemy(grp.type); G.gc++;
-      if (G.gc >= grp.count) { G.gi++; G.gc = 0; if (G.gi >= lvl.groups.length) G.spawnedAll = true; else G.gtimer = 0.9; }
+      if (G.gc >= grp.count) { G.gi++; G.gc = 0; if (G.gi >= G.gen.groups.length) G.spawnedAll = true; else G.gtimer = 0.9; }
       else G.gtimer = grp.gap;
     }
   } else if (G.enemies.length === 0) return win();
@@ -342,9 +397,14 @@ function update(dt) {
   // inimigos andam até a base
   for (const e of G.enemies) {
     if (e.dead) continue;
+    const ty = TYPES[e.type];
+    if (ty.regen) e.hp = Math.min(e.maxHp, e.hp + ty.regen * dt);
+    if (ty.heal) { e.healT = (e.healT == null ? ty.heal.cd : e.healT) - dt; if (e.healT <= 0) { e.healT = ty.heal.cd; for (const o of G.enemies) if (o !== e && !o.dead && o.hp < o.maxHp && Math.hypot(o.x - e.x, o.z - e.z) < ty.heal.radius) o.hp = Math.min(o.maxHp, o.hp + ty.heal.amount); const sc = wScreen(e.x, e.z); if (sc.vis) burst(sc.x, sc.y, '#5fd08a', 6); } }
+    let spd = e.speed;
+    if (ty.burst) { e.bt = (e.bt == null ? ty.burst.cd : e.bt) - dt; if (e.bt <= 0) { e.bursting = ty.burst.dur; e.bt = ty.burst.cd; } if (e.bursting > 0) { e.bursting -= dt; spd = e.speed * ty.burst.mult; } }
     e.bob += dt * 9; if (e.hit > 0) e.hit -= dt; let arrived = false;
-    if (e.fly) { const ddx = BASEP[0] - e.x, ddz = BASEP[1] - e.z, L = Math.hypot(ddx, ddz) || 1; e.x += ddx / L * e.speed * dt; e.z += ddz / L * e.speed * dt; e.ang = Math.atan2(ddx, ddz); if (L < 0.8) arrived = true; }
-    else { e.d += e.speed * dt; const pt = pathAt(e.d); e.x = pt.x; e.z = pt.z; e.ang = pt.ang; if (e.d >= PLEN) arrived = true; }
+    if (e.fly) { const ddx = BASEP[0] - e.x, ddz = BASEP[1] - e.z, L = Math.hypot(ddx, ddz) || 1; e.x += ddx / L * spd * dt; e.z += ddz / L * spd * dt; e.ang = Math.atan2(ddx, ddz); if (L < 0.8) arrived = true; }
+    else { e.d += spd * dt; const pt = pathAt(e.d); e.x = pt.x; e.z = pt.z; e.ang = pt.ang; if (e.d >= PLEN) arrived = true; }
     if (arrived) { G.baseHp -= e.dmg; e.dead = true; const s = wScreen(BASEP[0], BASEP[1]); if (s.vis) burst(s.x, s.y, '#e8595a', 14); shake(8); flash('232,89,90', 0.4); if (G.baseHp <= 0) return gameOver(); }
   }
   G.enemies = G.enemies.filter(e => !e.dead);
@@ -353,7 +413,7 @@ function update(dt) {
   G.coins3 = G.coins3.filter(c => !c.done);
 }
 function nearestTo(x, z, range) { let b = null, bd = range; for (const e of G.enemies) { if (e.dead) continue; const d = Math.hypot(x - e.x, z - e.z); if (d < bd) { bd = d; b = e; } } return b; }
-function win() { G.state = 'won'; const reward = 40 + G.level * 25, gr = 5 + G.level * 2; META.coins += reward; META.gems += gr; G.reward = reward; G.greward = gr; if (G.level + 1 > META.unlocked) META.unlocked = Math.min(LEVELS.length - 1, G.level + 1); saveMeta(); SND.win(); }
+function win() { G.state = 'won'; if (G.firstClear) { META.clearedMax = Math.max(META.clearedMax, G.level); const reward = 30 + G.level * 8, gr = 4 + Math.floor(G.level / 3); META.coins += reward; META.gems += gr; G.reward = reward; G.greward = gr; saveMeta(); } else { G.reward = 0; G.greward = 0; } SND.win(); }
 function gameOver() { G.state = 'over'; shake(12); flash('0,0,0', 0.3); SND.lose(); vibe(120); }
 
 /* ===== Render ===== */
@@ -374,11 +434,16 @@ function buildBase() {
 function renderScene() {
   const shx = G.shake ? rand(-G.shake, G.shake) * 0.02 : 0, shy = G.shake ? rand(-G.shake, G.shake) * 0.02 : 0;
   setupCam(shx, shy); FACES = []; FLOOR = [];
-  BUF = FLOOR; buildFloor(); BUF = FACES; buildDeco(); buildBase();
-  if (G.towers) for (let i = 0; i < SLOTS.length; i++) if (G.towers[i] > 0) drawModel(M_TOWER, SLOTS[i][0], 0, SLOTS[i][1], 0, 1);
-  if (G.hero) drawModel(M_HERO, G.hero.x, 0, G.hero.z, G.hero.ang, 1);
-  if (G.enemies) for (const e of G.enemies) { const fy = e.fly ? 1.5 + Math.sin(e.bob) * 0.2 : Math.sin(e.bob) * 0.05; drawModel(MODELS[e.type], e.x, fy, e.z, e.ang, e.scale); }
-  if (G.shots) for (const s of G.shots) box(s.x, s.y, s.z, 0.18, 0.18, 0.18, s.color, 1, 0, [s.x, 0, s.z]);
+  const menuMode = (G.state === 'menu' || G.state === 'bestiary');
+  BUF = FLOOR; buildFloor(); BUF = FACES;
+  if (menuMode) { box(0, -0.05, -2, 3.6, 0.35, 3.6, '#2e2b44', 1, 0, [0, 0, -2]); drawModel(M_HERO, 0, 0, -2, G.t * 0.5, 3.1); }
+  else {
+    buildDeco(); buildBase();
+    if (G.towers) for (let i = 0; i < SLOTS.length; i++) if (G.towers[i] > 0) drawModel(M_TOWER, SLOTS[i][0], 0, SLOTS[i][1], 0, 1);
+    if (G.hero) drawModel(M_HERO, G.hero.x, 0, G.hero.z, G.hero.ang, 1);
+    if (G.enemies) for (const e of G.enemies) { const fy = e.fly ? 1.5 + Math.sin(e.bob) * 0.2 : Math.sin(e.bob) * 0.05; drawModel(MODELS[e.type], e.x, fy, e.z, e.ang, e.scale); }
+    if (G.shots) for (const s of G.shots) box(s.x, s.y, s.z, 0.18, 0.18, 0.18, s.color, 1, 0, [s.x, 0, s.z]);
+  }
   FLOOR.sort((a, b) => b.z - a.z); paint(FLOOR); FACES.sort((a, b) => b.z - a.z); paint(FACES);
 }
 function render() {
@@ -389,7 +454,8 @@ function render() {
   if (G.state === 'playing' || G.state === 'paused') { drawPlayHud(); drawSlots(); drawFx(); drawJoystick(); }
   if (G.state === 'playing' && G.flash > 0) { ctx.fillStyle = 'rgba(' + G.flashC + ',' + G.flash + ')'; ctx.fillRect(0, 0, cw, ch); }
   if (G.state === 'menu') drawMenu();
-  else if (G.state === 'select') drawSelect();
+  else if (G.state === 'campaign') drawCampaign();
+  else if (G.state === 'bestiary') drawBestiary();
   else if (G.state === 'story') drawStory();
   else if (G.state === 'settings') drawSettings();
   else if (G.state === 'paused') drawPause();
@@ -410,8 +476,7 @@ function btn(act, x, y, w, h, label, sub, color, enabled) {
 function coinHud() { const p = 1 + (G.coinPulse || 0) * 0.3; panel(cw - 188, 12, 176, 50, 14); coin(cw - 166, 38, 11); ctx.save(); ctx.translate(cw - 124, 40); ctx.scale(p, p); ctx.fillStyle = '#ffcf5e'; ctx.font = '800 19px system-ui'; ctx.textAlign = 'center'; ctx.fillText(fmt(META.coins), 0, 7); ctx.restore(); gem(cw - 70, 38, 9); ctx.fillStyle = '#bff0ff'; ctx.font = '800 18px system-ui'; ctx.textAlign = 'center'; ctx.fillText(fmt(META.gems), cw - 40, 45); ctx.textAlign = 'left'; }
 
 function drawPlayHud() {
-  const lvl = LEVELS[G.level];
-  panel(12, 12, 200, 56, 14); ctx.fillStyle = '#fff'; ctx.font = '800 17px system-ui'; ctx.textAlign = 'left'; ctx.fillText('Fase ' + (G.level + 1) + ' · ' + lvl.name, 24, 33);
+  panel(12, 12, 200, 56, 14); ctx.fillStyle = '#fff'; ctx.font = '800 16px system-ui'; ctx.textAlign = 'left'; ctx.fillText('Fase ' + G.level + (G.firstClear ? '' : ' (replay)'), 24, 33);
   const bw = 176, hp = clamp(G.baseHp / G.baseHpMax, 0, 1); rr(24, 46, bw, 9, 4); ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fill(); rr(24, 46, bw * hp, 9, 4); ctx.fillStyle = hp > 0.3 ? '#4fcf72' : '#e8595a'; ctx.fill();
   coinHud();
   // progresso da fase
@@ -438,53 +503,84 @@ function drawJoystick() {
 function overlay() { ctx.fillStyle = 'rgba(8,12,8,0.74)'; ctx.fillRect(0, 0, cw, ch); }
 function title(txt, y) { ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '900 40px system-ui'; ctx.lineWidth = 7; ctx.strokeStyle = '#9D4EDD'; ctx.strokeText(txt, CX, y); ctx.fillText(txt, CX, y); ctx.textAlign = 'left'; }
 
-function drawMenu() {
-  overlay(); ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '900 52px system-ui'; ctx.lineWidth = 8; ctx.strokeStyle = '#9D4EDD';
-  ctx.strokeText('BASTION', CX, ch * 0.3); ctx.fillText('BASTION', CX, ch * 0.3); ctx.strokeText('RUSH', CX, ch * 0.3 + 56); ctx.fillText('RUSH', CX, ch * 0.3 + 56);
-  ctx.fillStyle = '#cdd6e6'; ctx.font = '600 15px system-ui'; ctx.fillText('Mova o herói e defenda a base!', CX, ch * 0.3 + 96); ctx.textAlign = 'left';
-  const pl = 1 + Math.sin(G.t * 4) * 0.04; ctx.save(); ctx.translate(CX, ch * 0.52 + 32); ctx.scale(pl, pl); ctx.translate(-CX, -(ch * 0.52 + 32)); btn('play', CX - 130, ch * 0.52, 260, 64, t('play')); ctx.restore();
-  const yy = ch * 0.52 + 84;
-  btn('story', CX - 130, yy, 125, 44, t('story'), '', 'rgba(50,60,95,0.96)');
-  btn('settings', CX + 5, yy, 125, 44, t('settings'), '', 'rgba(50,60,95,0.96)');
-  ctx.textAlign = 'center'; ctx.fillStyle = '#8b93a5'; ctx.font = '700 12px system-ui'; ctx.fillText('— ' + (META.lang === 'pt' ? 'EM BREVE' : 'COMING SOON') + ' —', CX, yy + 72); ctx.textAlign = 'left';
-  const bw = (260 - 16) / 3;
-  btn('soon', CX - 130, yy + 84, bw, 40, t('alli'), '', 'rgba(40,44,58,0.9)');
-  btn('soon', CX - 130 + bw + 8, yy + 84, bw, 40, t('pvp'), '', 'rgba(40,44,58,0.9)');
-  btn('soon', CX - 130 + (bw + 8) * 2, yy + 84, bw, 40, t('events'), '', 'rgba(40,44,58,0.9)');
+function drawTopBar() {
+  panel(8, 8, cw - 16, 44, 14);
+  ctx.fillStyle = '#9D4EDD'; rr(14, 13, 74, 34, 10); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = '800 12px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Nv ' + META.clearedMax, 51, 27);
+  ctx.fillStyle = '#e0d0ff'; ctx.font = '700 9px system-ui'; ctx.fillText('Fase ' + Math.min(META.clearedMax + 1, TOTAL_LEVELS), 51, 40);
+  coin(cw - 158, 30, 10); ctx.fillStyle = '#ffcf5e'; ctx.font = '800 15px system-ui'; ctx.textAlign = 'left'; ctx.fillText(fmt(META.coins), cw - 144, 35);
+  gem(cw - 86, 30, 9); ctx.fillStyle = '#bff0ff'; ctx.fillText(fmt(META.gems), cw - 72, 35);
+  const gx = cw - 44, gy = 14; rr(gx, gy, 32, 32, 8); ctx.fillStyle = 'rgba(40,44,58,0.95)'; ctx.fill(); ctx.fillStyle = '#fff'; for (let i = 0; i < 3; i++) ctx.fillRect(gx + 8, gy + 9 + i * 6, 16, 3); G.ui.push({ x: gx, y: gy, w: 32, h: 32, act: 'settings' });
+  ctx.textAlign = 'left';
 }
-function drawSelect() {
-  overlay(); title('FASES', 52); coinHud(); btn('menu', 16, 28, 88, 36, t('back'), '', 'rgba(40,44,58,0.95)');
-  let gy = 86;
-  if (META.lastDaily !== today()) { btn('daily', 16, gy, cw - 32, 42, '🎁 ' + t('daily') + '  +200 / +20💎', '', 'rgba(74,58,26,0.96)'); gy += 52; }
-  const cols = 2, bw = (cw - 48) / cols, bh = 56;
-  for (let i = 0; i < LEVELS.length; i++) {
-    const r = Math.floor(i / cols), c = i % cols, x = 16 + c * (bw + 16), y = gy + r * (bh + 10);
-    const locked = i > META.unlocked;
-    btn(locked ? 'lock' : ('level:' + i), x, y, bw, bh, 'Fase ' + (i + 1), locked ? '🔒' : LEVELS[i].name, locked ? 'rgba(40,44,58,0.92)' : 'rgba(50,60,95,0.96)', !locked);
+function drawChest(x, y, c) { ctx.fillStyle = c; rr(x - 16, y - 4, 32, 18, 4); ctx.fill(); ctx.fillStyle = '#ffe08a'; ctx.fillRect(x - 3, y - 4, 6, 18); ctx.fillStyle = c; rr(x - 16, y - 14, 32, 12, 6); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,.15)'; rr(x - 16, y - 14, 32, 6, 6); ctx.fill(); }
+function drawChestRow() {
+  const y = ch - 96, n = 4, gap = 10, w = (cw - 16 - gap * (n - 1)) / n;
+  for (let i = 0; i < n; i++) {
+    const x = 8 + i * (w + gap); rr(x, y, w, 86, 12);
+    if (i === 0) { const av = META.lastDaily !== today(); ctx.fillStyle = av ? 'rgba(74,58,26,0.96)' : 'rgba(30,36,50,0.92)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = av ? '#ffcf5e' : '#39425c'; ctx.stroke(); drawChest(x + w / 2, y + 36, av ? '#ffcf5e' : '#5a6378'); ctx.fillStyle = '#fff'; ctx.font = '800 11px system-ui'; ctx.textAlign = 'center'; ctx.fillText(av ? 'DIÁRIA' : 'amanhã', x + w / 2, y + 72); if (av) G.ui.push({ x, y, w, h: 86, act: 'daily' }); }
+    else { ctx.fillStyle = 'rgba(30,36,50,0.92)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#39425c'; ctx.stroke(); drawChest(x + w / 2, y + 36, '#5a6378'); ctx.fillStyle = '#8b93a5'; ctx.font = '800 10px system-ui'; ctx.textAlign = 'center'; ctx.fillText('EM BREVE', x + w / 2, y + 72); G.ui.push({ x, y, w, h: 86, act: 'soon' }); }
   }
-  let sy = gy + Math.ceil(LEVELS.length / cols) * (bh + 10) + 6;
-  btn('buy:dmg', 16, sy, bw, 50, 'DANO Nv ' + META.dmgLvl, '🪙 ' + costDmg(), 'rgba(60,40,90,0.96)', META.coins >= costDmg());
-  btn('buy:rate', 16 + bw + 16, sy, bw, 50, 'CADÊNCIA Nv ' + META.rateLvl, '🪙 ' + costRate(), 'rgba(60,40,90,0.96)', META.coins >= costRate());
-  btn('gacha', 16, sy + 60, cw - 32, 46, '🎲 ' + t('summon') + ' (100💎)', '', META.gems >= 100 ? 'rgba(40,90,80,0.96)' : 'rgba(40,44,58,0.92)', META.gems >= 100);
+  ctx.textAlign = 'left';
+}
+function drawMenu() {
+  drawTopBar();
+  ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '900 30px system-ui'; ctx.lineWidth = 5; ctx.strokeStyle = '#9D4EDD'; ctx.strokeText('BASTION RUSH', CX, 86); ctx.fillText('BASTION RUSH', CX, 86); ctx.textAlign = 'left';
+  const next = Math.min(META.clearedMax + 1, TOTAL_LEVELS);
+  const pl = 1 + Math.sin(G.t * 4) * 0.03; ctx.save(); ctx.translate(CX, ch * 0.6 + 35); ctx.scale(pl, pl); ctx.translate(-CX, -(ch * 0.6 + 35));
+  btn('battle', CX - 130, ch * 0.6, 260, 70, t('play'), 'Fase ' + next, 'rgba(232,170,40,0.98)'); ctx.restore();
+  btn('campaign', CX - 130, ch * 0.6 + 82, 125, 46, 'FASES', '', 'rgba(50,60,95,0.96)');
+  btn('bestiary', CX + 5, ch * 0.6 + 82, 125, 46, 'BESTIÁRIO', '', 'rgba(50,60,95,0.96)');
+  btn('story', CX - 130, ch * 0.6 + 134, 260, 38, t('story'), '', 'rgba(40,44,58,0.92)');
+  drawChestRow();
+}
+function drawCampaign() {
+  overlay(); title('CAMPANHA', 70); coinHud(); btn('menu', 16, 28, 88, 36, t('back'), '', 'rgba(40,44,58,0.95)');
+  const sel = G.campSel || 1, maxSel = Math.min(META.clearedMax + 1, TOTAL_LEVELS);
+  ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '800 24px system-ui'; ctx.fillText('Fase ' + sel + ' / ' + TOTAL_LEVELS, CX, ch * 0.32);
+  ctx.fillStyle = sel > META.clearedMax ? '#ffcf5e' : '#8b93a5'; ctx.font = '600 14px system-ui'; ctx.fillText(sel > META.clearedMax ? 'Nova — rende moedas' : 'Já vencida — sem moedas', CX, ch * 0.32 + 26); ctx.textAlign = 'left';
+  btn('camp:prev', CX - 150, ch * 0.4, 56, 60, '<', '', 'rgba(50,60,95,0.96)', sel > 1);
+  btn('camp:next', CX + 94, ch * 0.4, 56, 60, '>', '', 'rgba(50,60,95,0.96)', sel < maxSel);
+  btn('camp:play', CX - 74, ch * 0.4, 148, 60, 'JOGAR', '', 'rgba(232,170,40,0.98)');
+  const bw = (cw - 48) / 2;
+  btn('buy:dmg', 16, ch * 0.56, bw, 52, 'DANO Nv ' + META.dmgLvl, '🪙 ' + costDmg(), 'rgba(60,40,90,0.96)', META.coins >= costDmg());
+  btn('buy:rate', 16 + bw + 16, ch * 0.56, bw, 52, 'CADÊNCIA Nv ' + META.rateLvl, '🪙 ' + costRate(), 'rgba(60,40,90,0.96)', META.coins >= costRate());
+  btn('gacha', 16, ch * 0.56 + 62, cw - 32, 46, '🎲 ' + t('summon') + ' (100💎)', '', META.gems >= 100 ? 'rgba(40,90,80,0.96)' : 'rgba(40,44,58,0.92)', META.gems >= 100);
+}
+function wrapTextCenter(txt, cx, y, maxw, lh) { ctx.textAlign = 'center'; const ws = txt.split(' '); let line = '', yy = y; for (const w of ws) { const test = line + w + ' '; if (ctx.measureText(test).width > maxw && line) { ctx.fillText(line, cx, yy); line = w + ' '; yy += lh; } else line = test; } ctx.fillText(line, cx, yy); }
+function drawMonsterIcon(cx, cy, ty) { const col = TYPES[ty].color; if (TYPES[ty].fly) { ctx.fillStyle = col; ctx.fillRect(cx - 24, cy - 2, 9, 5); ctx.fillRect(cx + 15, cy - 2, 9, 5); } ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, 15, 0, 6.28); ctx.fill(); if (TYPES[ty].boss) { ctx.fillStyle = '#ffcf5e'; for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(cx + i * 9 - 4, cy - 14); ctx.lineTo(cx + i * 9, cy - 22); ctx.lineTo(cx + i * 9 + 4, cy - 14); ctx.closePath(); ctx.fill(); } } ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx - 5, cy - 2, 3, 0, 6.28); ctx.arc(cx + 5, cy - 2, 3, 0, 6.28); ctx.fill(); ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(cx - 5, cy - 2, 1.4, 0, 6.28); ctx.arc(cx + 5, cy - 2, 1.4, 0, 6.28); ctx.fill(); }
+function drawBestiary() {
+  ctx.fillStyle = 'rgba(8,12,8,0.55)'; ctx.fillRect(0, 0, cw, ch);
+  title('BESTIÁRIO', 70); btn('menu', 16, 40, 88, 36, t('back'), '', 'rgba(40,44,58,0.95)');
+  const seenN = BESTIARY_LIST.filter(x => META.seen[x]).length;
+  ctx.textAlign = 'center'; ctx.fillStyle = '#aab3c5'; ctx.font = '700 12px system-ui'; ctx.fillText('Descobertos: ' + seenN + '/' + BESTIARY_LIST.length, CX, 92); ctx.textAlign = 'left';
+  const cols = 3, cw2 = (cw - 40) / cols, chh = 104, gx = 16, gy = 108;
+  for (let i = 0; i < BESTIARY_LIST.length; i++) {
+    const ty = BESTIARY_LIST[i], r = Math.floor(i / cols), c = i % cols, x = gx + c * (cw2 + 4), y = gy + r * (chh + 6), seen = !!META.seen[ty];
+    rr(x, y, cw2, chh, 12); ctx.fillStyle = 'rgba(20,26,38,0.92)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = seen ? (TYPES[ty].boss ? '#ffcf5e' : '#9D4EDD') : '#39425c'; ctx.stroke();
+    if (seen) { drawMonsterIcon(x + cw2 / 2, y + 32, ty); ctx.fillStyle = '#fff'; ctx.font = '800 12px system-ui'; ctx.textAlign = 'center'; ctx.fillText(MONSTER_DESC[ty].n, x + cw2 / 2, y + 60); ctx.fillStyle = '#9aa6c0'; ctx.font = '600 9px system-ui'; wrapTextCenter(MONSTER_DESC[ty].a, x + cw2 / 2, y + 74, cw2 - 10, 11); }
+    else { ctx.fillStyle = '#4a5266'; ctx.font = '900 30px system-ui'; ctx.textAlign = 'center'; ctx.fillText('?', x + cw2 / 2, y + 44); ctx.fillStyle = '#5a6378'; ctx.font = '700 11px system-ui'; ctx.fillText('???', x + cw2 / 2, y + 72); }
+  }
+  ctx.textAlign = 'left';
 }
 function drawPause() {
   overlay(); title('PAUSA', ch * 0.32);
   btn('resume', CX - 120, ch * 0.42, 240, 58, 'CONTINUAR');
   btn('restart', CX - 120, ch * 0.42 + 70, 240, 54, 'REINICIAR', '', 'rgba(50,60,95,0.96)');
-  btn('select', CX - 120, ch * 0.42 + 134, 240, 54, 'SAIR P/ FASES', '', 'rgba(40,44,58,0.95)');
+  btn('menu', CX - 120, ch * 0.42 + 134, 240, 54, 'SAIR P/ MENU', '', 'rgba(40,44,58,0.95)');
 }
 function drawWon() {
   overlay(); ctx.textAlign = 'center'; ctx.fillStyle = '#ffd23f'; ctx.font = '900 44px system-ui'; ctx.lineWidth = 7; ctx.strokeStyle = '#000'; ctx.strokeText('FASE VENCIDA!', CX, ch * 0.34); ctx.fillText('FASE VENCIDA!', CX, ch * 0.34);
-  ctx.fillStyle = '#fff'; ctx.font = '700 18px system-ui'; ctx.fillText('Recompensa: +' + (G.reward || 0) + ' moedas', CX, ch * 0.34 + 40); ctx.textAlign = 'left';
-  const hasNext = G.level + 1 < LEVELS.length;
+  ctx.fillStyle = '#fff'; ctx.font = '700 17px system-ui'; ctx.fillText(G.firstClear ? ('Recompensa: +' + (G.reward || 0) + ' 🪙  +' + (G.greward || 0) + ' 💎') : 'Replay — sem recompensa', CX, ch * 0.34 + 40); ctx.textAlign = 'left';
+  const hasNext = G.level < TOTAL_LEVELS;
   if (hasNext) btn('next', CX - 120, ch * 0.46, 240, 58, 'PRÓXIMA FASE');
-  btn('select', CX - 120, ch * 0.46 + (hasNext ? 70 : 0), 240, 54, 'FASES & MELHORIAS', '', 'rgba(50,60,95,0.96)');
+  btn('menu', CX - 120, ch * 0.46 + (hasNext ? 70 : 0), 240, 54, 'MENU', '', 'rgba(50,60,95,0.96)');
 }
 function drawOver() {
   overlay(); ctx.textAlign = 'center'; ctx.fillStyle = '#e8595a'; ctx.font = '900 44px system-ui'; ctx.lineWidth = 7; ctx.strokeStyle = '#000'; ctx.strokeText('A BASE CAIU', CX, ch * 0.34); ctx.fillText('A BASE CAIU', CX, ch * 0.34);
   ctx.fillStyle = '#aab3c5'; ctx.font = '600 15px system-ui'; ctx.fillText('Você derrotou ' + G.killed + '/' + G.total + ' inimigos', CX, ch * 0.34 + 38); ctx.textAlign = 'left';
   btn('restart', CX - 120, ch * 0.46, 240, 58, 'TENTAR DE NOVO');
-  btn('select', CX - 120, ch * 0.46 + 70, 240, 54, 'FASES', '', 'rgba(50,60,95,0.96)');
+  btn('menu', CX - 120, ch * 0.46 + 70, 240, 54, 'MENU', '', 'rgba(50,60,95,0.96)');
 }
 
 /* ===== Localização (PT/EN) ===== */
@@ -509,7 +605,7 @@ function useSkill() {
   G.skillCD = 6; SND.skill(); vibe(25); const h = G.hero, sc = wScreen(h.x, h.z);
   if (sc.vis) for (let i = 0; i < 22; i++) { const a = i / 22 * 6.28; G.parts.push({ x: sc.x + Math.cos(a) * 12, y: sc.y + Math.sin(a) * 7, vx: Math.cos(a) * 200, vy: Math.sin(a) * 120, life: 0.5, col: '#ffd23f', r: 3 }); }
   shake(7); flash('255,210,90', 0.28);
-  for (const e of G.enemies) if (!e.dead && Math.hypot(e.x - h.x, e.z - h.z) < 3.3) damageEnemy(e, heroDmg() * 2.6);
+  for (const e of G.enemies.slice()) if (!e.dead && Math.hypot(e.x - h.x, e.z - h.z) < 3.3) damageEnemy(e, heroDmg() * 2.6);
 }
 function useUlt() {
   if (G.state !== 'playing' || (G.ultCharge || 0) < 1) return;
@@ -564,7 +660,7 @@ function drawSettings() {
 }
 function drawToast() { if (!G.toast) return; ctx.font = '800 16px system-ui'; const tw = ctx.measureText(G.toast.msg).width, w = tw + 40, x = CX - w / 2, y = ch * 0.8; ctx.globalAlpha = clamp(G.toast.life * 1.6, 0, 1); rr(x, y, w, 44, 16); ctx.fillStyle = 'rgba(20,26,38,0.96)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#9D4EDD'; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(G.toast.msg, CX, y + 28); ctx.textAlign = 'left'; ctx.globalAlpha = 1; }
 
-window.BR = { start: startLevel, spawn: (ty) => { if (G.state === 'playing') spawnEnemy(ty); }, skill: useSkill, ult: useUlt, go: (s) => { G.state = s; if (s === 'story') G.story = { page: 0 }; }, charge: () => { if (G.ultCharge != null) G.ultCharge = 1; }, money: () => { META.coins += 9999; META.gems += 999; saveMeta(); }, state: () => G.state };
+window.BR = { start: startLevel, spawn: (ty) => { if (G.state === 'playing') spawnEnemy(ty); }, skill: useSkill, ult: useUlt, go: (s) => { G.state = s; if (s === 'story') G.story = { page: 0 }; if (s === 'campaign') G.campSel = Math.min(META.clearedMax + 1, TOTAL_LEVELS); }, charge: () => { if (G.ultCharge != null) G.ultCharge = 1; }, money: () => { META.coins += 9999; META.gems += 999; saveMeta(); }, cleared: (n) => { META.clearedMax = n; saveMeta(); }, gen: genLevel, state: () => G.state };
 </script>
 </body>
 </html>
