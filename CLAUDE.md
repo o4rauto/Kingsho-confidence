@@ -87,9 +87,11 @@ quando exigem servidor).
 > `BR.spawn(type)` só funciona com `G.state==='playing'`.
 
 ### `window.BR` — hooks de teste (inofensivos em produção)
-`start(n)`, `spawn(type)`, `skill()`, `ult()`, `go(state)`, `charge()` (enche a
-ult), `money()` (+moedas/gemas), `cleared(n)` (seta clearedMax), `gen(n)`
-(retorna o objeto da fase), `state()`.
+`start(n)`, `spawn(type, elite?)` (`elite` = id de afixo: `veteran/savage/iron/
+cursed`), `skill()`, `ult()`, `go(state)`, `charge()` (enche a ult), `money()`
+(+moedas/gemas), `cleared(n)` (seta clearedMax), `gen(n)` (retorna o objeto da
+fase, com `hasElite`), `enemies()` (lista resumida dos inimigos vivos: `type, hp,
+dmg, val, armor, elite`), `state()`.
 
 ---
 
@@ -114,7 +116,9 @@ input → update → render → telas/UI → habilidades → narrativa.
   empilha em `BUF` (`FLOOR` ou `FACES`) com `z` médio.
 - `box(cx,cy,cz, w,h,d, hex, cosA,sinA, pivot)`: cuboide (com rotação Y em torno
   do pivô) → 6 quads.
-- `drawModel(parts, wx,wy,wz, ang, sc)`: desenha um modelo (lista de caixas).
+- `drawModel(parts, wx,wy,wz, ang, sc, tint?)`: desenha um modelo (lista de
+  caixas). `tint` (hex) opcional mistura cada cor (fator 0.42, via `tintHex` com
+  cache) — usado p/ recolorir as **variantes de elite**.
 - **Painter em 2 passadas** (`paint`): `FLOOR` (chão+caminho) ordenado e pintado
   **primeiro**, depois `FACES` (tudo acima do chão). **Por quê:** o chão é
   desenhado como **mosaico de tiles** (`buildFloor`, 7×7) — se fosse 1 quadradão,
@@ -135,15 +139,28 @@ Roster atual (13 + 3 bosses), `ROSTER` define a **ordem de desbloqueio**:
 `grunt, runner, shield(armor .5), brute, flier(fly), healer(heal), splitter(split
 →swarm), revenant(regen), dasher(burst), swarm, armored(armor .6), ogre, wraith
 (regen)`. Bosses: `boss_tank, boss_swift, boss_king`.
-Comportamentos tratados no loop `update()` por flags do `TYPES`:
-- `armor` (0..1): reduz dano recebido em `damageEnemy`.
+Comportamentos: o `TYPES` define os defaults, mas o loop `update()` lê os campos
+da **instância** do inimigo (`e.armor/regen/heal/burst`), montados em `makeEnemy`.
+Isso permite que **elites** adicionem habilidades por cima do tipo. `split` e
+`color` continuam lidos do `TYPES` em `killEnemy`.
+- `armor` (0..1): reduz dano recebido em `damageEnemy` (`e.armor`).
 - `fly`: vai **reto até a base** (ignora o caminho), renderizado a `y≈1.5`.
-- `regen`: recupera vida/seg.
-- `heal {cd,amount,radius}`: cura aliados próximos periodicamente.
-- `burst {cd,mult,dur}`: arrancadas de velocidade periódicas.
+- `regen`: recupera vida/seg (`e.regen`).
+- `heal {cd,amount,radius}`: cura aliados próximos periodicamente (`e.heal`).
+- `burst {cd,mult,dur}`: arrancadas de velocidade periódicas (`e.burst`).
 - `split {into,count}`: ao morrer (`killEnemy`), gera N do tipo `into` via
   `spawnAt(type, d)` (na mesma posição do caminho).
 `MONSTER_DESC[type] = {n:nome, a:habilidade}` alimenta o **bestiário**.
+
+**Variantes de elite (`ELITES`).** Modificadores aplicados na **instância** (não
+criam tipos novos nem entradas no bestiário). 4 afixos: `veteran` (dourado,
+tankão), `savage` (laranja, +veloz, ganha `burst`), `iron` (prata, ganha
+`armor .5`), `cursed` (roxo, ganha `regen`). Cada um tem `tint` + multiplicadores
+`hp/dmg/spd/val/sc`. `makeEnemy(type, hpBase, el)` é o ponto único que monta o
+inimigo aplicando o afixo. Render: `drawModel(...tint)` recolore o modelo +
+`drawFx` desenha **aura pulsante (glow)** + **losango-marca** acima da cabeça
+(projetados). Mais dano/vida/recompensa (a recompensa extra só conta em
+`firstClear`, como o resto da economia).
 
 ### 3.4 Campanha procedural (2500 fases) — `genLevel(n)`
 - `TOTAL_LEVELS = 2500`. `genLevel(n)` é **determinístico** (semente=n via
@@ -152,8 +169,14 @@ Comportamentos tratados no loop `update()` por flags do `TYPES`:
   `diff = 1 + (n-1)*0.05` (multiplica HP no `spawnEnemy`).
 - **Novo monstro a cada 4 níveis**: `maxIdx = floor((n-1)/4)` → `pool =
   ROSTER.slice(0, maxIdx+1)`. Vale plenamente até ~**fase 52** (13 arquétipos);
-  depois é recombinação + escala. **Próximo passo planejado:** variantes de elite
-  (recolor + stats/habilidades) a cada marco p/ manter novidade nas fases fundas.
+  depois é recombinação + escala.
+- **Variantes de elite (✅ feito):** a partir da **fase 24**, cada grupo pode ser
+  marcado como elite. `eliteChance(n)` = 0 até a 24, sobe ~0,85%/fase até o teto
+  de **55%** (≈fase 88). O sorteio é determinístico (`r()` do próprio `genLevel`)
+  e **só consome RNG quando `ec>0`**, então as fases ≤23 mantêm o layout antigo
+  (verificado: `BR.gen(≤23).hasElite===false`). `grp.elite` guarda o id do afixo;
+  `genLevel` retorna `hasElite` (usado no aviso da tela de Campanha). Isso mantém
+  novidade nas fases fundas mesmo depois que todos os arquétipos já apareceram.
 - **Aproximação conhecida:** cada horda com vários tipos é "achatada" em
   sub-grupos sequenciais (com pausa de 0.9s entre grupos), então o nº de
   spawn-groups pode passar de 7 — o número de **hordas** é 3–7, mas a contagem de
@@ -325,15 +348,17 @@ main.js` (scripts clássicos compartilham escopo léxico global).
   cada 4 níveis até ~52); 13 monstros + 3 bosses com comportamentos (heal/split/
   regen/burst/armor/fly); bestiário (KR-like, `META.seen`); menu CR-like com herói
   central + baús; HAB+ULT; áudio (WebAudio) + vibração; diária + gemas + gacha;
-  ajustes (PT/EN); história do Guardião (1º play); botões "Em Breve" (FOMO).
+  ajustes (PT/EN); história do Guardião (1º play); botões "Em Breve" (FOMO);
+  **variantes de elite** (4 afixos: recolor + buffs + habilidade extra, a partir
+  da fase 24, com aura/marca e aviso na Campanha).
 - **🔜 Próximo (dá p/ fazer aqui, single-player):**
-  1. **Variantes de elite** nas fases profundas (mantém "novo a cada 4 níveis").
-  2. **Heróis colecionáveis** (coleção/níveis/skills, casa com o gacha).
-  3. **Capítulos + estrelas por fase + dificuldades + auto/2x**.
-  4. **Fusão com Frontier Bastion** (modo cidade/recursos/pesquisa entre
+  1. **Heróis colecionáveis** (coleção/níveis/skills, casa com o gacha).
+  2. **Capítulos + estrelas por fase + dificuldades + auto/2x**.
+  3. **Fusão com Frontier Bastion** (modo cidade/recursos/pesquisa entre
      batalhas).
-  5. Missões diárias/semanais + conquistas + passe; mais comportamentos
+  4. Missões diárias/semanais + conquistas + passe; mais comportamentos
      (summoner, multi-lane, perigos no caminho); animação esqueletal + sombras.
+  5. **Afixos de elite no bestiário** (entradas/legenda explicando os 4 tipos).
 - **🌐 Precisa de servidor (manter como "Em Breve"/FOMO):** IAP real, login
   Google/Apple + save na nuvem + multi-dispositivo, push, social/PvP/alianças.
 
