@@ -4,6 +4,9 @@
 > implementação**. É a fonte da verdade do design. Atualize o **status** dos
 > milestones conforme forem saindo. Tudo aqui é **original**, apenas *inspirado*
 > nos gêneros (ver regra de originalidade no `CLAUDE.md`).
+>
+> 🔧 **Mecânica técnica detalhada** (como o jogo deve funcionar, "do jeito que o
+> usuário quer"): ver [`MECHANICS.md`](MECHANICS.md).
 
 ---
 
