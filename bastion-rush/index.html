@@ -357,7 +357,7 @@ function killEnemy(e) {
   shake(e.boss ? 9 : 3);
   const sp = TYPES[e.type].split; if (sp) for (let i = 0; i < sp.count; i++) spawnAt(sp.into, Math.max(0, e.d - rand(0.1, 0.6)));
 }
-function shoot(fx, fz, target, dmg, color) { G.shots.push({ x: fx, z: fz, y: 0.7, target, dmg, color, life: 1.5 }); SND.shoot(); }
+function shoot(fx, fz, target, dmg, color, fy) { G.shots.push({ x: fx, z: fz, y: fy == null ? 0.7 : fy, target, dmg, color, life: 1.5 }); SND.shoot(); }
 function collectCoin(a) { G.runCoins += a; META.coins += a; G.coinPulse = 1; burst(cw - 60, 40, '#ffd23f', 6); dtext(cw - 64, 58, '+' + a, '#ffcf5e', 16); saveMeta(); SND.coin(); }
 
 /* ===== Input ===== */
@@ -462,7 +462,11 @@ function update(dt) {
   G.heroCool -= dt * 1000;
   let tg = nearestTo(h.x, h.z, 6.5);
   if (tg) h.ang = Math.atan2(tg.x - h.x, tg.z - h.z); else if (mag > 0.05) h.ang = h.moveAng;
-  if (G.heroCool <= 0 && tg) { shoot(h.x, h.z, tg, heroDmg(), '#ffd23f'); G.heroCool = heroCD(); }
+  if (G.heroCool <= 0 && tg) {                                                   // o tiro sai do orbe no topo do cajado
+    const ca = Math.cos(h.ang), sa = Math.sin(h.ang);                            // orbe local (0.46, 1.28, 0.16) girado pelo ângulo do herói
+    shoot(h.x + 0.46 * ca + 0.16 * sa, h.z - 0.46 * sa + 0.16 * ca, tg, heroDmg(), '#86f0ff', 1.28);
+    G.heroCool = heroCD();
+  }
   // torres
   for (let i = 0; i < SLOTS.length; i++) { if (G.towers[i] <= 0) continue; G.tCool[i] -= dt * 1000; if (G.tCool[i] <= 0) { const t = nearestTo(SLOTS[i][0], SLOTS[i][1], 6.5); if (t) { shoot(SLOTS[i][0], SLOTS[i][1], t, towerDmg(G.towers[i]), '#00BBF9'); G.tCool[i] = 850; } } }
   // projéteis
