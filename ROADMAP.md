@@ -7,6 +7,9 @@
 >
 > 🔧 **Mecânica técnica detalhada** (como o jogo deve funcionar, "do jeito que o
 > usuário quer"): ver [`MECHANICS.md`](MECHANICS.md).
+>
+> 📐 **Como funcionam os gêneros de base** (Archero + Kingdom Rush, esqueleto
+> funcional): ver [`BLUEPRINTS.md`](BLUEPRINTS.md).
 
 ---
 
