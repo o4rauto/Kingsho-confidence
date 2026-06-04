@@ -10,6 +10,9 @@
 >
 > 📐 **Como funcionam os gêneros de base** (Archero + Kingdom Rush, esqueleto
 > funcional): ver [`BLUEPRINTS.md`](BLUEPRINTS.md).
+>
+> 🧪 **Estudo profundo e CITADO** (pesquisa multi-fonte: Archero, Kingdom Rush,
+> arquitetura técnica e fusão/hybrid-casual): ver [`RESEARCH.md`](RESEARCH.md).
 
 ---
 
