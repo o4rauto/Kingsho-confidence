@@ -112,9 +112,12 @@ input → update → render → telas/UI → habilidades → narrativa.
 - Câmera fixa: `camPos=[0,15.5,15]`, `camTarget=[0,0.5,-2.5]`. `setupCam(shx,shy)`
   monta a base (`fwd/rgt/upv`); `project(p)` → `{vis,x,y,depth}` (perspectiva).
 - `pushQuad(a,b,c,d,rgb,center)`: calcula normal, orienta p/ fora pelo `center`,
-  **backface cull**, **iluminação flat** (`light = 0.38 + 0.62·max(0, n·LIGHT)`
-  — ambiente baixo p/ o clima de arena escura), empilha em `BUF` (`FLOOR`,
-  `SHADOWS` ou `FACES`) com `z` médio.
+  **backface cull**, **iluminação RGB cel-shading**: key difusa **quantizada em
+  degraus** (`toon`) + ambiente baixo `AMB` (base escura) + `FILL`, **mais point
+  lights locais** (`LIGHTS`: braseiros quentes + aura fria do mago, queda
+  quadrática por distância — clareiam superfícies no raio). Guarda `lr/lg/lb`
+  por face e empilha em `BUF` (`FLOOR`, `SHADOWS` ou `FACES`) com `z` médio;
+  `paint` multiplica `rgb` por `lr/lg/lb` e aplica a neblina.
 - `box(cx,cy,cz, w,h,d, hex, cosA,sinA, pivot)`: cuboide (com rotação Y em torno
   do pivô) → 6 quads.
 - `drawModel(parts, wx,wy,wz, ang, sc, tint?)`: desenha um modelo (lista de
@@ -129,7 +132,9 @@ input → update → render → telas/UI → habilidades → narrativa.
   foi corrigido assim). **Não volte a usar 1 quad gigante p/ o chão.**
 
 ### 3.2 Modelos (todos feitos de caixas, originais)
-- `M_HERO` (cavaleiro azul com elmo + lança), `M_TOWER`.
+- `M_HERO` (**mago chibi** estilo Archero × Kingdom Rush: botas, robe + cinto
+  dourado, capa, mãos, cabeça chibi com olhos, **chapéu pontudo** e **cajado com
+  orbe** brilhante), `M_TOWER`.
 - `humanoid(body, head, opts)` — corpo+cabeça+olhos+pés; `opts`: `bulk`,
   `plate` (peitoral), `horns`, `staff` (cajado+orbe).
 - `bossModel(c1,c2)` — chefe maior com coroa.

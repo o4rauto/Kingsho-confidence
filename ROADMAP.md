@@ -154,7 +154,11 @@ Ao construir, escolhe **1 de 4 classes**:
 - **M5 — Sinergias Herói×Torre** ⬜
   - Condutores, killshot, sacrifício, equipamento (necromante), habilidades gêmeas.
 - **M6 — Diretor de IA adaptativo** ⬜
-- **M7 — Visual PS2 (mesh/rig/materiais/cenário + variação/10 níveis)** ⬜
+- **M7 — Visual PS2 (mesh/rig/materiais/cenário + variação/10 níveis)** 🚧
+  - ✅ Iluminação **toon/cel-shading** + **luzes locais** (braseiros + aura do mago).
+  - ✅ Herói virou **mago detalhado**; câmera mais alta/afastada; cenário mais claro.
+  - ⬜ Malhas dos **monstros** mais detalhadas, **materiais** (fosco/metálico/vidro),
+    **animação de cast** do mago, **variação de cenário a cada 10 níveis**.
 - **M8 — Chefes bullet-hell** ⬜
 - **M9 — Variantes & dificuldade** ⬜ (Arena +60%/+40%, auto/2x, estrelas, capítulos).
 
