@@ -4,6 +4,9 @@
 > Rush**), consolidando tudo que o usuário pediu. Complementa o `ROADMAP.md` (o
 > ROADMAP diz **o quê/quando**; este doc diz **como funciona**). Status por item:
 > **✅ implementado** · **🔜 planejado** · **✂️ cortado**. Tudo original.
+>
+> ⚠️ **Decisões mais recentes + plano de execução:** ver [`PLAN.md`](PLAN.md)
+> (prevalece onde divergir deste spec).
 
 ---
 
@@ -214,6 +217,8 @@ Não é só aleatório/combinado/padrão — **aprende como o player joga**.
 - **Bunker de reciclagem** (corpos → moedas).
 - "Abate de torre → +5% cadência do herói".
 - **Controle de linha de frente** (basta a escolha das 4 classes).
+- **Salas especiais** (anjo/tesouro/diabo) — não agora.
+- **"Chamar a onda antes"** (call wave early).
 
 ---
 

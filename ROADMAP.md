@@ -13,6 +13,9 @@
 >
 > 🧪 **Estudo profundo e CITADO** (pesquisa multi-fonte: Archero, Kingdom Rush,
 > arquitetura técnica e fusão/hybrid-casual): ver [`RESEARCH.md`](RESEARCH.md).
+>
+> 🗺️ **Plano operacional vigente** (decisões mais recentes + ordem/COMO de
+> implementação): ver [`PLAN.md`](PLAN.md) — **prevalece** onde divergir.
 
 ---
 
@@ -180,6 +183,8 @@ Ao construir, escolhe **1 de 4 classes**:
 - **Bunker de reciclagem** (corpos → moedas).
 - "Abate de torre → +5% cadência do herói".
 - **Controle de linha de frente** (não necessário; basta a escolha das 4 classes).
+- **Salas especiais** (anjo/tesouro/diabo) — não agora (pode voltar depois).
+- **"Chamar a onda antes"** (call wave early) — não.
 
 ---
 
