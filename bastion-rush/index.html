@@ -290,7 +290,7 @@ const heroCD = () => Math.max(150, 560 - (META.rateLvl - 1) * 40);
 const costDmg = () => Math.floor(50 * Math.pow(1.5, META.dmgLvl - 1));
 const costRate = () => Math.floor(55 * Math.pow(1.5, META.rateLvl - 1));
 const costTower = (l) => l === 0 ? 60 : Math.floor(50 * Math.pow(1.6, l));
-const towerDmg = (l) => 5 + (l - 1) * 6;
+const towerDmg = (l) => 12 + (l - 1) * 11;
 
 let G = { state: 'menu', t: 0 };
 function startLevel(n) {
@@ -303,7 +303,7 @@ function startLevel(n) {
     enemies: [], shots: [], coins3: [], parts: [], texts: [],
     gi: 0, gc: 0, gtimer: 0.6, spawnedAll: false, total: gen.groups.reduce((s, g) => s + g.count, 0), killed: 0,
     hero: { x: 0, z: 2.6, ang: Math.PI }, heroCool: 0, skillCD: 0, ultCharge: 0,
-    towers: [0, 0, 0, 0], tCool: [0, 0, 0, 0], runCoins: 0,
+    towers: [0, 0, 0, 0], tCool: [0, 0, 0, 0], battle: 90, battlePulse: 0,
     shake: 0, flash: 0, flashC: '255,255,255', coinPulse: 0, slotScr: [], ui: [],
     joy: null, keys: {},
   };
@@ -353,12 +353,12 @@ function damageEnemy(e, dmg) {
 function killEnemy(e) {
   e.dead = true; G.killed++; SND.kill(); vibe(e.boss ? 60 : 15); if (e.boss && G.firstClear) { META.gems += 15; saveMeta(); }
   const s = wScreen(e.x, e.z); if (s.vis) burst(s.x, s.y, TYPES[e.type].color, e.boss ? 28 : 10);
-  if (G.firstClear && s.vis) G.coins3.push({ x: e.x, z: e.z, sx: s.x, sy: s.y, t: 0, amount: e.value });
+  if (s.vis) G.coins3.push({ x: e.x, z: e.z, sx: s.x, sy: s.y, t: 0, amount: e.value });   // dropa cristal de batalha
   shake(e.boss ? 9 : 3);
   const sp = TYPES[e.type].split; if (sp) for (let i = 0; i < sp.count; i++) spawnAt(sp.into, Math.max(0, e.d - rand(0.1, 0.6)));
 }
 function shoot(fx, fz, target, dmg, color, fy) { G.shots.push({ x: fx, z: fz, y: fy == null ? 0.7 : fy, target, dmg, color, life: 1.5 }); SND.shoot(); }
-function collectCoin(a) { G.runCoins += a; META.coins += a; G.coinPulse = 1; burst(cw - 60, 40, '#ffd23f', 6); dtext(cw - 64, 58, '+' + a, '#ffcf5e', 16); saveMeta(); SND.coin(); }
+function collectCoin(a) { G.battle += a; G.battlePulse = 1; burst(cw - 60, 96, '#36c9ff', 6); dtext(cw - 60, 114, '+' + a, '#9fe3ff', 15); SND.coin(); }   // cristal de batalha (gasto em torres; reseta na fase)
 
 /* ===== Input ===== */
 const toCss = (ev) => { const r = canvas.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; };
@@ -414,7 +414,7 @@ function doAction(act) {
   else if (act === 'buy:dmg') { if (META.coins >= costDmg()) { META.coins -= costDmg(); META.dmgLvl++; saveMeta(); } }
   else if (act === 'buy:rate') { if (META.coins >= costRate()) { META.coins -= costRate(); META.rateLvl++; saveMeta(); } }
 }
-function buyTower(i) { const l = G.towers[i]; if (G.runCoins + 0 >= 0 && META.coins >= costTower(l) && l < 5) { META.coins -= costTower(l); G.towers[i]++; saveMeta(); flash('255,255,255', 0.16); const s = G.slotScr[i]; if (s && s.vis) burst(s.x, s.y, '#00BBF9', 14); } else shake(4); }
+function buyTower(i) { const l = G.towers[i]; if (G.battle >= costTower(l) && l < 5) { G.battle -= costTower(l); G.towers[i]++; flash('255,255,255', 0.16); const s = G.slotScr[i]; if (s && s.vis) burst(s.x, s.y, '#36c9ff', 14); } else shake(4); }
 
 /* ===== Loop ===== */
 let last = performance.now();
@@ -428,6 +428,7 @@ function update(dt) {
   if (G.invuln > 0) G.invuln = Math.max(0, G.invuln - dt);
   if (G.flash > 0) G.flash = Math.max(0, G.flash - dt * 1.4);
   if (G.coinPulse > 0) G.coinPulse = Math.max(0, G.coinPulse - dt * 4);
+  if (G.battlePulse > 0) G.battlePulse = Math.max(0, G.battlePulse - dt * 4);
   if (G.skillCD > 0) G.skillCD = Math.max(0, G.skillCD - dt);
   for (const p of G.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 90 * dt; p.life -= dt; }
   G.parts = G.parts.filter(p => p.life > 0);
@@ -473,7 +474,7 @@ function update(dt) {
     }
   }
   // torres
-  for (let i = 0; i < SLOTS.length; i++) { if (G.towers[i] <= 0) continue; G.tCool[i] -= dt * 1000; if (G.tCool[i] <= 0) { const t = nearestTo(SLOTS[i][0], SLOTS[i][1], 6.5); if (t) { shoot(SLOTS[i][0], SLOTS[i][1], t, towerDmg(G.towers[i]), '#00BBF9'); G.tCool[i] = 850; } } }
+  for (let i = 0; i < SLOTS.length; i++) { if (G.towers[i] <= 0) continue; G.tCool[i] -= dt * 1000; if (G.tCool[i] <= 0) { const t = nearestTo(SLOTS[i][0], SLOTS[i][1], 6.5); if (t) { shoot(SLOTS[i][0], SLOTS[i][1], t, towerDmg(G.towers[i]), '#00BBF9'); G.tCool[i] = 720; } } }
   // projéteis
   for (const s of G.shots) {
     if (!s.target || s.target.dead) { s.life = 0; continue; }
@@ -498,7 +499,7 @@ function update(dt) {
   }
   G.enemies = G.enemies.filter(e => !e.dead);
   // moedas voando
-  for (const c of G.coins3) { c.t += dt / 0.55; if (c.t >= 1) { c.done = 1; collectCoin(c.amount); } else { const e = 1 - Math.pow(1 - c.t, 3); c.cx = c.sx + (cw - 60 - c.sx) * e; c.cy = c.sy + (40 - c.sy) * e; } }
+  for (const c of G.coins3) { c.t += dt / 0.55; if (c.t >= 1) { c.done = 1; collectCoin(c.amount); } else { const e = 1 - Math.pow(1 - c.t, 3); c.cx = c.sx + (cw - 60 - c.sx) * e; c.cy = c.sy + (96 - c.sy) * e; } }
   G.coins3 = G.coins3.filter(c => !c.done);
 }
 function nearestTo(x, z, range) { let b = null, bd = range; for (const e of G.enemies) { if (e.dead) continue; const d = Math.hypot(x - e.x, z - e.z); if (d < bd) { bd = d; b = e; } } return b; }
@@ -624,7 +625,7 @@ function btn(act, x, y, w, h, label, sub, color, enabled) {
   if (sub) { ctx.fillStyle = '#aab3c5'; ctx.font = '700 11px system-ui'; ctx.fillText(sub, x + w / 2, y + h / 2 + 15); }
   ctx.textAlign = 'left'; if (enabled) G.ui.push({ x, y, w, h, act });
 }
-function coinHud() { const p = 1 + (G.coinPulse || 0) * 0.3; panel(cw - 188, 12, 176, 50, 14); coin(cw - 166, 38, 11); ctx.save(); ctx.translate(cw - 124, 40); ctx.scale(p, p); ctx.fillStyle = '#ffcf5e'; ctx.font = '800 19px system-ui'; ctx.textAlign = 'center'; ctx.fillText(fmt(META.coins), 0, 7); ctx.restore(); gem(cw - 70, 38, 9); ctx.fillStyle = '#bff0ff'; ctx.font = '800 18px system-ui'; ctx.textAlign = 'center'; ctx.fillText(fmt(META.gems), cw - 40, 45); ctx.textAlign = 'left'; }
+function coinHud() { const p = 1 + (G.coinPulse || 0) * 0.3; panel(cw - 188, 12, 176, 50, 14); coin(cw - 166, 38, 11); ctx.save(); ctx.translate(cw - 124, 40); ctx.scale(p, p); ctx.fillStyle = '#ffcf5e'; ctx.font = '800 19px system-ui'; ctx.textAlign = 'center'; ctx.fillText(fmt(META.coins), 0, 7); ctx.restore(); gem(cw - 70, 38, 9); ctx.fillStyle = '#a8f0c0'; ctx.font = '800 18px system-ui'; ctx.textAlign = 'center'; ctx.fillText(fmt(META.gems), cw - 40, 45); ctx.textAlign = 'left'; }
 
 function drawPlayHud() {
   panel(12, 12, 200, 84, 14); ctx.fillStyle = '#fff'; ctx.font = '800 15px system-ui'; ctx.textAlign = 'left'; ctx.fillText('Fase ' + G.level + (G.firstClear ? '' : ' (replay)'), 24, 30);
@@ -637,6 +638,10 @@ function drawPlayHud() {
   ctx.fillStyle = '#aeb8c8'; ctx.font = '700 9px system-ui'; ctx.fillText('BASE', 24, 70);
   const bhp = clamp(G.baseHp / G.baseHpMax, 0, 1); rr(24, 74, 168, 7, 3); ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fill(); rr(24, 74, 168 * bhp, 7, 3); ctx.fillStyle = bhp > 0.3 ? '#5a8fd0' : '#e8595a'; ctx.fill();
   coinHud();
+  // cristal de batalha (moeda da run; gasta nas torres; reseta na fase)
+  const bp2 = 1 + (G.battlePulse || 0) * 0.3; panel(cw - 188, 70, 176, 38, 12); crystal(cw - 166, 90, 11);
+  ctx.save(); ctx.translate(cw - 116, 91); ctx.scale(bp2, bp2); ctx.fillStyle = '#9fe3ff'; ctx.font = '800 18px system-ui'; ctx.textAlign = 'center'; ctx.fillText(fmt(G.battle), 0, 6); ctx.restore();
+  ctx.fillStyle = '#7892b0'; ctx.font = '700 9px system-ui'; ctx.textAlign = 'right'; ctx.fillText('p/ torres', cw - 22, 105); ctx.textAlign = 'left';
   // progresso da fase
   const pr = clamp(G.killed / G.total, 0, 1); panel(cw / 2 - 80, 12, 160, 26, 12); rr(cw / 2 - 72, 20, 144, 10, 5); ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fill(); rr(cw / 2 - 72, 20, 144 * pr, 10, 5); ctx.fillStyle = '#ffcf5e'; ctx.fill();
   ctx.fillStyle = '#fff'; ctx.font = '700 10px system-ui'; ctx.textAlign = 'center'; ctx.fillText(G.killed + '/' + G.total + ' inimigos', cw / 2, 52); ctx.textAlign = 'left';
@@ -646,7 +651,26 @@ function drawPlayHud() {
 }
 function drawSlots() {
   G.slotScr = [];
-  for (let i = 0; i < SLOTS.length; i++) { const sc = project([SLOTS[i][0], 0.1, SLOTS[i][1]]); G.slotScr[i] = sc; if (G.towers[i] <= 0 && sc.vis) { const can = META.coins >= costTower(0), pl = can ? 3 + Math.sin(G.t * 5) * 2 : 0; ctx.strokeStyle = can ? '#ffcf5e' : 'rgba(255,255,255,.5)'; ctx.lineWidth = 3; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.arc(sc.x, sc.y, 22 + pl, 0, 6.28); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = can ? '#ffcf5e' : 'rgba(255,255,255,.6)'; ctx.font = '800 24px system-ui'; ctx.textAlign = 'center'; ctx.fillText('+', sc.x, sc.y + 8); coin(sc.x - 14, sc.y + 24, 6); ctx.fillStyle = '#fff'; ctx.font = '700 12px system-ui'; ctx.fillText(costTower(0), sc.x + 6, sc.y + 28); ctx.textAlign = 'left'; } }
+  for (let i = 0; i < SLOTS.length; i++) {
+    const sc = project([SLOTS[i][0], 0.1, SLOTS[i][1]]); G.slotScr[i] = sc; if (!sc.vis) continue;
+    const l = G.towers[i];
+    if (l <= 0) {                                                                  // slot vazio -> construir (cristal de batalha)
+      const cost = costTower(0), can = G.battle >= cost, pl = can ? 3 + Math.sin(G.t * 5) * 2 : 0;
+      ctx.strokeStyle = can ? '#36c9ff' : 'rgba(255,255,255,.5)'; ctx.lineWidth = 3; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.arc(sc.x, sc.y, 22 + pl, 0, 6.28); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = can ? '#9fe3ff' : 'rgba(255,255,255,.6)'; ctx.font = '800 24px system-ui'; ctx.textAlign = 'center'; ctx.fillText('+', sc.x, sc.y + 8);
+      crystal(sc.x - 16, sc.y + 24, 6); ctx.fillStyle = '#fff'; ctx.font = '700 12px system-ui'; ctx.fillText(cost, sc.x + 6, sc.y + 28); ctx.textAlign = 'left';
+    } else {                                                                       // torre construída -> nível + upgrade
+      const ty = sc.y - 30; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(20,26,40,.85)'; rr(sc.x - 19, ty - 9, 38, 16, 5); ctx.fill();
+      ctx.fillStyle = '#ffe9a8'; ctx.font = '800 11px system-ui'; ctx.fillText('Lv ' + l, sc.x, ty + 3);
+      if (l < 5) {
+        const cost = costTower(l), can = G.battle >= cost;
+        ctx.strokeStyle = can ? 'rgba(54,201,255,.9)' : 'rgba(255,255,255,.3)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(sc.x, sc.y, 17, 0, 6.28); ctx.stroke();
+        ctx.fillStyle = can ? '#9fe3ff' : 'rgba(255,255,255,.45)'; ctx.font = '800 18px system-ui'; ctx.fillText('+', sc.x, sc.y + 7);
+        crystal(sc.x - 15, sc.y + 23, 5); ctx.fillStyle = can ? '#fff' : 'rgba(255,255,255,.5)'; ctx.font = '700 11px system-ui'; ctx.fillText(cost, sc.x + 6, sc.y + 26);
+      } else { ctx.fillStyle = '#ffcf5e'; ctx.font = '800 11px system-ui'; ctx.fillText('MAX', sc.x, sc.y + 5); }
+      ctx.textAlign = 'left';
+    }
+  }
 }
 function drawFx() {
   // luz quente dos braseiros
@@ -674,7 +698,7 @@ function drawFx() {
     }
   }
   for (const p of G.parts) { ctx.globalAlpha = clamp(p.life * 2.2, 0, 1); ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, p.r, p.r); } ctx.globalAlpha = 1;
-  for (const c of G.coins3) coin(c.cx != null ? c.cx : c.sx, c.cy != null ? c.cy : c.sy, 9);
+  for (const c of G.coins3) crystal(c.cx != null ? c.cx : c.sx, c.cy != null ? c.cy : c.sy, 8);
   for (const t of G.texts) { ctx.globalAlpha = clamp(t.life * 1.6, 0, 1); ctx.font = '800 ' + t.sz + 'px system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.strokeText(t.v, t.x, t.y); ctx.fillStyle = t.col; ctx.fillText(t.v, t.x, t.y); } ctx.globalAlpha = 1; ctx.textAlign = 'left';
 }
 function drawJoystick() {
@@ -805,7 +829,8 @@ function drawSkillUlt() {
 }
 
 /* ===== Gemas / diária / invocação ===== */
-function gem(x, y, r) { ctx.fillStyle = '#7fe0ff'; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.8, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.8, y); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#bff0ff'; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.4, y - r * 0.2); ctx.lineTo(x - r * 0.4, y - r * 0.2); ctx.closePath(); ctx.fill(); }
+function gem(x, y, r) { ctx.fillStyle = '#39d36e'; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.8, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.8, y); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#a8f0c0'; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.4, y - r * 0.2); ctx.lineTo(x - r * 0.4, y - r * 0.2); ctx.closePath(); ctx.fill(); }
+function crystal(x, y, r) { ctx.fillStyle = '#2aa9ff'; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.6, y - r * 0.25); ctx.lineTo(x + r * 0.42, y + r); ctx.lineTo(x - r * 0.42, y + r); ctx.lineTo(x - r * 0.6, y - r * 0.25); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#bfeaff'; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.6, y - r * 0.25); ctx.lineTo(x, y); ctx.closePath(); ctx.fill(); }
 function claimDaily() { if (META.lastDaily === today()) return; META.lastDaily = today(); META.coins += 200; META.gems += 20; saveMeta(); toast('+200 moedas, +20 gemas! 🎁'); }
 function doGacha() {
   if (META.gems < 100) { toast(t('nogems')); return; }
@@ -843,7 +868,7 @@ function drawSettings() {
 }
 function drawToast() { if (!G.toast) return; ctx.font = '800 16px system-ui'; const tw = ctx.measureText(G.toast.msg).width, w = tw + 40, x = CX - w / 2, y = ch * 0.8; ctx.globalAlpha = clamp(G.toast.life * 1.6, 0, 1); rr(x, y, w, 44, 16); ctx.fillStyle = 'rgba(20,26,38,0.96)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#9D4EDD'; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(G.toast.msg, CX, y + 28); ctx.textAlign = 'left'; ctx.globalAlpha = 1; }
 
-window.BR = { start: startLevel, spawn: (ty, el) => { if (G.state === 'playing') spawnEnemy(ty, el); }, skill: useSkill, ult: useUlt, go: (s) => { G.state = s; if (s === 'story') G.story = { page: 0 }; if (s === 'campaign') G.campSel = Math.min(META.clearedMax + 1, TOTAL_LEVELS); }, charge: () => { if (G.ultCharge != null) G.ultCharge = 1; }, money: () => { META.coins += 9999; META.gems += 999; saveMeta(); }, cleared: (n) => { META.clearedMax = n; saveMeta(); }, gen: genLevel, state: () => G.state, hero: () => { const h = G.hero || {}; const s = wScreen(h.x || 0, h.z || 0); return { x: +(h.x || 0).toFixed(2), z: +(h.z || 0).toFixed(2), sx: Math.round(s.x), sy: Math.round(s.y), vis: s.vis, hp: G.heroHp, hpMax: G.heroHpMax, lives: G.lives, invuln: +(G.invuln || 0).toFixed(2), fired: G.fired || 0 }; }, enemies: () => (G.enemies || []).map(e => ({ type: e.type, hp: e.maxHp, dmg: e.dmg, val: e.value, armor: e.armor, elite: e.elite && e.elite.id })) };
+window.BR = { start: startLevel, spawn: (ty, el) => { if (G.state === 'playing') spawnEnemy(ty, el); }, skill: useSkill, ult: useUlt, go: (s) => { G.state = s; if (s === 'story') G.story = { page: 0 }; if (s === 'campaign') G.campSel = Math.min(META.clearedMax + 1, TOTAL_LEVELS); }, charge: () => { if (G.ultCharge != null) G.ultCharge = 1; }, money: () => { META.coins += 9999; META.gems += 999; saveMeta(); }, cleared: (n) => { META.clearedMax = n; saveMeta(); }, gen: genLevel, state: () => G.state, hero: () => { const h = G.hero || {}; const s = wScreen(h.x || 0, h.z || 0); return { x: +(h.x || 0).toFixed(2), z: +(h.z || 0).toFixed(2), sx: Math.round(s.x), sy: Math.round(s.y), vis: s.vis, hp: G.heroHp, hpMax: G.heroHpMax, lives: G.lives, invuln: +(G.invuln || 0).toFixed(2), fired: G.fired || 0 }; }, enemies: () => (G.enemies || []).map(e => ({ type: e.type, hp: e.maxHp, dmg: e.dmg, val: e.value, armor: e.armor, elite: e.elite && e.elite.id })), build: (i) => buyTower(i), eco: () => ({ battle: G.battle | 0, coins: META.coins | 0, gems: META.gems | 0 }) };
 </script>
 </body>
 </html>

@@ -63,7 +63,7 @@ torre (sem 4 classes, sem tier-4, sem gating); **sem 1-de-3**; **sem 10-hordas**
 > dano + economia) **junto** com o núcleo Archero (que a pesquisa mandou fazer 1º).
 > Cada sub-etapa é **verificada headless** e **commitada** antes da próxima.
 
-### ETAPA 1 — Núcleo Archero + torres jogáveis + economia *(fundação + dores)*
+### ETAPA 1 — Núcleo Archero + torres jogáveis + economia  ✅ CONCLUÍDA
 - **1.1 Atira parado / não andando.** *Como:* no `update`, herói só dispara se
   `|input|≈0`; andando, vira pro movimento. *Pronto:* headless mostra parado-atira /
   andando-não.
