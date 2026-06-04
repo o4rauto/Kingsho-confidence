@@ -299,7 +299,7 @@ function startLevel(n) {
   const gen = genLevel(n);
   G = {
     state: 'playing', t: 0, level: n, gen, diff: gen.diff, firstClear: n > META.clearedMax,
-    baseHpMax: 100, baseHp: 100,
+    baseHpMax: 100, baseHp: 100, heroHpMax: 120, heroHp: 120, lives: 3, invuln: 0,
     enemies: [], shots: [], coins3: [], parts: [], texts: [],
     gi: 0, gc: 0, gtimer: 0.6, spawnedAll: false, total: gen.groups.reduce((s, g) => s + g.count, 0), killed: 0,
     hero: { x: 0, z: 2.6, ang: Math.PI }, heroCool: 0, skillCD: 0, ultCharge: 0,
@@ -425,6 +425,7 @@ function update(dt) {
   G.t += dt;
   if (G.state !== 'playing') return;
   if (G.shake > 0) G.shake = Math.max(0, G.shake - dt * 26);
+  if (G.invuln > 0) G.invuln = Math.max(0, G.invuln - dt);
   if (G.flash > 0) G.flash = Math.max(0, G.flash - dt * 1.4);
   if (G.coinPulse > 0) G.coinPulse = Math.max(0, G.coinPulse - dt * 4);
   if (G.skillCD > 0) G.skillCD = Math.max(0, G.skillCD - dt);
@@ -458,14 +459,18 @@ function update(dt) {
     h.x = clamp(h.x + dx * sp * dt, -maxX, maxX);                                // limite horizontal ciente da perspectiva
     h.moveAng = Math.atan2(dx, dz);
   }
-  // ataque do herói (no alcance)
+  // ataque do herói — só PARADO (estilo Archero): andando, vira p/ o movimento e NÃO atira
   G.heroCool -= dt * 1000;
+  const moving = mag > 0.05;
   let tg = nearestTo(h.x, h.z, 6.5);
-  if (tg) h.ang = Math.atan2(tg.x - h.x, tg.z - h.z); else if (mag > 0.05) h.ang = h.moveAng;
-  if (G.heroCool <= 0 && tg) {                                                   // o tiro sai do orbe no topo do cajado
-    const ca = Math.cos(h.ang), sa = Math.sin(h.ang);                            // orbe local (0.46, 1.28, 0.16) girado pelo ângulo do herói
-    shoot(h.x + 0.46 * ca + 0.16 * sa, h.z - 0.46 * sa + 0.16 * ca, tg, heroDmg(), '#86f0ff', 1.28);
-    G.heroCool = heroCD();
+  if (moving) h.ang = h.moveAng;
+  else if (tg) {
+    h.ang = Math.atan2(tg.x - h.x, tg.z - h.z);
+    if (G.heroCool <= 0) {                                                        // o tiro sai do orbe no topo do cajado
+      const ca = Math.cos(h.ang), sa = Math.sin(h.ang);                           // orbe local (0.46, 1.28, 0.16) girado pelo ângulo
+      shoot(h.x + 0.46 * ca + 0.16 * sa, h.z - 0.46 * sa + 0.16 * ca, tg, heroDmg(), '#86f0ff', 1.28);
+      G.heroCool = heroCD(); G.fired = (G.fired || 0) + 1;
+    }
   }
   // torres
   for (let i = 0; i < SLOTS.length; i++) { if (G.towers[i] <= 0) continue; G.tCool[i] -= dt * 1000; if (G.tCool[i] <= 0) { const t = nearestTo(SLOTS[i][0], SLOTS[i][1], 6.5); if (t) { shoot(SLOTS[i][0], SLOTS[i][1], t, towerDmg(G.towers[i]), '#00BBF9'); G.tCool[i] = 850; } } }
@@ -487,6 +492,8 @@ function update(dt) {
     e.bob += dt * 9; if (e.hit > 0) e.hit -= dt; let arrived = false;
     if (e.fly) { const ddx = BASEP[0] - e.x, ddz = BASEP[1] - e.z, L = Math.hypot(ddx, ddz) || 1; e.x += ddx / L * spd * dt; e.z += ddz / L * spd * dt; e.ang = Math.atan2(ddx, ddz); if (L < 0.8) arrived = true; }
     else { e.d += spd * dt; const pt = pathAt(e.d); e.x = pt.x; e.z = pt.z; e.ang = pt.ang; if (e.d >= PLEN) arrived = true; }
+    const hdx = h.x - e.x, hdz = h.z - e.z;                                       // dano de contato no herói (pode morrer)
+    if (hdx * hdx + hdz * hdz < (0.5 + e.scale * 0.35) ** 2) { e.atkT = (e.atkT == null ? 0 : e.atkT) - dt; if (e.atkT <= 0) { e.atkT = 0.8; hurtHero(e.dmg); } }
     if (arrived) { G.baseHp -= e.dmg; e.dead = true; const s = wScreen(BASEP[0], BASEP[1]); if (s.vis) burst(s.x, s.y, '#e8595a', 14); shake(8); flash('232,89,90', 0.4); if (G.baseHp <= 0) return gameOver(); }
   }
   G.enemies = G.enemies.filter(e => !e.dead);
@@ -497,6 +504,17 @@ function update(dt) {
 function nearestTo(x, z, range) { let b = null, bd = range; for (const e of G.enemies) { if (e.dead) continue; const d = Math.hypot(x - e.x, z - e.z); if (d < bd) { bd = d; b = e; } } return b; }
 function win() { G.state = 'won'; if (G.firstClear) { META.clearedMax = Math.max(META.clearedMax, G.level); const reward = 30 + G.level * 8, gr = 4 + Math.floor(G.level / 3); META.coins += reward; META.gems += gr; G.reward = reward; G.greward = gr; saveMeta(); } else { G.reward = 0; G.greward = 0; } SND.win(); }
 function gameOver() { G.state = 'over'; shake(12); flash('0,0,0', 0.3); SND.lose(); vibe(120); }
+function hurtHero(dmg) {
+  if (G.state !== 'playing' || G.invuln > 0) return;
+  G.heroHp -= dmg; G.invuln = 0.6; shake(7); flash('232,89,90', 0.28); vibe(30); SND.hit();
+  const s = wScreen(G.hero.x, G.hero.z); if (s.vis) dtext(s.x, s.y - 34, '-' + Math.floor(dmg), '#ff6b6b', 16);
+  if (G.heroHp <= 0) {
+    G.lives -= 1;
+    if (G.lives <= 0) { G.heroHp = 0; return gameOver(); }
+    G.heroHp = G.heroHpMax; G.invuln = 1.6; G.hero.x = 0; G.hero.z = 2.6;          // renasce na base
+    banner('Renasceu!  Vidas: ' + G.lives); shake(10); flash('120,200,255', 0.3); SND.skill();
+  }
+}
 
 /* ===== Render ===== */
 function paint(arr) {
@@ -571,7 +589,7 @@ function renderScene() {
   else {
     buildDeco(); buildBase(); buildWalls();
     if (G.towers) for (let i = 0; i < SLOTS.length; i++) if (G.towers[i] > 0) { addShadow(SLOTS[i][0], SLOTS[i][1], 0.55); drawModel(M_TOWER, SLOTS[i][0], 0, SLOTS[i][1], 0, 1); }
-    if (G.hero) { addShadow(G.hero.x, G.hero.z, 0.6); drawModel(M_HERO, G.hero.x, 0, G.hero.z, G.hero.ang, 1); }
+    if (G.hero) { addShadow(G.hero.x, G.hero.z, 0.6); if (!(G.invuln > 0 && (G.t * 14 | 0) % 2)) drawModel(M_HERO, G.hero.x, 0, G.hero.z, G.hero.ang, 1); }
     if (G.enemies) for (const e of G.enemies) { const fy = e.fly ? 1.5 + Math.sin(e.bob) * 0.2 : Math.sin(e.bob) * 0.05; addShadow(e.x, e.z, 0.5 * e.scale); drawModel(MODELS[e.type], e.x, fy, e.z, e.ang, e.scale, e.elite ? e.elite.tint : null); }
     if (G.shots) for (const s of G.shots) box(s.x, s.y, s.z, 0.18, 0.18, 0.18, s.color, 1, 0, [s.x, 0, s.z]);
   }
@@ -609,8 +627,15 @@ function btn(act, x, y, w, h, label, sub, color, enabled) {
 function coinHud() { const p = 1 + (G.coinPulse || 0) * 0.3; panel(cw - 188, 12, 176, 50, 14); coin(cw - 166, 38, 11); ctx.save(); ctx.translate(cw - 124, 40); ctx.scale(p, p); ctx.fillStyle = '#ffcf5e'; ctx.font = '800 19px system-ui'; ctx.textAlign = 'center'; ctx.fillText(fmt(META.coins), 0, 7); ctx.restore(); gem(cw - 70, 38, 9); ctx.fillStyle = '#bff0ff'; ctx.font = '800 18px system-ui'; ctx.textAlign = 'center'; ctx.fillText(fmt(META.gems), cw - 40, 45); ctx.textAlign = 'left'; }
 
 function drawPlayHud() {
-  panel(12, 12, 200, 56, 14); ctx.fillStyle = '#fff'; ctx.font = '800 16px system-ui'; ctx.textAlign = 'left'; ctx.fillText('Fase ' + G.level + (G.firstClear ? '' : ' (replay)'), 24, 33);
-  const bw = 176, hp = clamp(G.baseHp / G.baseHpMax, 0, 1); rr(24, 46, bw, 9, 4); ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fill(); rr(24, 46, bw * hp, 9, 4); ctx.fillStyle = hp > 0.3 ? '#4fcf72' : '#e8595a'; ctx.fill();
+  panel(12, 12, 200, 84, 14); ctx.fillStyle = '#fff'; ctx.font = '800 15px system-ui'; ctx.textAlign = 'left'; ctx.fillText('Fase ' + G.level + (G.firstClear ? '' : ' (replay)'), 24, 30);
+  // vida do HERÓI (você) + 3 vidas
+  const hhp = clamp(G.heroHp / G.heroHpMax, 0, 1);
+  ctx.fillStyle = '#aeb8c8'; ctx.font = '700 9px system-ui'; ctx.fillText('HERÓI', 24, 44);
+  rr(24, 48, 130, 8, 4); ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fill(); rr(24, 48, 130 * hhp, 8, 4); ctx.fillStyle = hhp > 0.4 ? '#4fcf72' : hhp > 0.2 ? '#ffb43a' : '#e8595a'; ctx.fill();
+  for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(170 + i * 15, 52, 5.5, 0, 6.28); ctx.fillStyle = i < G.lives ? '#ff5a7a' : 'rgba(255,255,255,.16)'; ctx.fill(); }
+  // vida da BASE
+  ctx.fillStyle = '#aeb8c8'; ctx.font = '700 9px system-ui'; ctx.fillText('BASE', 24, 70);
+  const bhp = clamp(G.baseHp / G.baseHpMax, 0, 1); rr(24, 74, 168, 7, 3); ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fill(); rr(24, 74, 168 * bhp, 7, 3); ctx.fillStyle = bhp > 0.3 ? '#5a8fd0' : '#e8595a'; ctx.fill();
   coinHud();
   // progresso da fase
   const pr = clamp(G.killed / G.total, 0, 1); panel(cw / 2 - 80, 12, 160, 26, 12); rr(cw / 2 - 72, 20, 144, 10, 5); ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fill(); rr(cw / 2 - 72, 20, 144 * pr, 10, 5); ctx.fillStyle = '#ffcf5e'; ctx.fill();
@@ -818,7 +843,7 @@ function drawSettings() {
 }
 function drawToast() { if (!G.toast) return; ctx.font = '800 16px system-ui'; const tw = ctx.measureText(G.toast.msg).width, w = tw + 40, x = CX - w / 2, y = ch * 0.8; ctx.globalAlpha = clamp(G.toast.life * 1.6, 0, 1); rr(x, y, w, 44, 16); ctx.fillStyle = 'rgba(20,26,38,0.96)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#9D4EDD'; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(G.toast.msg, CX, y + 28); ctx.textAlign = 'left'; ctx.globalAlpha = 1; }
 
-window.BR = { start: startLevel, spawn: (ty, el) => { if (G.state === 'playing') spawnEnemy(ty, el); }, skill: useSkill, ult: useUlt, go: (s) => { G.state = s; if (s === 'story') G.story = { page: 0 }; if (s === 'campaign') G.campSel = Math.min(META.clearedMax + 1, TOTAL_LEVELS); }, charge: () => { if (G.ultCharge != null) G.ultCharge = 1; }, money: () => { META.coins += 9999; META.gems += 999; saveMeta(); }, cleared: (n) => { META.clearedMax = n; saveMeta(); }, gen: genLevel, state: () => G.state, hero: () => { const h = G.hero || {}; const s = wScreen(h.x || 0, h.z || 0); return { x: +(h.x || 0).toFixed(2), z: +(h.z || 0).toFixed(2), sx: Math.round(s.x), sy: Math.round(s.y), vis: s.vis }; }, enemies: () => (G.enemies || []).map(e => ({ type: e.type, hp: e.maxHp, dmg: e.dmg, val: e.value, armor: e.armor, elite: e.elite && e.elite.id })) };
+window.BR = { start: startLevel, spawn: (ty, el) => { if (G.state === 'playing') spawnEnemy(ty, el); }, skill: useSkill, ult: useUlt, go: (s) => { G.state = s; if (s === 'story') G.story = { page: 0 }; if (s === 'campaign') G.campSel = Math.min(META.clearedMax + 1, TOTAL_LEVELS); }, charge: () => { if (G.ultCharge != null) G.ultCharge = 1; }, money: () => { META.coins += 9999; META.gems += 999; saveMeta(); }, cleared: (n) => { META.clearedMax = n; saveMeta(); }, gen: genLevel, state: () => G.state, hero: () => { const h = G.hero || {}; const s = wScreen(h.x || 0, h.z || 0); return { x: +(h.x || 0).toFixed(2), z: +(h.z || 0).toFixed(2), sx: Math.round(s.x), sy: Math.round(s.y), vis: s.vis, hp: G.heroHp, hpMax: G.heroHpMax, lives: G.lives, invuln: +(G.invuln || 0).toFixed(2), fired: G.fired || 0 }; }, enemies: () => (G.enemies || []).map(e => ({ type: e.type, hp: e.maxHp, dmg: e.dmg, val: e.value, armor: e.armor, elite: e.elite && e.elite.id })) };
 </script>
 </body>
 </html>
