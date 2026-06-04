@@ -47,9 +47,9 @@ function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x 
 /* ===== Câmera + projeção ===== */
 const LIGHT = norm([-0.4, 1.0, 0.35]);
 const LIGHT2 = norm([0.5, 0.35, -0.55]);            // luz de preenchimento (suaviza faces na sombra)
-const FOG = [30, 32, 56];                           // cor da neblina (casa com o horizonte do fundo)
-const FOG_NEAR = 16, FOG_SPAN = 24, FOG_MAX = 0.74; // neblina por profundidade — "ar" de jogo 3D antigo
-const camPos = [0, 15.5, 15], camTarget = [0, 0.5, -2.5];
+const FOG = [46, 50, 78];                           // cor da neblina (casa com o horizonte do fundo)
+const FOG_NEAR = 24, FOG_SPAN = 32, FOG_MAX = 0.6;  // neblina por profundidade — "ar" de jogo 3D antigo
+const camPos = [0, 19.5, 19], camTarget = [0, 0.5, -2.5];
 let fwd, rgt, upv, CAM;
 function setupCam(shx, shy) { CAM = [camPos[0] + shx, camPos[1] + shy, camPos[2]]; fwd = norm(sub(camTarget, CAM)); rgt = norm(cross(fwd, [0, 1, 0])); upv = cross(rgt, fwd); }
 function project(p) { const r = sub(p, CAM); const depth = dot(r, fwd); if (depth < 0.05) return { vis: false }; return { vis: true, x: CX + dot(r, rgt) * F / depth, y: CY - dot(r, upv) * F / depth, depth }; }
@@ -69,7 +69,7 @@ function pushQuad(a, b, c, d, rgb, center) {
   if (dot(n, sub(fc, CAM)) >= 0) return;
   const pa = project(a), pb = project(b), pc = project(c), pd = project(d);
   if (!pa.vis || !pb.vis || !pc.vis || !pd.vis) return;
-  BUF.push({ s: [pa, pb, pc, pd], rgb, light: 0.32 + 0.54 * Math.max(0, dot(n, LIGHT)) + 0.16 * Math.max(0, dot(n, LIGHT2)), z: (pa.depth + pb.depth + pc.depth + pd.depth) / 4 });
+  BUF.push({ s: [pa, pb, pc, pd], rgb, light: 0.46 + 0.5 * Math.max(0, dot(n, LIGHT)) + 0.18 * Math.max(0, dot(n, LIGHT2)), z: (pa.depth + pb.depth + pc.depth + pd.depth) / 4 });
 }
 function box(cx, cy, cz, w, h, d, hex, cosA, sinA, pivot) {
   const rgb = rgbOf(hex), hw = w / 2, hh = h / 2, hd = d / 2, C = [];
@@ -424,9 +424,9 @@ function update(dt) {
   const mag = Math.hypot(dx, dz);
   if (mag > 0.05) {
     dx /= Math.max(1, mag); dz /= Math.max(1, mag); const sp = 5.2;
-    h.z = clamp(h.z + dz * sp * dt, -9.6, 3.6);                                  // limite vertical: não sai da tela
+    h.z = clamp(h.z + dz * sp * dt, -11.5, 4.2);                                 // limite vertical: não sai da tela
     const pxX = wScreen(1, h.z).x - wScreen(0, h.z).x;                           // px por unidade-X nesta profundidade
-    const maxX = Math.max(2.2, (CX - 44) / Math.abs(pxX || 1));                  // mantém ~44px de margem das bordas
+    const maxX = Math.max(2.2, (CX - 36) / Math.abs(pxX || 1));                  // mantém ~36px de margem das bordas
     h.x = clamp(h.x + dx * sp * dt, -maxX, maxX);                                // limite horizontal ciente da perspectiva
     h.moveAng = Math.atan2(dx, dz);
   }
@@ -483,7 +483,7 @@ function buildFloor() {
   for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
     const ax = x0 + (x1 - x0) * i / N, bx = x0 + (x1 - x0) * (i + 1) / N, az = z0 + (z1 - z0) * j / N, bz = z0 + (z1 - z0) * (j + 1) / N;
     const hsh = ((i * 73856093) ^ (j * 19349663)) >>> 0, v = (hsh & 63) / 63;       // grão determinístico 0..1
-    const base = ((i + j) & 1 ? 46 : 39) + (v - 0.5) * 11;                          // xadrez sutil + textura de pedra
+    const base = ((i + j) & 1 ? 60 : 52) + (v - 0.5) * 11;                          // xadrez sutil + textura de pedra
     pushQuad([ax, 0, az], [bx, 0, az], [bx, 0, bz], [ax, 0, bz], [base * 0.9, base * 0.97, base * 1.2], [(ax + bx) / 2, -1, (az + bz) / 2]);
   }
   // caminho de pedra clara, com leve variação por trecho
@@ -547,7 +547,7 @@ function render() {
   const g = ctx.createLinearGradient(0, 0, 0, ch); g.addColorStop(0, '#070812'); g.addColorStop(0.4, '#13162a'); g.addColorStop(0.56, '#222640'); g.addColorStop(0.8, '#171a2c'); g.addColorStop(1, '#0b0d16'); ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch);
   renderScene();
   // vinheta: escurece as bordas e foca o centro (estilo Archero)
-  const vg = ctx.createRadialGradient(CX, CY * 0.92, Math.min(cw, ch) * 0.32, CX, CY, Math.max(cw, ch) * 0.78); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.5)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, cw, ch);
+  const vg = ctx.createRadialGradient(CX, CY * 0.92, Math.min(cw, ch) * 0.32, CX, CY, Math.max(cw, ch) * 0.78); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.32)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, cw, ch);
   G.ui = [];
   if (G.state === 'playing' || G.state === 'paused') { drawPlayHud(); drawSlots(); drawFx(); drawJoystick(); }
   if (G.state === 'playing' && G.flash > 0) { ctx.fillStyle = 'rgba(' + G.flashC + ',' + G.flash + ')'; ctx.fillRect(0, 0, cw, ch); }
