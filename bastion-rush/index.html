@@ -94,13 +94,35 @@ function drawModel(parts, wx, wy, wz, ang, sc, tint) {
 }
 
 /* ===== Modelos (caixas) ===== */
+// Herói: mago chibi (mistura Archero × Kingdom Rush) — robe, chapéu pontudo e cajado com orbe
 const M_HERO = [
-  { x: -0.18, y: 0.22, z: 0, w: 0.22, h: 0.45, d: 0.26, c: '#34527e' }, { x: 0.18, y: 0.22, z: 0, w: 0.22, h: 0.45, d: 0.26, c: '#34527e' },
-  { x: 0, y: 0.72, z: 0, w: 0.62, h: 0.6, d: 0.42, c: '#3f6fb0' }, { x: 0, y: 0.78, z: 0.2, w: 0.5, h: 0.4, d: 0.08, c: '#2f568f' },
-  { x: -0.42, y: 0.74, z: 0, w: 0.18, h: 0.5, d: 0.22, c: '#365f97' }, { x: 0.42, y: 0.74, z: 0, w: 0.18, h: 0.5, d: 0.22, c: '#365f97' },
-  { x: 0, y: 1.16, z: 0, w: 0.36, h: 0.32, d: 0.34, c: '#f0c39a' }, { x: 0, y: 1.3, z: 0, w: 0.42, h: 0.18, d: 0.4, c: '#cfd3db' },
-  { x: 0, y: 1.46, z: 0, w: 0.1, h: 0.16, d: 0.1, c: '#ffcf5e' },
-  { x: 0.5, y: 0.95, z: 0.18, w: 0.08, h: 0.7, d: 0.08, c: '#7a5230' }, { x: 0.5, y: 1.34, z: 0.18, w: 0.12, h: 0.16, d: 0.04, c: '#cfd3db' },
+  // botas
+  { x: -0.13, y: 0.08, z: 0.02, w: 0.17, h: 0.16, d: 0.24, c: '#2b2740' }, { x: 0.13, y: 0.08, z: 0.02, w: 0.17, h: 0.16, d: 0.24, c: '#2b2740' },
+  // robe: barra larga -> saia -> tronco, com cinto dourado
+  { x: 0, y: 0.16, z: 0, w: 0.66, h: 0.1, d: 0.56, c: '#352e6e' },
+  { x: 0, y: 0.36, z: 0, w: 0.6, h: 0.4, d: 0.5, c: '#4a44a8' },
+  { x: 0, y: 0.74, z: 0, w: 0.5, h: 0.42, d: 0.4, c: '#4a44a8' },
+  { x: 0, y: 0.55, z: 0, w: 0.56, h: 0.1, d: 0.46, c: '#e0a93a' }, { x: 0, y: 0.55, z: 0.235, w: 0.12, h: 0.12, d: 0.05, c: '#ffe9a8' },
+  // emblema mágico no peito + capa atrás
+  { x: 0, y: 0.84, z: 0.205, w: 0.14, h: 0.16, d: 0.04, c: '#86f0ff' },
+  { x: 0, y: 0.78, z: -0.21, w: 0.46, h: 0.66, d: 0.06, c: '#372f7a' },
+  // mangas + mãos
+  { x: -0.31, y: 0.7, z: 0.04, w: 0.18, h: 0.34, d: 0.26, c: '#433d98' }, { x: 0.31, y: 0.7, z: 0.04, w: 0.18, h: 0.34, d: 0.26, c: '#433d98' },
+  { x: -0.33, y: 0.5, z: 0.14, w: 0.13, h: 0.13, d: 0.13, c: '#f2c79c' }, { x: 0.33, y: 0.5, z: 0.14, w: 0.13, h: 0.13, d: 0.13, c: '#f2c79c' },
+  // cabeça (chibi) + olhos
+  { x: 0, y: 1.12, z: 0, w: 0.42, h: 0.38, d: 0.4, c: '#f2c79c' },
+  { x: -0.1, y: 1.13, z: 0.21, w: 0.07, h: 0.11, d: 0.04, c: '#23304a' }, { x: 0.1, y: 1.13, z: 0.21, w: 0.07, h: 0.11, d: 0.04, c: '#23304a' },
+  // chapéu pontudo: aba -> faixa -> cone -> ponta
+  { x: 0, y: 1.34, z: -0.01, w: 0.62, h: 0.08, d: 0.62, c: '#5b54c8' },
+  { x: 0, y: 1.4, z: 0, w: 0.46, h: 0.08, d: 0.46, c: '#e0a93a' },
+  { x: 0.01, y: 1.5, z: -0.03, w: 0.36, h: 0.16, d: 0.36, c: '#5b54c8' },
+  { x: 0.03, y: 1.64, z: -0.07, w: 0.24, h: 0.16, d: 0.24, c: '#554ec4' },
+  { x: 0.05, y: 1.77, z: -0.11, w: 0.13, h: 0.16, d: 0.13, c: '#4f48be' },
+  // cajado: haste + suporte dourado + orbe brilhante (núcleo branco)
+  { x: 0.46, y: 0.64, z: 0.16, w: 0.06, h: 1.04, d: 0.06, c: '#6e4525' },
+  { x: 0.46, y: 1.16, z: 0.16, w: 0.13, h: 0.1, d: 0.13, c: '#e0a93a' },
+  { x: 0.46, y: 1.28, z: 0.16, w: 0.2, h: 0.2, d: 0.2, c: '#86f0ff' },
+  { x: 0.46, y: 1.28, z: 0.16, w: 0.1, h: 0.1, d: 0.1, c: '#ffffff' },
 ];
 function humanoid(body, head, o) {
   o = o || {}; const b = o.bulk || 1;
@@ -506,7 +528,7 @@ function buildDeco() {
   // colunas de pedra quebradas — dão profundidade ao cenário
   for (const p of PILLARS) { const pv = [p[0], 0, p[1]]; box(p[0], 0.18, p[1], 1.0, 0.36, 1.0, '#2b3040', 1, 0, pv); box(p[0], 1.1, p[1], 0.6, 1.6, 0.6, '#373d4f', 1, 0, pv); box(p[0], 2.0, p[1], 0.74, 0.22, 0.74, '#41485c', 1, 0, pv); }
   // braseiros (poste de pedra + brasa) — pontos de luz da arena
-  for (const t of TREES) { box(t[0], 0.5, t[1], 0.28, 1.0, 0.28, '#2a2f3e', 1, 0, [t[0], 0, t[1]]); box(t[0], 1.06, t[1], 0.46, 0.18, 0.46, '#3a4150', 1, 0, [t[0], 0, t[1]]); box(t[0], 1.32, t[1], 0.3, 0.26, 0.3, '#ff8a3c', 1, 0, [t[0], 0, t[1]]); box(t[0], 1.54, t[1], 0.17, 0.17, 0.17, '#ffd23f', 1, 0, [t[0], 0, t[1]]); }
+  for (const t of TREES) { box(t[0], 0.5, t[1], 0.28, 1.0, 0.28, '#2a2f3e', 1, 0, [t[0], 0, t[1]]); box(t[0], 1.06, t[1], 0.46, 0.18, 0.46, '#3a4150', 1, 0, [t[0], 0, t[1]]); box(t[0], 1.34, t[1], 0.34, 0.3, 0.34, '#ff7a2e', 1, 0, [t[0], 0, t[1]]); box(t[0], 1.58, t[1], 0.22, 0.22, 0.22, '#ffb43a', 1, 0, [t[0], 0, t[1]]); box(t[0], 1.76, t[1], 0.12, 0.16, 0.12, '#ffe680', 1, 0, [t[0], 0, t[1]]); }
 }
 function buildBase() {
   const x = BASEP[0], z = BASEP[1];
@@ -517,7 +539,7 @@ function buildBase() {
 }
 // muralhas da arena (paredes de pedra + portão no fundo por onde a horda entra)
 function buildWalls() {
-  const wc = '#1d212c', cap = '#2a3142', merlon = '#252b3a', y = 1.0, h = 2.0;
+  const wc = '#272d3e', cap = '#3a4258', merlon = '#323a50', y = 1.0, h = 2.0;
   // paredes laterais + ameias
   for (const sx of [-12, 12]) {
     box(sx, y, -4, 0.7, h, 22, wc, 1, 0, [sx, 0, -4]); box(sx, h + 0.05, -4, 0.95, 0.2, 22, cap, 1, 0, [sx, 0, -4]);
@@ -539,6 +561,7 @@ function renderScene() {
   const menuMode = (G.state === 'menu' || G.state === 'bestiary');
   LIGHTS = menuMode ? [{ x: 0, y: 1.5, z: -1.2, r2: 56, i: 0.6, c: [0.5, 0.58, 0.95] }]
                     : TREES.map(t => ({ x: t[0], y: 1.35, z: t[1], r2: 42, i: 1.05, c: [1.0, 0.55, 0.2] }));
+  if (!menuMode && G.hero) LIGHTS.push({ x: G.hero.x, y: 1.0, z: G.hero.z, r2: 20, i: 0.55, c: [0.42, 0.8, 0.98] });   // aura mágica do mago (clareia ao redor)
   BUF = FLOOR; buildFloor(); BUF = FACES;
   if (menuMode) { box(0, -0.05, -2, 3.6, 0.35, 3.6, '#2e2b44', 1, 0, [0, 0, -2]); drawModel(M_HERO, 0, 0, -2, G.t * 0.5, 3.1); }
   else {
