@@ -1,0 +1,19 @@
+# Dependências (o projeto não usa, mas previne commits acidentais)
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*~
+
+# Saves locais / temporários
+*.local
