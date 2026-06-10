@@ -1,8 +1,33 @@
 # CLAUDE.md — Contexto completo do projeto
 
 Guia para agentes (Claude) que pegam este repositório do zero (após `/clear`).
-**Leia inteiro antes de editar.** Última atualização: SHA `30c9f3c`, branch
-`claude/ecstatic-gauss-nCtxQ`.
+**Leia inteiro antes de editar.** Última atualização: branch
+`claude/optimistic-archimedes-1ebr2w` (Visual Dominance Edition — VFX Phase completa).
+
+---
+
+## 0. CARTA DE DESENVOLVIMENTO (Charter v3.0 — Máxima Autoridade)
+
+O agente ativo não é apenas programador — é o **departamento técnico completo**:
+Lead Architect + Technical Director + Gameplay Designer + Performance Engineer.
+
+**Lei suprema de decisão:** *"Isso aumenta a percepção de qualidade do jogador?"* → sim → prioridade alta.
+
+**Workflow obrigatório:** Estudar → Mapear → Documentar → Planejar → Implementar → Validar → Atualizar CLAUDE.md → Continuar.
+
+**Este arquivo é um documento vivo.** Atualizar após cada milestone:
+`Current Version`, `Completed Features`, `Known Issues`, `Architecture Changes`, `Next Actions`.
+
+**KPIs oficiais:**
+- Visual: 4/10 atual → **meta 8.5/10**
+- Sessão média: 5 min atual → **meta 20+ min**
+- Todo ataque deve gerar: som + partículas + impacto + shake + feedback visual
+
+**Referências de qualidade:** Kingdom Rush 5, Archero 2, Hades (game feel / feedback / progressão)
+
+**Regra de ouro da performance:** 60 FPS com 100 inimigos simultâneos.
+
+**Critérios Steam (long-term):** 4 mapas, 4 bosses, 20 inimigos, 4 torres, 50 upgrades, ≥8/10 visual, ≥20 min retenção.
 
 ---
 
@@ -331,12 +356,12 @@ main.js` (scripts clássicos compartilham escopo léxico global).
 
 - Repositório: `o4rauto/Kingsho-confidence` (o nome tem maiúsculas; nas chamadas
   da API GitHub MCP o usuário às vezes aparece como `o4rauto/kingsho-confidence`).
-- Branch de trabalho: **`claude/ecstatic-gauss-nCtxQ`** (é a default; o repo
-  nasceu **vazio**, então essa branch virou default no 1º push). Há uma branch
-  **`main`** com um **commit inicial vazio** criada só para servir de base do
-  **PR #1 (draft)**.
-- Sempre: `git push -u origin claude/ecstatic-gauss-nCtxQ`. Após push, garantir
-  que o PR draft existe (já existe, #1).
+- Branch de trabalho ativa: **`claude/optimistic-archimedes-1ebr2w`**. Branch
+  legada `claude/ecstatic-gauss-nCtxQ` ainda existe mas a ativa é esta.
+  Há uma branch **`main`** com um **commit inicial vazio** criada só para servir
+  de base do **PR draft**.
+- Sempre: `git push -u origin claude/optimistic-archimedes-1ebr2w`. Após push,
+  garantir que o PR draft existe.
 - Commits terminam com a linha de sessão:
   `https://claude.ai/code/session_...`.
 - **NÃO** colocar o ID do modelo em commits/PR/código.
@@ -367,7 +392,7 @@ main.js` (scripts clássicos compartilham escopo léxico global).
 > A lista abaixo é **histórico**; o ROADMAP é a **fonte da verdade** do que vem.
 > Já feito do M0: clamp do herói à tela (perspectiva) + hook `BR.hero`.
 
-- **✅ Feito:** Bastion Rush 3D; herói móvel (joystick/WASD); campanha procedural
+- **✅ Feito (base):** Bastion Rush 3D; herói móvel (joystick/WASD); campanha procedural
   2500 fases (vencer p/ avançar, recompensa única, 3–7 hordas, monstro novo a
   cada 4 níveis até ~52); 13 monstros + 3 bosses com comportamentos (heal/split/
   regen/burst/armor/fly); bestiário (KR-like, `META.seen`); menu CR-like com herói
@@ -376,7 +401,20 @@ main.js` (scripts clássicos compartilham escopo léxico global).
   **variantes de elite** (4 afixos: recolor + buffs + habilidade extra, a partir
   da fase 24, com aura/marca e aviso na Campanha); **visual estilo Archero**
   (arena escura + muralhas + braseiros, sombras de contato, vinheta, projéteis
-  brilhantes, barras de vida sobre inimigos).
+  brilhantes, barras de vida sobre inimigos);
+  **4 tipos de torre** (arqueira/mágica/quartel/artilharia, seleção radial, upgrade
+  por nível, slow + AOE + ignoreArmor); herói atira só parado; 3 vidas.
+- **✅ Feito (Visual Dominance Edition — Charter Fases 1+2+7):**
+  screen shake (small/medium/large), hit stop (`G.hitStop`), partículas físicas
+  estilizadas (spark/blood/dust/explosion/shockwave), números flutuantes animados
+  com punch-in para crits (escala 1.5×), críticos 15% (2× dmg, dourado, shake+stop),
+  glow dos braseiros com `'lighter'` pulsante, glow do orbe do mago pulsante,
+  trails de projéteis estilo Archero (N pontos 3D → `project()`), flash de hit nos
+  inimigos (radial branco, `'lighter'`), HUD com barras gradiente (verde↔laranja↔vermelho
+  herói / azul↔vermelho base / ouro progresso), `drawBossBar()` (barra full-width +
+  gradiente rosa + nome, visível na fase), `drawBossIntro()` (overlay cinemático
+  com fade-in/out, nome grande gradiente, "BOSS APARECEU"), impact rings
+  expandindo no hit, embers ambientes dos braseiros (`'lighter'` flutuando).
 - **🔜 Próximo (dá p/ fazer aqui, single-player):**
   1. **Loop estilo Archero — "salas fechadas"** (pedido pelo usuário): trocar a
      horda-até-a-base por salas que liberam a saída ao limpar os inimigos. Muda o
