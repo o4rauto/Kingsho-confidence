@@ -29,6 +29,18 @@ Lead Architect + Technical Director + Gameplay Designer + Performance Engineer.
 
 **Critérios Steam (long-term):** 4 mapas, 4 bosses, 20 inimigos, 4 torres, 50 upgrades, ≥8/10 visual, ≥20 min retenção.
 
+### Nota sobre "Living World Edition" e chartes Unity/C#
+
+O usuário enviou chartes que referenciam Unity (MonoBehaviour, ScriptableObjects, FMOD, ShaderGraph). **Esses são PADRÕES DE REFERÊNCIA de qualidade — não instruções literais**. O Bastion Rush é intencionalmente **Canvas 2D single-file sem dependências** (decisão arquitetural registrada na seção 7). Adaptamos os princípios ao nosso stack:
+- *BiomeSystem* → variantes de mapa via SLOTS/TREES/LIGHTS por fase
+- *EnemyIconSystem* → MODELS[] com caixas únicas por tipo + elite tints + glow
+- *TowerFantasySystem* → towerModelFor() com partes extras por nível + LIGHTS coloridos
+- *JuiceManager* → screen shake, hit stop, particles, impact rings (já implementados)
+- *DamageSystem* → damageEnemy() com crit, armor, doom, drain, freeze, run upgrades
+- *Arquitetura src/core/engine/gameplay/...* → seções dentro do script único (helpers → motor 3D → modelos → monstros → campanha → save → áudio → estado/loop → input → update → render → UI)
+
+**NÃO** splittar em múltiplos arquivos nem adicionar build system — quebra o workflow de APK (single-file → Capacitor) e o sandbox de teste.
+
 ---
 
 ## 1. Visão geral
@@ -404,6 +416,14 @@ main.js` (scripts clássicos compartilham escopo léxico global).
   brilhantes, barras de vida sobre inimigos);
   **4 tipos de torre** (arqueira/mágica/quartel/artilharia, seleção radial, upgrade
   por nível, slow + AOE + ignoreArmor); herói atira só parado; 3 vidas.
+- **✅ Feito (Charter Fases 3+4+5):**
+  torres com modelos 3D únicos (Arqueira/Mágica/Quartel/Artilharia), towerModelFor()
+  com partes extras por nível 2–5 (bandeira/cristal/cinto/cano → espadarte/runas/pilares/escudo → capacete/runas gold/trim/rebites → coroa dourada), LIGHTS por tipo (verde/roxo/gold/laranja escalando com nível), glow ambiental das torres em drawFx().
+- **✅ Feito (Charter Fase 8 — Sistema Roguelite):**
+  20 upgrades em 4 raridades (Comum/Raro/Épico/Lendário) com efeitos reais:
+  dmgMult, cdMult, rangeBon, multiShot (2/3 projéteis), projBig, pierce, critBonus,
+  critMult (3×), drainFrac, explodeKill, freezeChance, ultFaster, baseRegen, doomPct, vampKill.
+  Tela de escolha entre hordas (overlay premium com 3 cards, cor por raridade). G.run object.
 - **✅ Feito (Visual Dominance Edition — Charter Fases 1+2+7):**
   screen shake (small/medium/large), hit stop (`G.hitStop`), partículas físicas
   estilizadas (spark/blood/dust/explosion/shockwave), números flutuantes animados
