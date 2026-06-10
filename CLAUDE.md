@@ -424,6 +424,15 @@ main.js` (scripts clássicos compartilham escopo léxico global).
   dmgMult, cdMult, rangeBon, multiShot (2/3 projéteis), projBig, pierce, critBonus,
   critMult (3×), drainFrac, explodeKill, freezeChance, ultFaster, baseRegen, doomPct, vampKill.
   Tela de escolha entre hordas (overlay premium com 3 cards, cor por raridade). G.run object.
+  `G.runUpgrades[]` rastreia poderes escolhidos; chips coloridos no HUD (abaixo do painel esquerdo).
+  HUD: painel central mostra "HORDA X/Y" p/ o jogador saber quando o próximo upgrade chega.
+- **✅ Feito (Arena Map Overhaul):**
+  caminho 67% mais largo (1.05→1.75 half-width) com pedra quente contrastando com chão frio;
+  marcadores de pedra nas bordas do caminho; muralhas 70% mais altas (2.0→3.4), torres do portão
+  com tochas no topo; 8 braseiros (era 6) para melhor iluminação ambiental; S-curve mais dramática;
+  muro frontal da arena. Modelos de inimigo: ogro reconstruído (torso largo, ombros projetados,
+  cabeça gigante com presas e olhos vermelhos), couraçado com espaldar + viseira, voador com
+  asas 2× maiores + membrana interna mais clara.
 - **✅ Feito (Visual Dominance Edition — Charter Fases 1+2+7):**
   screen shake (small/medium/large), hit stop (`G.hitStop`), partículas físicas
   estilizadas (spark/blood/dust/explosion/shockwave), números flutuantes animados
@@ -469,5 +478,5 @@ main.js` (scripts clássicos compartilham escopo léxico global).
 
 ## 10. Links úteis
 
-- Jogar (último SHA): `https://raw.githack.com/o4rauto/Kingsho-confidence/30c9f3ccce6d06095e6fb6292c2e79b77047d375/bastion-rush/index.html`
-- PR draft: #1 (base `main` ← `claude/ecstatic-gauss-nCtxQ`).
+- Jogar (último SHA): `https://raw.githack.com/o4rauto/Kingsho-confidence/a849bd96906eb6851ee8c31e2c7a3c96327e8b5c/bastion-rush/index.html`
+- PR draft: #2 (base `main` ← `claude/optimistic-archimedes-1ebr2w`).
