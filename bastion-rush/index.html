@@ -348,6 +348,46 @@ const ELITES = [
 const ELITE_BY_ID = {}; for (const e of ELITES) ELITE_BY_ID[e.id] = e;
 // 0 até a fase 24; sobe ~0.85%/fase até o teto de 55% (≈fase 88)
 function eliteChance(n) { return n < 24 ? 0 : Math.min(0.55, (n - 24) * 0.0085); }
+
+/* ===== Upgrades roguelite (escolha entre hordas) ===== */
+const UPGRADES = [
+  // Comum (r:0)
+  { id:'dmg1',   n:'Impacto',        a:'Herói +25% dano',              r:0, apply:g=>{g.run.dmgMult  *=1.25;} },
+  { id:'cd1',    n:'Velocidade',     a:'Herói -20% intervalo',          r:0, apply:g=>{g.run.cdMult   *=0.80;} },
+  { id:'range1', n:'Alcance',        a:'Herói +1.5 de alcance',         r:0, apply:g=>{g.run.rangeBon +=1.5;}  },
+  { id:'base1',  n:'Muralha Reforçada', a:'Base +25 HP máximo',         r:0, apply:g=>{g.baseHp=Math.min(g.baseHp+25,g.baseHpMax+=25);} },
+  // Raro (r:1)
+  { id:'bigp',   n:'Projétil Pesado',a:'+60% tamanho do projétil',      r:1, apply:g=>{g.run.projBig  *=1.6;}  },
+  { id:'dmg2',   n:'Força Bruta',    a:'Herói +55% dano',               r:1, apply:g=>{g.run.dmgMult  *=1.55;} },
+  { id:'cd2',    n:'Fúria',          a:'Herói -30% intervalo',          r:1, apply:g=>{g.run.cdMult   *=0.70;} },
+  { id:'crit1',  n:'Olho de Águia',  a:'+12% chance crítico',           r:1, apply:g=>{g.run.critBonus+=0.12;} },
+  { id:'drain',  n:'Drenar Mana',    a:'15% do dano restaura base HP',  r:1, apply:g=>{g.run.drainFrac+=0.15;} },
+  { id:'pierce', n:'Perfurante',     a:'Projétil atravessa 1 inimigo',  r:1, apply:g=>{g.run.pierce   +=1;}    },
+  // Épico (r:2)
+  { id:'multi2', n:'Duplo Tiro',     a:'Dispara 2 projéteis por ataque',r:2, apply:g=>{g.run.multiShot=Math.max(g.run.multiShot,2);} },
+  { id:'explode',n:'Explosão Fatal', a:'Abater causa mini explosão AoE',r:2, apply:g=>{g.run.explodeKill=true;} },
+  { id:'freeze', n:'Gelo',           a:'25% chance de congelar 0.8s',   r:2, apply:g=>{g.run.freezeChance+=0.25;} },
+  { id:'ultfast',n:'Canalização',    a:'ULT carrega 60% mais rápido',   r:2, apply:g=>{g.run.ultFaster*=1.6;}  },
+  { id:'crit2',  n:'Golpe Mortal',   a:'Crits causam 3× dano',          r:2, apply:g=>{g.run.critMult  =3;}     },
+  { id:'regen',  n:'Restauração',    a:'Base regenera 2 HP/s',          r:2, apply:g=>{g.run.baseRegen+=2;}    },
+  // Lendário (r:3)
+  { id:'multi3', n:'Triplo Tiro',    a:'Dispara 3 projéteis por ataque',r:3, apply:g=>{g.run.multiShot=Math.max(g.run.multiShot,3);} },
+  { id:'doom',   n:'Execução',       a:'Abate inimigos com <20% HP',    r:3, apply:g=>{g.run.doomPct=Math.max(g.run.doomPct,0.20);} },
+  { id:'vamp',   n:'Vampirismo',     a:'Abater recupera 3 HP da base',  r:3, apply:g=>{g.run.vampKill=true;}  },
+  { id:'mega',   n:'Sobrecarga',     a:'+80% dano e -25% intervalo',    r:3, apply:g=>{g.run.dmgMult*=1.8;g.run.cdMult*=0.75;} },
+];
+const UPG_RAR_COL = ['#9aa6c0','#4a9eff','#9D4EDD','#ffcf5e'];
+const UPG_RAR_NM  = ['Comum','Raro','Épico','Lendário'];
+function pickUpgrades(n) {
+  const W = [60, 30, 8, 2]; const used = new Set(); const res = [];
+  for (let att = 0; att < 40 && res.length < n; att++) {
+    const tw = UPGRADES.reduce((s,u)=>used.has(u.id)?s:s+W[u.r],0);
+    let rv = Math.random()*tw;
+    for (const u of UPGRADES) { if (used.has(u.id)) continue; rv-=W[u.r]; if (rv<=0){res.push(u.id);used.add(u.id);break;} }
+  }
+  return res;
+}
+
 function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function shuffle(arr, r) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const tmp = a[i]; a[i] = a[j]; a[j] = tmp; } return a; }
 function genLevel(n) {
@@ -362,7 +402,7 @@ function genLevel(n) {
     const types = shuffle(pool, r).slice(0, k);
     for (const ty of types) {
       let count = 3 + Math.floor(r() * 4) + Math.floor(n / 40); if (ty === 'swarm') count += 4;
-      const g = { type: ty, count: Math.min(24, count), gap: 0.32 + r() * 0.4 };
+      const g = { type: ty, count: Math.min(24, count), gap: 0.32 + r() * 0.4, h };
       // só consome RNG p/ elite quando ec>0 → fases <24 mantêm o layout antigo
       if (ec && r() < ec) g.elite = ELITES[Math.floor(r() * ELITES.length)].id;
       groups.push(g);
@@ -398,6 +438,7 @@ const SND = (function () {
     skill() { tone(300, 0.2, 'sawtooth', 0.18, 900); }, ult() { noise(0.4, 0.28); [200, 400, 800].forEach((f, i) => setTimeout(() => tone(f, 0.25, 'sawtooth', 0.22), i * 60)); },
     win() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.18, 'triangle', 0.22), i * 120)); },
     lose() { [440, 330, 220].forEach((f, i) => setTimeout(() => tone(f, 0.3, 'triangle', 0.22), i * 160)); },
+    upgrade() { [660, 880, 1100, 1320].forEach((f, i) => setTimeout(() => tone(f, 0.12, 'sine', 0.18), i * 55)); },
   };
 })();
 function vibe(ms) { if (META.vibe && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) {} }
@@ -442,6 +483,10 @@ function startLevel(n) {
     shake: 0, flash: 0, flashC: '255,255,255', coinPulse: 0, slotScr: [], ui: [],
     joy: null, keys: {}, hitStop: 0,
     rings: [], embers: [], bossIntro: null, treeScreenPos: null,
+    run: { dmgMult:1, cdMult:1, rangeBon:0, multiShot:1, projBig:1, pierce:0,
+           critBonus:0, critMult:2, drainFrac:0, explodeKill:false,
+           freezeChance:0, ultFaster:1, baseRegen:0, doomPct:0, vampKill:false },
+    upgradeHorde: 0, upgradeOpts: [], pendingUpgrade: false,
   };
   banner('Fase ' + n);
   if (n === 1) G.texts.push({ x: CX, y: ch * 0.46, v: 'Arraste p/ mover • use HAB e ULT', life: 4.5, col: '#fff', vy: -3, sz: 16 });
@@ -543,19 +588,26 @@ function spawnAt(type, d, eliteId) {
 }
 function damageEnemy(e, dmg, isHero, flags) {
   flags = flags || {};
+  const run = G.run || {};
   let isCrit = false;
   if (isHero) {
-    if (Math.random() < 0.15) {
+    const critChance = 0.15 + (run.critBonus || 0);
+    if (Math.random() < critChance) {
       isCrit = true;
-      dmg *= 2.0;
+      dmg *= run.critMult || 2.0;
     }
   }
   if (!flags.ignoreArmor) dmg = dmg * (1 - e.armor);
+  // doom: instant kill below threshold
+  if (isHero && run.doomPct > 0 && e.hp / e.maxHp < run.doomPct) { dmg = e.hp + 1; }
   e.hp -= dmg;
   e.hit = 0.12;
   if (flags.slow && !e.boss) { e.slowTimer = 1.2; e.slowFactor = flags.slow; }
+  if (isHero && run.freezeChance > 0 && Math.random() < run.freezeChance && !e.boss) { e.slowTimer = 0.8; e.slowFactor = 0.05; }
   SND.hit();
-  if (G.ultCharge != null) G.ultCharge = clamp(G.ultCharge + dmg * 0.0012, 0, 1);
+  const ultGain = dmg * 0.0012 * (run.ultFaster || 1);
+  if (G.ultCharge != null) G.ultCharge = clamp(G.ultCharge + ultGain, 0, 1);
+  if (isHero && run.drainFrac > 0) G.baseHp = Math.min(G.baseHpMax, G.baseHp + dmg * run.drainFrac);
   const s = wScreen(e.x, e.z);
   if (s.vis) {
     const dcol = isCrit ? '#ffcf5e' : (e.boss ? '#ffd23f' : (e.elite ? e.elite.tint : '#ffffff'));
@@ -590,6 +642,10 @@ function killEnemy(e) {
     }
   }
   if (s.vis) G.coins3.push({ x: e.x, z: e.z, sx: s.x, sy: s.y, t: 0, amount: e.value });
+  // run upgrade effects on kill
+  const run = G.run || {};
+  if (run.explodeKill && s.vis) { for (const oe of G.enemies) if (!oe.dead && Math.hypot(oe.x-e.x,oe.z-e.z)<2.0) damageEnemy(oe,15,false,{}); }
+  if (run.vampKill) G.baseHp = Math.min(G.baseHpMax, G.baseHp + 3);
   const sp = TYPES[e.type].split;
   if (sp) for (let i = 0; i < sp.count; i++) spawnAt(sp.into, Math.max(0, e.d - rand(0.1, 0.6)));
 }
@@ -669,6 +725,13 @@ function doAction(act) {
   else if (act === 'next') startLevel(G.level + 1);
   else if (act === 'buy:dmg') { if (META.coins >= costDmg()) { META.coins -= costDmg(); META.dmgLvl++; saveMeta(); updateHeroOrbColor(); } }
   else if (act === 'buy:rate') { if (META.coins >= costRate()) { META.coins -= costRate(); META.rateLvl++; saveMeta(); } }
+  else if (act.startsWith('upg:')) {
+    const upg = UPGRADES.find(u => u.id === act.slice(4));
+    if (upg && G.run) {
+      upg.apply(G); G.state = 'playing';
+      banner('✦ ' + upg.n); flash('134,240,255', 0.3); SND.upgrade(); vibe(25);
+    }
+  }
 }
 function buyTower(i) {
   const l = G.towers[i];
@@ -734,14 +797,33 @@ function update(dt) {
   if (G.bossIntro && G.bossIntro.timer > 0) G.bossIntro.timer -= dt;
   if (G.embers != null && G.treeScreenPos) { if (Math.random() < dt * 22) { const sp = G.treeScreenPos[Math.floor(Math.random() * G.treeScreenPos.length)]; if (sp && sp.vis) G.embers.push({ x: sp.x + rand(-5,5), y: sp.y, vy: rand(-50,-120), vx: rand(-12,12), life: rand(0.5,1.4), r: rand(1.5,3.5), col: Math.random() < 0.6 ? '#ff9a3c' : '#ffcf5e' }); } for (const em of G.embers) { em.x += em.vx * dt; em.y += em.vy * dt; em.r = Math.max(0.2, em.r * (1 - dt * 0.45)); em.life -= dt; } G.embers = G.embers.filter(em => em.life > 0); }
 
+  // base regen from run upgrade
+  if (G.run && G.run.baseRegen > 0) G.baseHp = Math.min(G.baseHpMax, G.baseHp + G.run.baseRegen * dt);
+  // ult charge acelerado por run
+  if (G.run && G.run.ultFaster !== 1) { /* applied per-damage in damageEnemy */ }
   // spawns da fase
   if (!G.spawnedAll) {
     G.gtimer -= dt;
     if (G.gtimer <= 0) {
       const grp = G.gen.groups[G.gi];
       spawnEnemy(grp.type, grp.elite); G.gc++;
-      if (G.gc >= grp.count) { G.gi++; G.gc = 0; if (G.gi >= G.gen.groups.length) G.spawnedAll = true; else G.gtimer = 0.9; }
-      else G.gtimer = grp.gap;
+      if (G.gc >= grp.count) {
+        const prevH = grp.h || 0; G.gi++; G.gc = 0;
+        if (G.gi >= G.gen.groups.length) {
+          G.spawnedAll = true;
+        } else {
+          const nextH = G.gen.groups[G.gi].h || 0;
+          if (nextH > prevH) { G.pendingUpgrade = true; G.gtimer = 9999; }
+          else G.gtimer = 0.9;
+        }
+      } else G.gtimer = grp.gap;
+    }
+    // show upgrade when current horde cleared
+    if (G.pendingUpgrade && G.enemies.length === 0) {
+      G.pendingUpgrade = false; G.upgradeHorde++;
+      G.upgradeOpts = pickUpgrades(3);
+      G.state = 'upgrade'; G.gtimer = 1.0;
+      flash('134,240,255', 0.35); SND.upgrade(); vibe(30);
     }
   } else if (G.enemies.length === 0) return win();
 
@@ -763,15 +845,25 @@ function update(dt) {
   // ataque do herói — só PARADO (estilo Archero): andando, vira p/ o movimento e NÃO atira
   G.heroCool -= dt * 1000;
   const moving = mag > 0.05;
-  let tg = nearestTo(h.x, h.z, 6.5);
+  const run = G.run || {};
+  let tg = nearestTo(h.x, h.z, 6.5 + (run.rangeBon || 0));
   if (moving) h.ang = h.moveAng;
   else if (tg) {
     h.ang = Math.atan2(tg.x - h.x, tg.z - h.z);
-    if (G.heroCool <= 0) {                                                        // o tiro sai do orbe no topo do cajado
-      const ca = Math.cos(h.ang), sa = Math.sin(h.ang);                           // orbe local (0.46, 1.28, 0.16) girado pelo ângulo
+    if (G.heroCool <= 0) {
+      const ca = Math.cos(h.ang), sa = Math.sin(h.ang);
       const proj = getHeroProjProps();
-      shoot(h.x + 0.46 * ca + 0.16 * sa, h.z - 0.46 * sa + 0.16 * ca, tg, heroDmg(), proj.color, 1.28, true, proj.size, proj.speed);
-      G.heroCool = heroCD(); G.fired = (G.fired || 0) + 1;
+      const dmg = heroDmg() * (run.dmgMult || 1);
+      const sz = proj.size * (run.projBig || 1);
+      const flags = {};
+      if (run.pierce > 0) flags.pierce = run.pierce;
+      if (run.freezeChance > 0) flags.freezeChance = run.freezeChance;
+      shoot(h.x + 0.46 * ca + 0.16 * sa, h.z - 0.46 * sa + 0.16 * ca, tg, dmg, proj.color, 1.28, true, sz, proj.speed, flags);
+      // multiShot: extra shots at ±angle
+      const ms = run.multiShot || 1;
+      if (ms >= 2) { const a2 = h.ang + 0.22; shoot(h.x + 0.46*Math.cos(a2)+0.16*Math.sin(a2), h.z - 0.46*Math.sin(a2)+0.16*Math.cos(a2), tg, dmg*0.8, proj.color, 1.28, true, sz*0.85, proj.speed, flags); }
+      if (ms >= 3) { const a3 = h.ang - 0.22; shoot(h.x + 0.46*Math.cos(a3)+0.16*Math.sin(a3), h.z - 0.46*Math.sin(a3)+0.16*Math.cos(a3), tg, dmg*0.8, proj.color, 1.28, true, sz*0.85, proj.speed, flags); }
+      G.heroCool = heroCD() * (run.cdMult || 1); G.fired = (G.fired || 0) + 1;
     }
   }
   // torres (cada tipo tem stats próprios)
@@ -975,8 +1067,9 @@ function render() {
   const vg = ctx.createRadialGradient(CX, CY * 0.92, Math.min(cw, ch) * 0.32, CX, CY, Math.max(cw, ch) * 0.78); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.42)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, cw, ch);
   G.ui = [];
   if (G.state === 'playing' || G.state === 'paused') { drawPlayHud(); drawSlots(); drawFx(); drawJoystick(); }
-  if (G.state === 'playing' && G.flash > 0) { ctx.fillStyle = 'rgba(' + G.flashC + ',' + G.flash + ')'; ctx.fillRect(0, 0, cw, ch); }
+  if ((G.state === 'playing' || G.state === 'upgrade') && G.flash > 0) { ctx.fillStyle = 'rgba(' + G.flashC + ',' + G.flash + ')'; ctx.fillRect(0, 0, cw, ch); }
   if (G.state === 'playing' && G.bossIntro && G.bossIntro.timer > 0) drawBossIntro();
+  if (G.state === 'upgrade') { drawPlayHud(); drawUpgrade(); }
   if (G.state === 'menu') drawMenu();
   else if (G.state === 'campaign') drawCampaign();
   else if (G.state === 'bestiary') drawBestiary();
@@ -1328,6 +1421,37 @@ function drawBossIntro() {
   grad.addColorStop(0, '#ff60b0'); grad.addColorStop(0.5, '#ffcf5e'); grad.addColorStop(1, '#ff60b0');
   ctx.fillStyle = grad; ctx.fillText(G.bossIntro.name, CX, ch * 0.28 + 78);
   ctx.textAlign = 'left'; ctx.restore();
+}
+function drawUpgrade() {
+  ctx.fillStyle = 'rgba(4,8,20,0.88)'; ctx.fillRect(0, 0, cw, ch);
+  ctx.textAlign = 'center';
+  ctx.font = '900 26px system-ui'; ctx.lineWidth = 6; ctx.strokeStyle = '#000';
+  ctx.strokeText('UPGRADE!', CX, ch * 0.14 + 4); ctx.fillStyle = '#ffcf5e'; ctx.fillText('UPGRADE!', CX, ch * 0.14 + 4);
+  ctx.font = '700 13px system-ui'; ctx.fillStyle = '#8b93a5';
+  ctx.fillText('Horda ' + (G.upgradeHorde || 1) + ' vencida — escolha um poder', CX, ch * 0.14 + 30);
+  const opts = G.upgradeOpts || [], cardH = 102, gap = 10;
+  const totalH = opts.length * cardH + (opts.length - 1) * gap;
+  const startY = ch * 0.22;
+  for (let i = 0; i < opts.length; i++) {
+    const upg = UPGRADES.find(u => u.id === opts[i]); if (!upg) continue;
+    const x = 18, y = startY + i * (cardH + gap), w = cw - 36;
+    rr(x, y, w, cardH, 14); ctx.fillStyle = 'rgba(14,18,30,0.97)'; ctx.fill();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = UPG_RAR_COL[upg.r]; ctx.stroke();
+    // Rarity tag
+    ctx.font = '700 10px system-ui'; ctx.fillStyle = UPG_RAR_COL[upg.r]; ctx.textAlign = 'left';
+    ctx.fillText(UPG_RAR_NM[upg.r].toUpperCase(), x + 16, y + 20);
+    // Name
+    ctx.font = '900 20px system-ui'; ctx.fillStyle = '#fff';
+    ctx.fillText(upg.n, x + 16, y + 48);
+    // Desc
+    ctx.font = '600 14px system-ui'; ctx.fillStyle = '#aab3c5';
+    ctx.fillText(upg.a, x + 16, y + 72);
+    // Tap hint
+    ctx.font = '700 10px system-ui'; ctx.fillStyle = UPG_RAR_COL[upg.r]; ctx.textAlign = 'right';
+    ctx.fillText('TOQUE PARA ESCOLHER >', x + w - 14, y + cardH - 10);
+    G.ui.push({ x, y, w, h: cardH, act: 'upg:' + upg.id });
+  }
+  ctx.textAlign = 'left';
 }
 function drawJoystick() {
   if (!G.joy) { panel(16, ch - 150, 150, 30, 12); ctx.fillStyle = '#aab3c5'; ctx.font = '700 12px system-ui'; ctx.textAlign = 'center'; ctx.fillText('arraste p/ mover o herói', 91, ch - 130); ctx.textAlign = 'left'; return; }
