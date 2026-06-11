@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Lint & smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Syntax check (todos os scripts)
+        run: |
+          for f in js/*.js test/*.js verify.js tools/*.js; do
+            echo "node --check $f"
+            node --check "$f"
+          done
+
+      - name: Smoke test do motor
+        run: node test/smoke.test.js
+
+  verify-game:
+    name: Verify do jogo real (Playwright headless)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps (playwright + three)
+        run: npm install --no-audit --no-fund
+
+      - name: Install Chromium (Playwright)
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke test do motor
+        run: npm test
+
+      - name: Verify Bastion Rush (carrega o jogo + console errors + screenshot)
+        run: node verify.js
+
+      - name: Spike Three.js — WebGL headless + screenshot
+        run: node tools/verify-webgl.js
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-screenshots
+          path: |
+            verify_screenshot.png
+            tools/webgl_spike_screenshot.png
+          if-no-files-found: warn

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1f2e">
+  <meta name="description" content="Frontier Bastion — jogo original de estratégia de sobrevivência: construa sua fortaleza, treine tropas e defenda-se das hordas.">
+  <title>Frontier Bastion</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
+</head>
+<body>
+  <div id="app">
+    <!-- Cabeçalho: marca + poder + recursos -->
+    <header id="topbar">
+      <div class="brand">
+        <span class="brand-mark">🏰</span>
+        <div class="brand-text">
+          <span class="brand-name">Frontier Bastion</span>
+          <span class="brand-power">⚡ Poder <b id="power-val">0</b></span>
+        </div>
+        <button id="missions-btn" class="missions-btn" data-missions="1" title="Missões e recompensas">
+          📜<span id="missions-badge" class="badge" hidden>0</span>
+        </button>
+      </div>
+      <div id="resbar"></div>
+    </header>
+
+    <!-- Conteúdo da tela ativa -->
+    <main id="screen"></main>
+
+    <!-- Navegação inferior -->
+    <nav id="navbar"></nav>
+  </div>
+
+  <!-- Notificações e modais -->
+  <div id="toast" class="toast"></div>
+  <div id="modal" class="modal"></div>
+
+  <!-- Botão de reinício (canto) -->
+  <button id="reset-btn" title="Reiniciar progresso">↺</button>
+
+  <!-- Scripts (ordem importa: dados → motor → telas → combate → main) -->
+  <script src="js/data.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/screens.js"></script>
+  <script src="js/combat.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "name": "kingsho-confidence",
+  "version": "1.0.0",
+  "description": "Bastion Rush — jogo de ação/tower-defense 3D low-poly (herói + hordas), inspirado no gênero; fusão Archero × Kingdom Rush em desenvolvimento. Inclui o protótipo Frontier Bastion (estratégia). HTML/CSS/JS puro, sem build, 0 dependências.",
+  "private": true,
+  "scripts": {
+    "test": "node test/smoke.test.js",
+    "verify": "node verify.js",
+    "verify:webgl": "node tools/verify-webgl.js",
+    "start": "python3 -m http.server 8000",
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "game",
+    "action",
+    "tower-defense",
+    "3d",
+    "canvas",
+    "roguelike",
+    "archero-like",
+    "kingdom-rush-like",
+    "vanilla-js",
+    "mobile"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "playwright": "^1.56.1",
+    "three": "^0.184.0"
+  }
+}
