@@ -17,3 +17,11 @@ Thumbs.db
 
 # Saves locais / temporários
 *.local
+
+# Artefatos de verificação QA (gerados por verify.js / verify-webgl.js;
+# o CI os publica como artifacts — não versionar)
+verify_screenshot.png
+tools/webgl_spike_screenshot.png
+
+# Lockfile (projeto sem build; CI usa npm install)
+package-lock.json

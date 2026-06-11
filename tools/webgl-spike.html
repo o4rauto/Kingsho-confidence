@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WebGL Spike — Three.js headless</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b0e14; overflow: hidden; }
+    #info { position: fixed; left: 8px; top: 8px; color: #8fd; font: 12px monospace; }
+  </style>
+  <!--
+    SPIKE de Modelos (raia QA dá suporte): prova que o CI consegue rodar Three.js
+    (WebGL) em Chromium headless e capturar screenshot.
+    Three.js é servido LOCALMENTE de /node_modules (sem CDN — a CDN é bloqueada no
+    sandbox). No CI, `npm install` traz o pacote `three`.
+  -->
+  <script type="importmap">
+    { "imports": { "three": "/node_modules/three/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div id="info">webgl-spike: inicializando…</div>
+  <script type="module">
+    import * as THREE from 'three';
+
+    const info = document.getElementById('info');
+    // Sinalizadores lidos pelo verificador headless.
+    window.SPIKE = { ready: false, frames: 0, renderer: null, error: null };
+
+    try {
+      const W = 460, H = 880;
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0b0e14);
+
+      const camera = new THREE.PerspectiveCamera(46, W / H, 0.1, 100);
+      camera.position.set(0, 1.4, 4);
+      camera.lookAt(0, 0, 0);
+
+      // preserveDrawingBuffer: permite ler pixels do canvas (getImageData) p/
+      // o verificador provar que não está vazio.
+      const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      renderer.setSize(W, H);
+      renderer.setPixelRatio(1);
+      document.body.appendChild(renderer.domElement);
+      window.SPIKE.renderer = renderer.getContext().constructor.name;
+
+      // Luzes + um cubo low-poly girando (modelo de teste, próprio).
+      scene.add(new THREE.AmbientLight(0x404858, 1.2));
+      const key = new THREE.DirectionalLight(0xffe6c0, 1.6);
+      key.position.set(3, 5, 4);
+      scene.add(key);
+
+      const cube = new THREE.Mesh(
+        new THREE.BoxGeometry(1.4, 1.4, 1.4),
+        new THREE.MeshStandardMaterial({ color: 0xe08a2e, roughness: 0.5, metalness: 0.1 })
+      );
+      scene.add(cube);
+
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(8, 8),
+        new THREE.MeshStandardMaterial({ color: 0x2a2f3a })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = -1.2;
+      scene.add(floor);
+
+      function tick() {
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.017;
+        renderer.render(scene, camera);
+        window.SPIKE.frames++;
+        window.SPIKE.ready = true;
+        info.textContent = 'webgl-spike: OK (' + window.SPIKE.renderer + ') frames=' + window.SPIKE.frames;
+        requestAnimationFrame(tick);
+      }
+      tick();
+    } catch (e) {
+      window.SPIKE.error = String(e && e.message ? e.message : e);
+      info.textContent = 'webgl-spike: ERRO ' + window.SPIKE.error;
+      console.error('spike error:', window.SPIKE.error);
+    }
+  </script>
+</body>
+</html>
