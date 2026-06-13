@@ -507,6 +507,7 @@ function startLevel(n) {
            critBonus:0, critMult:2, drainFrac:0, explodeKill:false,
            freezeChance:0, ultFaster:1, baseRegen:0, doomPct:0, vampKill:false },
     upgradeHorde: 0, upgradeOpts: [], pendingUpgrade: false, runUpgrades: [],
+    killStreak: 0, streakTimer: 0,
   };
   banner('Fase ' + n);
   if (n === 1) G.texts.push({ x: CX, y: ch * 0.46, v: 'Arraste p/ mover • use HAB e ULT', life: 4.5, col: '#fff', vy: -3, sz: 16 });
@@ -646,8 +647,14 @@ function damageEnemy(e, dmg, isHero, flags) {
 function killEnemy(e) {
   e.dead = true;
   G.killed++;
+  G.killStreak = (G.killStreak || 0) + 1; G.streakTimer = 2.2;
   SND.kill();
   vibe(e.boss ? 60 : 15);
+  if (!e.boss) {
+    if (G.killStreak === 3) { banner('COMBO ×3'); flash('255,200,60', 0.22); SND.skill(); collectCoin(5); }
+    else if (G.killStreak === 5) { banner('COMBO ×5!'); flash('255,170,30', 0.28); SND.skill(); collectCoin(12); }
+    else if (G.killStreak >= 8 && G.killStreak % 4 === 0) { banner(G.killStreak + '× FRENESI!!'); flash('255,130,20', 0.35); SND.upgrade(); collectCoin(G.killStreak * 2); }
+  }
   if (e.boss && G.firstClear) { META.gems += 15; saveMeta(); }
   const s = wScreen(e.x, e.z);
   if (s.vis) {
@@ -819,6 +826,8 @@ function update(dt) {
   if (G.bossIntro && G.bossIntro.timer > 0) G.bossIntro.timer -= dt;
   if (G.embers != null && G.treeScreenPos) { if (Math.random() < dt * 22) { const sp = G.treeScreenPos[Math.floor(Math.random() * G.treeScreenPos.length)]; if (sp && sp.vis) G.embers.push({ x: sp.x + rand(-5,5), y: sp.y, vy: rand(-50,-120), vx: rand(-12,12), life: rand(0.5,1.4), r: rand(1.5,3.5), col: Math.random() < 0.6 ? '#ff9a3c' : '#ffcf5e' }); } for (const em of G.embers) { em.x += em.vx * dt; em.y += em.vy * dt; em.r = Math.max(0.2, em.r * (1 - dt * 0.45)); em.life -= dt; } G.embers = G.embers.filter(em => em.life > 0); }
 
+  // streak timer decay
+  if (G.streakTimer > 0) { G.streakTimer -= dt; if (G.streakTimer <= 0) G.killStreak = 0; }
   // base regen from run upgrade
   if (G.run && G.run.baseRegen > 0) G.baseHp = Math.min(G.baseHpMax, G.baseHp + G.run.baseRegen * dt);
   // ult charge acelerado por run
@@ -944,12 +953,14 @@ function update(dt) {
       if (e.shotT <= 0) {
         e.shotT = e.shots.cd;
         const h = G.hero, ddx = h.x - e.x, ddz = h.z - e.z, L = Math.hypot(ddx, ddz) || 1;
-        G.enemyShots.push({ x: e.x, z: e.z, y: 1.1, vx: ddx/L, vz: ddz/L, dmg: e.shots.dmg, speed: e.shots.speed, color: e.shots.color, life: 2.5 });
-        if (e.boss) {
-          const ang = Math.atan2(ddx, ddz);
-          for (const off of [-0.32, 0.32]) { const a2 = ang + off; G.enemyShots.push({ x: e.x, z: e.z, y: 1.1, vx: Math.sin(a2), vz: Math.cos(a2), dmg: e.shots.dmg * 0.65, speed: e.shots.speed, color: e.shots.color, life: 2.5 }); }
+        if (L > 2.2) {  // não dispara corpo-a-corpo — usa o ataque melee
+          G.enemyShots.push({ x: e.x, z: e.z, y: 1.1, vx: ddx/L, vz: ddz/L, dmg: e.shots.dmg, speed: e.shots.speed, color: e.shots.color, life: 2.8 });
+          if (e.boss) {
+            const ang = Math.atan2(ddx, ddz);
+            for (const off of [-0.32, 0.32]) { const a2 = ang + off; G.enemyShots.push({ x: e.x, z: e.z, y: 1.1, vx: Math.sin(a2), vz: Math.cos(a2), dmg: e.shots.dmg * 0.65, speed: e.shots.speed, color: e.shots.color, life: 2.8 }); }
+          }
+          SND.shoot();
         }
-        SND.hit();
       }
     }
     if (e.heal) {
@@ -1002,7 +1013,10 @@ function update(dt) {
   for (const s of G.enemyShots) {
     s.x += s.vx * s.speed * dt; s.z += s.vz * s.speed * dt; s.life -= dt;
     const h = G.hero;
-    if (G.invuln <= 0 && Math.hypot(s.x - h.x, s.z - h.z) < 0.5) { s.life = 0; hurtHero(s.dmg); }
+    if (G.invuln <= 0 && Math.hypot(s.x - h.x, s.z - h.z) < 0.5) {
+      s.life = 0; hurtHero(s.dmg);
+      const hsc = wScreen(h.x, h.z); if (hsc.vis) { spawnSparks(hsc.x, hsc.y, s.color, 10); spawnExplosion(hsc.x, hsc.y - 10, 4); }
+    }
   }
   G.enemyShots = G.enemyShots.filter(s => s.life > 0);
   // moedas voando
