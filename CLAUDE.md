@@ -427,7 +427,11 @@ main.js` (scripts clássicos compartilham escopo léxico global).
   **inimigos com ataques à distância**: revenant (verde, cd 3s) e wraith (roxo, cd 2.2s) disparam
   projéteis em linha reta; boss_tank e boss_swift disparam spread de 3 projéteis;
   telegraph glow (0.4s antes de atirar o inimigo brilha na cor do projétil);
-  stop-to-aim (inimigos param 92% ao mirar); anel de alcance sutil ao redor do herói.
+  stop-to-aim (inimigos param 92% ao mirar); anel de alcance sutil ao redor do herói;
+  sistema de combo/streak (3×/5×/N× FRENESI com cristais bônus + fire rate acelerado);
+  ULT PRONTA banner+flash+som ao encher 100%; encounter banners para novos inimigos especiais;
+  impacto VFX (sparks + explosion) quando projétil do inimigo acerta o herói;
+  shots de inimigos não disparam à ≤2.2u de distância (anti-unfair ponto-a-ponto).
 - **✅ Feito (Charter Fase 8 — Sistema Roguelite):**
   20 upgrades em 4 raridades (Comum/Raro/Épico/Lendário) com efeitos reais:
   dmgMult, cdMult, rangeBon, multiShot (2/3 projéteis), projBig, pierce, critBonus,
@@ -487,5 +491,5 @@ main.js` (scripts clássicos compartilham escopo léxico global).
 
 ## 10. Links úteis
 
-- Jogar (último SHA): `https://raw.githack.com/o4rauto/Kingsho-confidence/1b8a6f9d9273019e61f5c640111c8306c3b07a9f/bastion-rush/index.html`
+- Jogar (último SHA): `https://raw.githack.com/o4rauto/Kingsho-confidence/1f090aab4cf789287953b83cec5849de33337d1c/bastion-rush/index.html`
 - PR draft: #2 (base `main` ← `claude/optimistic-archimedes-1ebr2w`).
