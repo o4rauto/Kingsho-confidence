@@ -464,7 +464,7 @@ const SND = (function () {
 function vibe(ms) { if (META.vibe && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) {} }
 function toast(msg) { G.toast = { msg, life: 2.2 }; }
 const heroDmg = () => 8 + (META.dmgLvl - 1) * 5;
-const heroCD = () => Math.max(150, 560 - (META.rateLvl - 1) * 40);
+const heroCD = () => { const base = Math.max(150, 560 - (META.rateLvl - 1) * 40); const sm = (G.killStreak||0) >= 5 ? 0.72 : (G.killStreak||0) >= 3 ? 0.85 : 1; return base * sm; };
 const costDmg = () => Math.floor(50 * Math.pow(1.5, META.dmgLvl - 1));
 const costRate = () => Math.floor(55 * Math.pow(1.5, META.rateLvl - 1));
 const costTower = (l, i) => { const ty = (G.tType && G.tType[i]) || 'archer'; return towerCost(ty, l); };
@@ -507,7 +507,7 @@ function startLevel(n) {
            critBonus:0, critMult:2, drainFrac:0, explodeKill:false,
            freezeChance:0, ultFaster:1, baseRegen:0, doomPct:0, vampKill:false },
     upgradeHorde: 0, upgradeOpts: [], pendingUpgrade: false, runUpgrades: [],
-    killStreak: 0, streakTimer: 0,
+    killStreak: 0, streakTimer: 0, seenThisRun: {},
   };
   banner('Fase ' + n);
   if (n === 1) G.texts.push({ x: CX, y: ch * 0.46, v: 'Arraste p/ mover • use HAB e ULT', life: 4.5, col: '#fff', vy: -3, sz: 16 });
@@ -595,6 +595,11 @@ function makeEnemy(type, hpBase, el) {
 function spawnEnemy(type, eliteId) {
   const t = TYPES[type], el = eliteId ? ELITE_BY_ID[eliteId] : null;
   if (!META.seen[type]) { META.seen[type] = true; saveMeta(); }
+  if (G.seenThisRun && !G.seenThisRun[type]) {
+    G.seenThisRun[type] = true;
+    const desc = MONSTER_DESC[type];
+    if (desc && (t.shots || t.heal || t.split || t.boss)) banner((desc.n || type) + '!');
+  }
   const e = makeEnemy(type, t.hp * (G.diff || 1), el);
   e.boss = !!t.boss; e.d = -rand(0, 1.2); e.x = PW[0][0]; e.z = PW[0][1]; e.ang = 0;
   if (t.fly) { e.x = rand(-7, 7); e.z = -13; }
@@ -627,7 +632,7 @@ function damageEnemy(e, dmg, isHero, flags) {
   if (isHero && run.freezeChance > 0 && Math.random() < run.freezeChance && !e.boss) { e.slowTimer = 0.8; e.slowFactor = 0.05; }
   SND.hit();
   const ultGain = dmg * 0.0012 * (run.ultFaster || 1);
-  if (G.ultCharge != null) G.ultCharge = clamp(G.ultCharge + ultGain, 0, 1);
+  if (G.ultCharge != null) { const prev = G.ultCharge; G.ultCharge = clamp(prev + ultGain, 0, 1); if (prev < 1 && G.ultCharge >= 1) { SND.skill(); flash('0,220,255', 0.32); banner('ULT PRONTA!'); } }
   if (isHero && run.drainFrac > 0) G.baseHp = Math.min(G.baseHpMax, G.baseHp + dmg * run.drainFrac);
   const s = wScreen(e.x, e.z);
   if (s.vis) {
