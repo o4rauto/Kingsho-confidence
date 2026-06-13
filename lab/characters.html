@@ -52,17 +52,23 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NoToneMapping; // cores saturadas "mobile"
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0e1220);
+scene.background = new THREE.Color(0x090b13);
 
 const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
 function frameCam(){ camera.position.set(0, 2.0, 7.4); camera.lookAt(0, 1.35, 0); }
 frameCam();
 
 // luz: HEMISFÉRICA (céu claro em cima / chão escuro embaixo) = gradiente top-down
-scene.add(new THREE.HemisphereLight(0xdfe9ff, 0x202a40, 0.85));
-const key = new THREE.DirectionalLight(0xfff2dc, 1.2); key.position.set(3.5,6,5); scene.add(key);
-const rim = new THREE.DirectionalLight(0x6fb0ff, 0.7); rim.position.set(-4,3,-4); scene.add(rim);
-const fillF = new THREE.DirectionalLight(0xffffff, 0.5); fillF.position.set(0,2,8); scene.add(fillF);
+scene.add(new THREE.HemisphereLight(0xcfe0ff, 0x171f33, 0.6));
+const key = new THREE.DirectionalLight(0xfff2dc, 1.7); key.position.set(3.5,6.5,4.5); scene.add(key);
+const rim = new THREE.DirectionalLight(0x6fb0ff, 0.85); rim.position.set(-4.5,3,-3.5); scene.add(rim);
+const fillF = new THREE.DirectionalLight(0xffffff, 0.32); fillF.position.set(0,2,8); scene.add(fillF);
+
+// sombra de contato (disco escuro achatado sob os pés) → "pé no chão"
+const shadow = new THREE.Mesh(
+  new THREE.CircleGeometry(1.15, 32),
+  new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:0.34 }));
+shadow.rotation.x = -Math.PI/2; shadow.position.y = 0.05; scene.add(shadow);
 
 // pódio (palco do personagem, estilo vitrine)
 const podium = new THREE.Mesh(
