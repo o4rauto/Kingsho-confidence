@@ -52,6 +52,25 @@ restrições do projeto (zero CDN, verificável headless).
 > **Conclusão:** a screenshot saiu → **migração de render APROVADA**. Three.js
 > vendorizado roda e é verificável headless, sem violar "zero CDN".
 
+### 🚧 Recriação dos personagens — estilo chibi "nível Clash Royale" (em `lab/`)
+Pipeline procedural em Three.js (não dá pra rodar Blender/Substance no sandbox),
+aplicando os pilares: proporção **cabeçuda** (cabeça ~45%), formas geométricas
+primárias, **bevels** macios (RoundedBoxGeometry vendorizado), **toon "vinil"**
+saturado, **specular fake** (catchlights nos olhos), **olhos 2D** trocáveis,
+**contorno marcado** (inverted-hull), e **rig de squash & stretch**. Tudo
+original. **Um personagem por vez** (a pedido do usuário).
+
+- **Toolkit:** `lab/chibi.js` — materiais (toon vinil/glow), primitivas
+  (rbox/ball/blob/cone/capsule/glove), olhos 2D expressivos (normal/happy/angry/
+  dead), bochecha, contorno (`outlineAll`) e classe `Rig` (squash & stretch + idle).
+- **Viewer:** `lab/characters.html` — pódio de vitrine, luz **hemisférica**
+  (gradiente top-down), bloom, turntable; hooks `window.LAB` p/ verificação headless.
+- **✅ Personagem 01 — Mago Herói** (`lab/hero.js`): chapéu pontudo + estrela,
+  olhos grandes com catchlight, cinto dourado, robe triangular, cajado com **orbe
+  brilhante** (bloom). Turnaround renderizado headless (`ERROS=[]`) e **conferido**
+  → `lab/hero-mage.png`.
+- ⬜ Próximos (um por vez): grunt, brute/tank, flier, healer, … + chefes.
+
 ### ⬜ Próximos passos da raia (pós-spike, ainda em `lab/`)
 - Materiais (fosco/metálico/vidro via fresnel fake), animação de **cast** do mago,
   variação de cenário a cada 10 níveis.
