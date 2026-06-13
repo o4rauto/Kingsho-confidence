@@ -37,6 +37,13 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Rig } from './chibi.js';
 import { buildHeroMage } from './hero.js';
+import { buildGrunt } from './monsters.js';
+
+// registro de personagens (nome → builder + rótulo + foco de câmera)
+const CHARS = {
+  hero:  { build: buildHeroMage, label: 'Mago Herói',  look: 1.35, dist: 7.4 },
+  grunt: { build: buildGrunt,    label: 'Grunt',       look: 1.0,  dist: 6.2 },
+};
 
 const LAB = window.LAB = { ready:false, error:null, frames:0, rev:THREE.REVISION, webgl:null, who:'hero' };
 document.getElementById('rev').textContent = THREE.REVISION;
@@ -54,8 +61,13 @@ renderer.toneMapping = THREE.NoToneMapping; // cores saturadas "mobile"
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x090b13);
 
+const which = new URLSearchParams(location.search).get('c') || 'hero';
+const CH = CHARS[which] || CHARS.hero;
+LAB.who = which;
+document.getElementById('who').textContent = CH.label;
+
 const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-function frameCam(){ camera.position.set(0, 2.0, 7.4); camera.lookAt(0, 1.35, 0); }
+function frameCam(){ camera.position.set(0, CH.look + 0.65, CH.dist); camera.lookAt(0, CH.look, 0); }
 frameCam();
 
 // luz: HEMISFÉRICA (céu claro em cima / chão escuro embaixo) = gradiente top-down
@@ -83,13 +95,13 @@ podTop.position.y = 0.01; scene.add(podTop);
 // turntable + personagem
 const turntable = new THREE.Group(); scene.add(turntable);
 let rig;
-function loadHero(){
-  const { model } = buildHeroMage();
+function loadChar(){
+  const { model } = CH.build();
   rig = new Rig(model);
   turntable.add(rig);
   window.__lab = { root: model, camera, THREE };
 }
-loadHero();
+loadChar();
 
 // post: bloom (faz o orbe/estrela/olhos "brilharem")
 const composer = new EffectComposer(renderer);
