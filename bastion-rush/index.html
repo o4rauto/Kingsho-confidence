@@ -275,14 +275,14 @@ const TYPES = {
   flier:  { hp: 13, speed: 2.0, scale: 0.7, dmg: 9, value: 7, color: '#7ad0e0', fly: 1 },
   healer:  { hp: 26, speed: 0.95, scale: 1.0, dmg: 8, value: 9, color: '#5fd08a', heal: { cd: 1.6, amount: 8, radius: 3 } },
   splitter:{ hp: 40, speed: 1.0, scale: 1.2, dmg: 12, value: 11, color: '#c08a3c', split: { into: 'swarm', count: 3 } },
-  revenant:{ hp: 34, speed: 1.1, scale: 1.0, dmg: 10, value: 10, color: '#7a9b6a', regen: 6 },
+  revenant:{ hp: 34, speed: 1.1, scale: 1.0, dmg: 10, value: 10, color: '#7a9b6a', regen: 6, shots: { cd: 3.0, dmg: 9, speed: 5.0, color: '#7aff9a' } },
   dasher:  { hp: 18, speed: 1.25, scale: 0.9, dmg: 8, value: 8, color: '#e85a9a', burst: { cd: 2.2, mult: 2.6, dur: 0.5 } },
   swarm:   { hp: 6, speed: 1.8, scale: 0.55, dmg: 4, value: 3, color: '#d8d048' },
   armored: { hp: 50, speed: 0.85, scale: 1.1, dmg: 12, value: 12, color: '#8893a8', armor: 0.6 },
   ogre:    { hp: 160, speed: 0.6, scale: 1.8, dmg: 30, value: 22, color: '#7a5a3a' },
-  wraith:  { hp: 24, speed: 1.7, scale: 0.95, dmg: 9, value: 11, color: '#9a7ad0', regen: 5 },
-  boss_tank:  { hp: 520, speed: 0.7, scale: 2.0, dmg: 50, value: 90, boss: 1, color: '#b23bc0' },
-  boss_swift: { hp: 340, speed: 1.55, scale: 1.7, dmg: 40, value: 90, boss: 1, color: '#3cb0c0' },
+  wraith:  { hp: 24, speed: 1.7, scale: 0.95, dmg: 9, value: 11, color: '#9a7ad0', regen: 5, shots: { cd: 2.2, dmg: 11, speed: 6.5, color: '#c97aff' } },
+  boss_tank:  { hp: 520, speed: 0.7, scale: 2.0, dmg: 50, value: 90, boss: 1, color: '#b23bc0', shots: { cd: 2.8, dmg: 16, speed: 5.5, color: '#e060ff' } },
+  boss_swift: { hp: 340, speed: 1.55, scale: 1.7, dmg: 40, value: 90, boss: 1, color: '#3cb0c0', shots: { cd: 1.8, dmg: 13, speed: 8.0, color: '#40f0f0' } },
   boss_king:  { hp: 1000, speed: 0.62, scale: 2.3, dmg: 75, value: 180, boss: 1, color: '#c0405c' },
 };
 const MODELS = {
@@ -347,10 +347,10 @@ const MONSTER_DESC = {
   grunt: { n: 'Saqueador', a: 'Básico. Avança em fila.' }, runner: { n: 'Batedor', a: 'Muito rápido, pouca vida.' },
   shield: { n: 'Escudeiro', a: 'Armadura: -50% de dano.' }, brute: { n: 'Brutamonte', a: 'Tanque lento e resistente.' },
   flier: { n: 'Voador', a: 'Voa reto até a base.' }, healer: { n: 'Curandeiro', a: 'Cura aliados próximos.' },
-  splitter: { n: 'Divisor', a: 'Ao morrer, libera enxames.' }, revenant: { n: 'Espectro', a: 'Regenera vida.' },
+  splitter: { n: 'Divisor', a: 'Ao morrer, libera enxames.' }, revenant: { n: 'Espectro', a: 'Regenera vida e dispara projéteis.' },
   dasher: { n: 'Investidor', a: 'Dispara arrancadas de velocidade.' }, swarm: { n: 'Enxame', a: 'Fraco, vem em massa.' },
   armored: { n: 'Couraçado', a: 'Armadura pesada (-60%).' }, ogre: { n: 'Ogro', a: 'Enorme, muita vida.' },
-  wraith: { n: 'Assombração', a: 'Veloz e regenera.' }, boss_tank: { n: 'Colosso', a: 'CHEFE: vida imensa.' },
+  wraith: { n: 'Assombração', a: 'Veloz, regenera e dispara projéteis rápidos.' }, boss_tank: { n: 'Colosso', a: 'CHEFE: vida imensa.' },
   boss_swift: { n: 'Algoz Veloz', a: 'CHEFE: rápido e forte.' }, boss_king: { n: 'Rei da Horda', a: 'CHEFE FINAL.' },
 };
 /* ===== Variantes de elite =====
@@ -496,7 +496,7 @@ function startLevel(n) {
   G = {
     state: 'playing', t: 0, level: n, gen, diff: gen.diff, firstClear: n > META.clearedMax,
     baseHpMax: 150, baseHp: 150, heroHpMax: 120, heroHp: 120, lives: 3, invuln: 0,
-    enemies: [], shots: [], coins3: [], parts: [], texts: [],
+    enemies: [], shots: [], enemyShots: [], coins3: [], parts: [], texts: [],
     gi: 0, gc: 0, gtimer: 0.35, spawnedAll: false, total: gen.groups.reduce((s, g) => s + g.count, 0), killed: 0,
     hero: { x: 0, z: 2.6, ang: Math.PI }, heroCool: 0, skillCD: 0, ultCharge: 0,
     towers: [0, 0, 0, 0], tType: [null, null, null, null], tCool: [0, 0, 0, 0], battle: 110, battlePulse: 0, towerMenu: null,
@@ -587,7 +587,7 @@ function makeEnemy(type, hpBase, el) {
     type, hp, maxHp: hp, speed: t.speed * (el ? el.spd : 1) * (0.86 + Math.random() * 0.28), scale: t.scale * (el ? el.sc : 1),
     dmg: Math.round(t.dmg * (el ? el.dmg : 1)), value: Math.round(t.value * (el ? el.val : 1)),
     armor: Math.max(t.armor || 0, (el && el.armor) || 0), regen: (t.regen || 0) + ((el && el.regen) || 0),
-    heal: t.heal || null, burst: (el && el.burst) || t.burst || null, elite: el || null,
+    heal: t.heal || null, burst: (el && el.burst) || t.burst || null, shots: t.shots || null, elite: el || null,
     fly: !!t.fly, hit: 0, bob: rand(0, 6.3),
   };
 }
@@ -938,6 +938,20 @@ function update(dt) {
   for (const e of G.enemies) {
     if (e.dead) continue;
     if (e.regen) e.hp = Math.min(e.maxHp, e.hp + e.regen * dt);
+    if (e.shots) {
+      if (e.shotT == null) e.shotT = e.shots.cd * (0.5 + Math.random() * 0.5);
+      e.shotT -= dt;
+      if (e.shotT <= 0) {
+        e.shotT = e.shots.cd;
+        const h = G.hero, ddx = h.x - e.x, ddz = h.z - e.z, L = Math.hypot(ddx, ddz) || 1;
+        G.enemyShots.push({ x: e.x, z: e.z, y: 1.1, vx: ddx/L, vz: ddz/L, dmg: e.shots.dmg, speed: e.shots.speed, color: e.shots.color, life: 2.5 });
+        if (e.boss) {
+          const ang = Math.atan2(ddx, ddz);
+          for (const off of [-0.32, 0.32]) { const a2 = ang + off; G.enemyShots.push({ x: e.x, z: e.z, y: 1.1, vx: Math.sin(a2), vz: Math.cos(a2), dmg: e.shots.dmg * 0.65, speed: e.shots.speed, color: e.shots.color, life: 2.5 }); }
+        }
+        SND.hit();
+      }
+    }
     if (e.heal) {
       e.healT = (e.healT == null ? e.heal.cd : e.healT) - dt;
       if (e.healT <= 0) {
@@ -963,6 +977,11 @@ function update(dt) {
     let spd = e.speed;
     if (e.burst) { e.bt = (e.bt == null ? e.burst.cd : e.bt) - dt; if (e.bt <= 0) { e.bursting = e.burst.dur; e.bt = e.burst.cd; } if (e.bursting > 0) { e.bursting -= dt; spd = e.speed * e.burst.mult; } }
     if (e.slowTimer > 0) { e.slowTimer -= dt; spd *= e.slowFactor; }
+    // inimigos de longo alcance param para mirar antes de atirar
+    if (e.shots && e.shotT != null && e.shotT < 0.42) {
+      const hdxr = G.hero.x - e.x, hdzr = G.hero.z - e.z;
+      e.ang = Math.atan2(hdxr, hdzr); spd *= 0.08;
+    }
     e.bob += dt * 9; if (e.hit > 0) e.hit -= dt; let arrived = false;
     if (Math.random() < 0.04 && !e.dead && !e.fly) { spawnDust(e.x, e.z, 1); }
     if (e.fly) { const ddx = BASEP[0] - e.x, ddz = BASEP[1] - e.z, L = Math.hypot(ddx, ddz) || 1; e.x += ddx / L * spd * dt; e.z += ddz / L * spd * dt; e.ang = Math.atan2(ddx, ddz); if (L < 0.8) arrived = true; }
@@ -979,6 +998,13 @@ function update(dt) {
     if (arrived) { G.baseHp -= Math.ceil(e.dmg * 0.55); e.dead = true; const s = wScreen(BASEP[0], BASEP[1]); if (s.vis) spawnExplosion(s.x, s.y, 20); shakeMedium(); flash('232,89,90', 0.4); if (G.baseHp <= 0) return gameOver(); }
   }
   G.enemies = G.enemies.filter(e => !e.dead);
+  // projéteis dos inimigos — linha reta, o jogador deve desviar
+  for (const s of G.enemyShots) {
+    s.x += s.vx * s.speed * dt; s.z += s.vz * s.speed * dt; s.life -= dt;
+    const h = G.hero;
+    if (G.invuln <= 0 && Math.hypot(s.x - h.x, s.z - h.z) < 0.5) { s.life = 0; hurtHero(s.dmg); }
+  }
+  G.enemyShots = G.enemyShots.filter(s => s.life > 0);
   // moedas voando
   for (const c of G.coins3) { c.t += dt / 0.55; if (c.t >= 1) { c.done = 1; collectCoin(c.amount); } else { const e = 1 - Math.pow(1 - c.t, 3); c.cx = c.sx + (cw - 60 - c.sx) * e; c.cy = c.sy + (96 - c.sy) * e; } }
   G.coins3 = G.coins3.filter(c => !c.done);
@@ -1290,6 +1316,17 @@ function drawSlots() {
 function drawFx() {
   // luz quente dos braseiros (intensificada)
   for (const tr of TREES) { const s = project([tr[0], 1.25, tr[1]]); if (!s.vis) continue; const pulse = 0.6 + 0.4 * Math.sin(G.t * 7 + tr[0]); const R = (1.9 + 0.38 * pulse) * F / s.depth; ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, R); g.addColorStop(0, 'rgba(255,210,110,' + (0.52 * pulse).toFixed(3) + ')'); g.addColorStop(0.4, 'rgba(255,140,40,' + (0.28 * pulse).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,80,10,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s.x, s.y, R, 0, 6.28); ctx.fill(); ctx.restore(); }
+  // anel de alcance do herói — elipse tracejada sutil no chão
+  if (G.hero && G.run) {
+    const hs = project([G.hero.x, 0.05, G.hero.z]);
+    if (hs.vis) {
+      const rng = (6.5 + (G.run.rangeBon || 0)) * F / hs.depth;
+      ctx.save(); ctx.globalAlpha = 0.15; ctx.strokeStyle = '#86deff';
+      ctx.lineWidth = 1.2; ctx.setLineDash([4, 9]);
+      ctx.beginPath(); ctx.ellipse(hs.x, hs.y, rng, rng * 0.38, 0, 0, 6.28); ctx.stroke();
+      ctx.setLineDash([]); ctx.restore();
+    }
+  }
   // orbe do mago — glow mágico pulsante
   if (G.hero) { const os = project([G.hero.x, 1.28, G.hero.z]); if (os.vis) { const pulse = 0.7 + 0.3 * Math.sin(G.t * 9); const R = 0.42 * F / os.depth; ctx.save(); ctx.globalCompositeOperation = 'lighter'; const og = ctx.createRadialGradient(os.x, os.y, 0, os.x, os.y, R * 3.5); og.addColorStop(0, 'rgba(134,240,255,' + (0.6 * pulse).toFixed(2) + ')'); og.addColorStop(0.45, 'rgba(60,180,255,' + (0.22 * pulse).toFixed(2) + ')'); og.addColorStop(1, 'rgba(40,120,255,0)'); ctx.fillStyle = og; ctx.beginPath(); ctx.arc(os.x, os.y, R * 3.5, 0, 6.28); ctx.fill(); ctx.restore(); } }
   // projéteis brilhantes (bolas de energia) com rastros (trails) estilo Archero
@@ -1331,6 +1368,18 @@ function drawFx() {
     ctx.fill();
     ctx.restore();
   }
+  // projéteis dos inimigos — orbs coloridos viajando em linha reta
+  if (G.enemyShots) for (const sh of G.enemyShots) {
+    const sc = project([sh.x, sh.y, sh.z]); if (!sc.vis) continue;
+    const R = 0.48 * F / sc.depth, c = rgbOf(sh.color);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(sc.x, sc.y, 0, sc.x, sc.y, R);
+    g.addColorStop(0, 'rgba('+c[0]+','+c[1]+','+c[2]+',0.9)');
+    g.addColorStop(0.4, 'rgba('+c[0]+','+c[1]+','+c[2]+',0.4)');
+    g.addColorStop(1, 'rgba('+c[0]+','+c[1]+','+c[2]+',0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sc.x, sc.y, R, 0, 6.28); ctx.fill();
+    ctx.restore();
+  }
   // por inimigo: aura de elite (glow + marca) + barra de vida
   if (G.enemies) for (const e of G.enemies) {
     if (e.dead) continue;
@@ -1338,6 +1387,16 @@ function drawFx() {
     const R = 0.7 * e.scale * F / s.depth;
     // flash de hit + flash de slow (azul)
     if (e.hit > 0) { const ha = Math.min(0.52, e.hit * 7); ctx.save(); ctx.globalCompositeOperation = 'lighter'; const hg = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, R * 2.2); hg.addColorStop(0, 'rgba(255,255,255,' + ha + ')'); hg.addColorStop(1, 'rgba(255,200,100,0)'); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(s.x, s.y, R * 2.2, 0, 6.28); ctx.fill(); ctx.restore(); }
+    // telegrama de tiro: glow vermelho nos 0.4s antes de atirar
+    if (e.shots && e.shotT != null && e.shotT < 0.4) {
+      const warn = 1 - e.shotT / 0.4, c = rgbOf(e.shots.color);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const wg = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, R * 2.6);
+      wg.addColorStop(0, 'rgba('+c[0]+','+c[1]+','+c[2]+','+(warn*0.7).toFixed(2)+')');
+      wg.addColorStop(1, 'rgba('+c[0]+','+c[1]+','+c[2]+',0)');
+      ctx.fillStyle = wg; ctx.beginPath(); ctx.arc(s.x, s.y, R * 2.6, 0, 6.28); ctx.fill();
+      ctx.restore();
+    }
     if (e.elite) {
       const pulse = 0.5 + 0.5 * Math.sin(G.t * 5 + e.bob);
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
