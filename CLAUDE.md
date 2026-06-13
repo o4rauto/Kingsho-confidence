@@ -2,7 +2,7 @@
 
 Guia para agentes (Claude) que pegam este repositório do zero (após `/clear`).
 **Leia inteiro antes de editar.** Última atualização: branch
-`claude/optimistic-archimedes-1ebr2w` (Visual Dominance Edition — VFX Phase completa).
+`claude/optimistic-archimedes-1ebr2w` (Gameplay Core Edition — ranged enemies, dodge mechanics, core feel).
 
 ---
 
@@ -419,6 +419,15 @@ main.js` (scripts clássicos compartilham escopo léxico global).
 - **✅ Feito (Charter Fases 3+4+5):**
   torres com modelos 3D únicos (Arqueira/Mágica/Quartel/Artilharia), towerModelFor()
   com partes extras por nível 2–5 (bandeira/cristal/cinto/cano → espadarte/runas/pilares/escudo → capacete/runas gold/trim/rebites → coroa dourada), LIGHTS por tipo (verde/roxo/gold/laranja escalando com nível), glow ambiental das torres em drawFx().
+- **✅ Feito (Gameplay Core Edition):**
+  spawn cadence 50% mais rápido; herói prioriza inimigo mais avançado no caminho (heroTarget);
+  zona de perigo (1.8 uni): inimigos viram p/ herói, desaceleram e atacam; dano na base 55% (antes 100%);
+  base HP 150 (antes 100); cristais 110 (antes 90); tap-anywhere em won/over para continuar;
+  danger pulse vermelho abaixo de 35% HP; HAB range 4.8, cd 5s, dano 3.2×;
+  **inimigos com ataques à distância**: revenant (verde, cd 3s) e wraith (roxo, cd 2.2s) disparam
+  projéteis em linha reta; boss_tank e boss_swift disparam spread de 3 projéteis;
+  telegraph glow (0.4s antes de atirar o inimigo brilha na cor do projétil);
+  stop-to-aim (inimigos param 92% ao mirar); anel de alcance sutil ao redor do herói.
 - **✅ Feito (Charter Fase 8 — Sistema Roguelite):**
   20 upgrades em 4 raridades (Comum/Raro/Épico/Lendário) com efeitos reais:
   dmgMult, cdMult, rangeBon, multiShot (2/3 projéteis), projBig, pierce, critBonus,
@@ -478,5 +487,5 @@ main.js` (scripts clássicos compartilham escopo léxico global).
 
 ## 10. Links úteis
 
-- Jogar (último SHA): `https://raw.githack.com/o4rauto/Kingsho-confidence/a849bd96906eb6851ee8c31e2c7a3c96327e8b5c/bastion-rush/index.html`
+- Jogar (último SHA): `https://raw.githack.com/o4rauto/Kingsho-confidence/1b8a6f9d9273019e61f5c640111c8306c3b07a9f/bastion-rush/index.html`
 - PR draft: #2 (base `main` ← `claude/optimistic-archimedes-1ebr2w`).
