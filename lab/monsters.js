@@ -25,13 +25,17 @@ function fangMouth(width = 0.5, color = 0x3a0d12, fangColor = 0xfdfdff) {
   return g;
 }
 
-// ════════════════════════════ GRUNT (goblin magrelo/esquálido) ════════════════════════════
+// ═══════════════ GRUNT — "Saqueador" (A Maré, Vermelho): saqueador gelo-morto ═══════════════
+// Ficha: lab/concept/saqueador.png — carne enregelada, trapos+capuz, cachecol
+// vermelho (facção), brasa/calor residual e picareta tosca. Gaunto e curvado.
 export function buildGrunt(opts = {}) {
-  const SKIN = opts.skin ?? 0x74b03e;   // verde saturado
-  const SKIN2 = opts.skin2 ?? 0x4f7d27;  // sombra/verde escuro
-  const BELLY = opts.belly ?? 0xbfdc84;  // barriga/peito claro
-  const CLOTH = opts.cloth ?? 0x7a4a22;  // tanga
+  const SKIN = opts.skin ?? 0x9fb1c2;   // carne enregelada (azul-acinzentado)
+  const SKIN2 = opts.skin2 ?? 0x6d8194;  // sombra/gangrena fria
+  const BELLY = opts.belly ?? 0xc4d2dd;  // peito/abdômen gelado claro
+  const CLOTH = opts.cloth ?? 0x2b2f37;  // trapos escuros
   const STEEL = 0xb8c2cc;
+  const RED = opts.red ?? 0xbe392c;     // facção Vermelho (cachecol/faixa)
+  const EMBER = 0xff5a28;               // brasa / calor residual (brilho)
 
   const model = new THREE.Group();
   const HEADR = 0.5;
@@ -85,21 +89,25 @@ export function buildGrunt(opts = {}) {
   const armR = capsule(0.07, 0.54, SKIN); armR.position.set(0.36, 1.42, 0.08);
   armR.rotation.z = -0.85; model.add(armR);
   const handR = glove(0.12, SKIN2); handR.position.set(0.62, 1.66, 0.12); model.add(handR);
-  // adaga (cabo + lâmina serrilhada)
-  const grip = capsule(0.05, 0.18, 0x3a2a1c); grip.position.set(0.66, 1.64, 0.12); grip.rotation.z = -0.2; model.add(grip);
-  const guard = rbox(0.22, 0.05, 0.08, 0x6b5224, 0.02); guard.position.set(0.69, 1.76, 0.12); model.add(guard);
-  const blade = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.5, 4), vinyl(STEEL));
-  blade.position.set(0.73, 2.06, 0.12); blade.rotation.z = -0.12; model.add(blade);
+  // PICARETA tosca (cabo de madeira + cabeça de ferro de dois bicos + brasa)
+  const haft = capsule(0.05, 0.9, 0x4a3422); haft.position.set(0.66, 1.5, 0.12); haft.rotation.z = -0.16; model.add(haft);
+  const pickH = rbox(0.46, 0.12, 0.1, STEEL, 0.03); pickH.position.set(0.74, 1.96, 0.12); pickH.rotation.z = 0.18; model.add(pickH);
+  for (const dx of [-1, 1]) {
+    const spike = cone(0.07, 0.26, 0x515a66, 8); spike.position.set(0.74 + dx * 0.24, 1.96 + dx * 0.04, 0.12);
+    spike.rotation.z = Math.PI / 2 + dx * 0.18; model.add(spike);
+  }
+  const heat = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 1), glow(EMBER));
+  heat.position.set(0.74, 1.96, 0.18); heat.userData.noOutline = true; model.add(heat);
 
   // ── CABEÇA grande (chibi) levemente projetada pra frente ──
   const head = ball(HEADR, SKIN); head.position.set(0, HEADY, 0.08); head.scale.set(1.04, 0.96, 0.98); model.add(head);
 
-  // orelhas pontudas enormes (silhueta!)
+  // CAPUZ esfarrapado (cowl escuro cobrindo topo/atrás) + pontas caídas nas laterais
+  const hood = blob(0.62, 0.58, 0.6, CLOTH); hood.position.set(0, HEADY + 0.2, -0.12); model.add(hood);
+  const hoodBack = blob(0.5, 0.5, 0.34, 0x1d2027); hoodBack.position.set(0, HEADY + 0.08, -0.42); model.add(hoodBack);
   for (const sx of [-1, 1]) {
-    const ear = cone(0.18, 0.62, SKIN, 14); ear.position.set(sx * 0.6, HEADY + 0.14, -0.02);
-    ear.rotation.z = sx * -1.2; ear.rotation.y = sx * 0.3; model.add(ear);
-    const earIn = cone(0.09, 0.42, SKIN2, 12); earIn.position.set(sx * 0.55, HEADY + 0.14, 0.04);
-    earIn.rotation.z = sx * -1.2; earIn.rotation.y = sx * 0.3; earIn.userData.noOutline = true; model.add(earIn);
+    const flap = cone(0.16, 0.52, CLOTH, 10); flap.position.set(sx * 0.5, HEADY - 0.12, -0.04);
+    flap.rotation.z = sx * -0.5; model.add(flap);
   }
 
   // sobrancelha raivosa (bloco escuro angulado pra dentro)
@@ -107,10 +115,12 @@ export function buildGrunt(opts = {}) {
     const brow = rbox(0.28, 0.11, 0.08, SKIN2, 0.04);
     brow.position.set(sx * 0.22, HEADY + 0.2, HEADR * 0.9 + 0.08); brow.rotation.z = sx * -0.5; model.add(brow);
   }
-  // olhos arregalados amarelos (a fúria vem das sobrancelhas)
+  // olhos brasa (calor residual) fundos e brilhantes
   for (const sx of [-1, 1]) {
-    const e = eye(0.17, 0xffd23a, 'normal');
+    const e = eye(0.16, EMBER, 'normal');
     e.position.set(sx * 0.23, HEADY + 0.07, HEADR * 0.92 + 0.08); e.userData.noOutline = true; model.add(e);
+    const gl = new THREE.Mesh(new THREE.CircleGeometry(0.1, 14), glow(EMBER));
+    gl.position.set(sx * 0.23, HEADY + 0.07, HEADR * 0.9 + 0.06); gl.userData.noOutline = true; model.add(gl);
   }
   // nariz comprido e adunco
   const nose = blob(0.1, 0.1, 0.2, SKIN2); nose.position.set(0, HEADY - 0.08, HEADR * 0.95 + 0.12); model.add(nose);
@@ -118,7 +128,14 @@ export function buildGrunt(opts = {}) {
   const mouth = fangMouth(0.3); mouth.position.set(0, HEADY - 0.32, HEADR * 0.84 + 0.08);
   mouth.rotation.z = 0.08; model.add(mouth);
 
-  outlineAll(model, 0.045);
+  // CACHECOL/faixa vermelha (cor da facção) + brasas residuais espalhadas
+  const scarf = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.18, 16), vinyl(RED));
+  scarf.position.set(0, 1.66, 0.06); model.add(scarf);
+  const tail = rbox(0.16, 0.5, 0.06, RED, 0.04); tail.position.set(0.2, 1.4, 0.24); tail.rotation.z = -0.2; model.add(tail);
+  for (const p of [[0.0, 1.3, 0.3], [-0.14, 1.14, 0.29]]) {
+    const crack = new THREE.Mesh(new THREE.IcosahedronGeometry(0.04, 1), glow(EMBER));
+    crack.position.set(...p); crack.userData.noOutline = true; model.add(crack);
+  }
   return { model, lights: [] };
 }
 
