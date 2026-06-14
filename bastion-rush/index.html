@@ -186,7 +186,7 @@ const MODELS = {
   boss_swift: bossModel('#3cb0c0', '#2f8fa0'),
   boss_king: bossModel('#c0405c', '#a02f49'),
 };
-const TYPE_LABEL = { grunt: 'Saqueadores', runner: 'Batedores', brute: 'Brutamontes', shield: 'Escudeiros', flier: 'Voadores', boss_tank: 'Colosso', boss_swift: 'Algoz Veloz', boss_king: 'Rei da Horda' };
+const TYPE_LABEL = { grunt: 'Saqueadores', runner: 'Batedores', brute: 'Brutamontes', shield: 'Escudeiros', flier: 'Voadores', boss_tank: 'Murm, o Colosso', boss_swift: 'Skarn, o Algoz', boss_king: 'Gorr, o Rei Faminto' };
 
 /* ===== Caminho / cenário ===== */
 const PW = [[0, -14.5], [0, -9.5], [-6.5, -8], [-6.5, -3], [6.5, -1.5], [6.5, 2.5], [-3, 3.8], [0, 5.2]];
@@ -213,8 +213,8 @@ const MONSTER_DESC = {
   splitter: { n: 'Divisor', a: 'Ao morrer, libera enxames.' }, revenant: { n: 'Espectro', a: 'Regenera vida.' },
   dasher: { n: 'Investidor', a: 'Dispara arrancadas de velocidade.' }, swarm: { n: 'Enxame', a: 'Fraco, vem em massa.' },
   armored: { n: 'Couraçado', a: 'Armadura pesada (-60%).' }, ogre: { n: 'Ogro', a: 'Enorme, muita vida.' },
-  wraith: { n: 'Assombração', a: 'Veloz e regenera.' }, boss_tank: { n: 'Colosso', a: 'CHEFE: vida imensa.' },
-  boss_swift: { n: 'Algoz Veloz', a: 'CHEFE: rápido e forte.' }, boss_king: { n: 'Rei da Horda', a: 'CHEFE FINAL.' },
+  wraith: { n: 'Assombração', a: 'Veloz e regenera.' }, boss_tank: { n: 'Murm, o Colosso', a: 'CHEFE: muralha de gelo viva.' },
+  boss_swift: { n: 'Skarn, o Algoz', a: 'CHEFE: caça os vivos à frente da Maré.' }, boss_king: { n: 'Gorr, o Faminto', a: 'CHEFE FINAL: o pacto do Inverno.' },
 };
 /* ===== Variantes de elite =====
  * Modificadores aplicados na INSTÂNCIA do inimigo (não criam tipos novos nem
@@ -262,7 +262,7 @@ const SAVE = {
   save(d) { try { localStorage.setItem(this.K, JSON.stringify(d)); } catch (e) {} },
 };
 let META;
-function loadMeta() { const s = SAVE.load() || {}; META = { coins: s.coins || 0, gems: s.gems || 0, dmgLvl: s.dmgLvl || 1, rateLvl: s.rateLvl || 1, clearedMax: s.clearedMax || 0, seen: s.seen || {}, sound: s.sound !== false, vibe: s.vibe !== false, lang: s.lang || 'pt', lastDaily: s.lastDaily || '', seenStory: !!s.seenStory }; }
+function loadMeta() { const s = SAVE.load() || {}; META = { coins: s.coins || 0, gems: s.gems || 0, dmgLvl: s.dmgLvl || 1, rateLvl: s.rateLvl || 1, clearedMax: s.clearedMax || 0, seen: s.seen || {}, sound: s.sound !== false, vibe: s.vibe !== false, lang: s.lang || 'pt', lastDaily: s.lastDaily || '', seenStory: !!s.seenStory, seenInterludes: s.seenInterludes || {} }; }
 function saveMeta() { SAVE.save(META); }
 loadMeta();
 const today = () => new Date().toISOString().slice(0, 10);
@@ -367,7 +367,7 @@ const pauseRect = () => ({ x: cw - 58, y: ch - 122, w: 46, h: 46 });
 
 canvas.addEventListener('pointerdown', (ev) => {
   const p = toCss(ev); SND.resume();
-  if (G.state === 'story') { if (G.story.page >= STORY.length - 1) { META.seenStory = true; saveMeta(); startLevel(META.clearedMax + 1); } else G.story.page++; return; }
+  if (G.state === 'story') { const s = G.story; if (s.page >= s.seq.length - 1) { if (s.then === 'intro') { META.seenStory = true; saveMeta(); startLevel(META.clearedMax + 1); } else if (s.then === 'won') { G.state = 'won'; } else { G.state = 'menu'; } } else s.page++; return; }
   if (G.state === 'playing') {
     if (inR(p, pauseRect())) { G.state = 'paused'; G.joy = null; return; }
     if (inR(p, skillRect())) return useSkill();
@@ -390,8 +390,8 @@ addEventListener('keyup', (e) => { if (G.keys) G.keys[e.code] = 0; });
 
 function doAction(act) {
   SND.ui();
-  if (act === 'play') { G.state = META.seenStory ? 'select' : 'story'; if (!META.seenStory) G.story = { page: 0 }; }
-  else if (act === 'story') { G.story = { page: 0 }; G.state = 'story'; }
+  if (act === 'play') { if (!META.seenStory) openStory('intro', INTRO.title, INTRO.seq); else startLevel(META.clearedMax + 1); }
+  else if (act === 'story') { openStory('menu', INTRO.title, INTRO.seq); }
   else if (act === 'settings') { G.state = 'settings'; }
   else if (act === 'set:sound') { META.sound = !META.sound; saveMeta(); }
   else if (act === 'set:vibe') { META.vibe = !META.vibe; saveMeta(); vibe(30); }
@@ -399,7 +399,7 @@ function doAction(act) {
   else if (act === 'soon') { toast(t('soon')); }
   else if (act === 'gacha') { doGacha(); }
   else if (act === 'daily') { claimDaily(); }
-  else if (act === 'battle') { if (!META.seenStory) { G.story = { page: 0 }; G.state = 'story'; } else startLevel(META.clearedMax + 1); }
+  else if (act === 'battle') { if (!META.seenStory) openStory('intro', INTRO.title, INTRO.seq); else startLevel(META.clearedMax + 1); }
   else if (act === 'bestiary') { G.state = 'bestiary'; }
   else if (act === 'campaign') { G.state = 'campaign'; G.campSel = Math.min(META.clearedMax + 1, TOTAL_LEVELS); }
   else if (act === 'camp:prev') { G.campSel = Math.max(1, (G.campSel || 1) - 1); }
@@ -503,7 +503,13 @@ function update(dt) {
   G.coins3 = G.coins3.filter(c => !c.done);
 }
 function nearestTo(x, z, range) { let b = null, bd = range; for (const e of G.enemies) { if (e.dead) continue; const d = Math.hypot(x - e.x, z - e.z); if (d < bd) { bd = d; b = e; } } return b; }
-function win() { G.state = 'won'; if (G.firstClear) { META.clearedMax = Math.max(META.clearedMax, G.level); const reward = 30 + G.level * 8, gr = 4 + Math.floor(G.level / 3); META.coins += reward; META.gems += gr; G.reward = reward; G.greward = gr; saveMeta(); } else { G.reward = 0; G.greward = 0; } SND.win(); }
+function win() {
+  if (G.firstClear) { META.clearedMax = Math.max(META.clearedMax, G.level); const reward = 30 + G.level * 8, gr = 4 + Math.floor(G.level / 3); META.coins += reward; META.gems += gr; G.reward = reward; G.greward = gr; saveMeta(); } else { G.reward = 0; G.greward = 0; }
+  SND.win();
+  // interlúdio de marco (1ª vez): mostra a cutscene e só então a tela de vitória
+  if (G.firstClear) { const il = INTERLUDES.find(x => x.level === G.level && !META.seenInterludes[x.level]); if (il) { META.seenInterludes[il.level] = true; saveMeta(); openStory('won', il.title, il.seq); return; } }
+  G.state = 'won';
+}
 function gameOver() { G.state = 'over'; shake(12); flash('0,0,0', 0.3); SND.lose(); vibe(120); }
 function hurtHero(dmg) {
   if (G.state !== 'playing' || G.invuln > 0) return;
@@ -743,8 +749,9 @@ function drawCampaign() {
   overlay(); title('CAMPANHA', 70); coinHud(); btn('menu', 16, 28, 88, 36, t('back'), '', 'rgba(40,44,58,0.95)');
   const sel = G.campSel || 1, maxSel = Math.min(META.clearedMax + 1, TOTAL_LEVELS);
   ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '800 24px system-ui'; ctx.fillText('Fase ' + sel + ' / ' + TOTAL_LEVELS, CX, ch * 0.32);
-  ctx.fillStyle = sel > META.clearedMax ? '#ffcf5e' : '#8b93a5'; ctx.font = '600 14px system-ui'; ctx.fillText(sel > META.clearedMax ? 'Nova — rende moedas' : 'Já vencida — sem moedas', CX, ch * 0.32 + 26);
-  if (genLevel(sel).hasElite) { ctx.fillStyle = '#ff9a4c'; ctx.font = '800 13px system-ui'; ctx.fillText('Contém variantes de elite', CX, ch * 0.32 + 46); }
+  ctx.fillStyle = '#9fb0d0'; ctx.font = '700 14px system-ui'; ctx.fillText(actTitle(sel), CX, ch * 0.32 + 26);
+  ctx.fillStyle = sel > META.clearedMax ? '#ffcf5e' : '#8b93a5'; ctx.font = '600 14px system-ui'; ctx.fillText(sel > META.clearedMax ? t('newlv') : t('donelv'), CX, ch * 0.32 + 46);
+  if (genLevel(sel).hasElite) { ctx.fillStyle = '#ff9a4c'; ctx.font = '800 13px system-ui'; ctx.fillText(t('elite'), CX, ch * 0.32 + 66); }
   ctx.textAlign = 'left';
   btn('camp:prev', CX - 150, ch * 0.4, 56, 60, '<', '', 'rgba(50,60,95,0.96)', sel > 1);
   btn('camp:next', CX + 94, ch * 0.4, 56, 60, '>', '', 'rgba(50,60,95,0.96)', sel < maxSel);
@@ -792,17 +799,106 @@ function drawOver() {
 
 /* ===== Localização (PT/EN) ===== */
 const STRINGS = {
-  pt: { play: 'JOGAR', story: 'HISTÓRIA', settings: 'AJUSTES', alli: 'Alianças', pvp: 'PvP', events: 'Eventos', sound: 'Som', vibe: 'Vibração', lang: 'Idioma', back: 'VOLTAR', daily: 'Recompensa diária', summon: 'Invocar', on: 'ON', off: 'OFF', soon: 'Em breve! 🔒', nogems: 'Gemas insuficientes' },
-  en: { play: 'PLAY', story: 'STORY', settings: 'SETTINGS', alli: 'Alliances', pvp: 'PvP', events: 'Events', sound: 'Sound', vibe: 'Vibration', lang: 'Language', back: 'BACK', daily: 'Daily reward', summon: 'Summon', on: 'ON', off: 'OFF', soon: 'Coming soon! 🔒', nogems: 'Not enough gems' },
+  pt: { play: 'JOGAR', story: 'HISTÓRIA', settings: 'AJUSTES', alli: 'Alianças', pvp: 'PvP', events: 'Eventos', sound: 'Som', vibe: 'Vibração', lang: 'Idioma', back: 'VOLTAR', daily: 'Recompensa diária', summon: 'Invocar', on: 'ON', off: 'OFF', soon: 'Em breve! 🔒', nogems: 'Gemas insuficientes', cont: 'toque para continuar ›', newlv: 'Nova — rende moedas', donelv: 'Já vencida — sem moedas', elite: 'Contém variantes de elite' },
+  en: { play: 'PLAY', story: 'STORY', settings: 'SETTINGS', alli: 'Alliances', pvp: 'PvP', events: 'Events', sound: 'Sound', vibe: 'Vibration', lang: 'Language', back: 'BACK', daily: 'Daily reward', summon: 'Summon', on: 'ON', off: 'OFF', soon: 'Coming soon! 🔒', nogems: 'Not enough gems', cont: 'tap to continue ›', newlv: 'New — drops coins', donelv: 'Cleared — no coins', elite: 'Contains elite variants' },
 };
 function t(k) { return (STRINGS[META.lang] || STRINGS.pt)[k] || k; }
 
-/* ===== Narrativa (texto original) ===== */
-const STORY = [
-  'O inverno chegou cedo — e trouxe a horda. As vilas arderam uma a uma.',
-  'Sou o último Guardião do Bastião. Reúno os sobreviventes atrás destes muros.',
-  'Pegue sua arma, comandante. Enquanto eu respirar, a base não cai. Avante!',
+/* ===== Narrativa (roteiro 100% original) =====
+ * MUNDO: o Vale de Auren, engolido pelo Longo Inverno. A Chama do Bastião segura
+ *   o frio; onde a luz falha, a Maré Cinérea (os mortos) se levanta.
+ * HERÓI: Pyr, o último Arcano (o mago jogável) — carrega uma fagulha da Chama.
+ * MENTOR/NARRADOR: o Guardião (a própria Chama feita voz).
+ * VILÃO: Gorr, o Rei Faminto — fez um pacto com o Inverno p/ salvar seu povo da
+ *   fome e os condenou à não-morte. Generais: Murm (Colosso) e Skarn (Algoz).
+ * ESTRUTURA: 3 atos contados por curtos interlúdios ao vencer fases-marco
+ *   (1ª vez). Documento completo de Narrative Design em bastion-rush/NARRATIVE.md.
+ * Tudo localizado PT/EN via L({pt,en}). */
+const L = (o) => (o && (typeof o === 'object') ? (o[META.lang] || o.pt) : o);
+const GUARDIAN = { pt: 'O Guardião', en: 'The Guardian' };
+const ACTS = [
+  { from: 1, to: 499, title: { pt: 'Ato I — A Vigília', en: 'Act I — The Vigil' } },
+  { from: 500, to: 1499, title: { pt: 'Ato II — A Maré Sobe', en: 'Act II — The Tide Rises' } },
+  { from: 1500, to: TOTAL_LEVELS, title: { pt: 'Ato III — O Rei Faminto', en: 'Act III — The Hungry King' } },
 ];
+function actTitle(n) { const a = ACTS.find(a => n >= a.from && n <= a.to) || ACTS[0]; return L(a.title); }
+// Introdução (1ª vez que se toca BATALHAR) — o Guardião acolhe o Arcano
+const INTRO = {
+  title: GUARDIAN,
+  seq: {
+    pt: [
+      'O Longo Inverno engoliu o Vale de Auren. Onde a luz morre, os mortos se levantam.',
+      'Eu sou o Guardião — a Chama deste Bastião feita voz. Sozinho, já não basto.',
+      'Você é Pyr, o último Arcano. Sua orbe ainda guarda uma fagulha da Chama.',
+      'A Maré Cinérea sobe pela estrada. Enquanto você resistir, a luz não se apaga. Avante!',
+    ],
+    en: [
+      'The Long Winter has swallowed the Vale of Auren. Where light dies, the dead rise.',
+      'I am the Guardian — the Flame of this Bastion given voice. Alone, I am no longer enough.',
+      'You are Pyr, the last Arcanist. Your orb still holds a spark of the Flame.',
+      'The Ashen Tide climbs the road. While you stand, the light endures. Onward!',
+    ],
+  },
+};
+// Interlúdios por fase-marco (tocam 1x, no firstClear). Arco em 3 atos.
+const INTERLUDES = [
+  { level: 10, title: GUARDIAN, seq: {
+    pt: ['A Maré sentiu o calor da Chama. Agora ela vem com fome de verdade.',
+         'Não recue um passo, Pyr. Cada inimigo na estrada é uma vela que eles querem apagar.'],
+    en: ['The Tide has tasted the Flame’s warmth. Now it comes with true hunger.',
+         'Give no ground, Pyr. Every foe on the road is a candle they mean to snuff out.'] } },
+  { level: 50, title: { pt: 'Skarn, o Algoz', en: 'Skarn the Huntsman' }, seq: {
+    pt: ['Eu te vejo, fagulha. Corro à frente da Maré e marco os vivos.',
+         'Corra quanto quiser. O frio sempre chega primeiro.'],
+    en: ['I see you, little spark. I run ahead of the Tide and mark the living.',
+         'Run all you like. The cold always arrives first.'] } },
+  { level: 100, title: GUARDIAN, seq: {
+    pt: ['As vilas do vale se calaram. Todas, menos nós.',
+         'No horizonte, algo imenso se move sob o gelo: Murm, o Colosso. A Maré tem generais.'],
+    en: ['The valley’s villages have fallen silent. All but us.',
+         'On the horizon, something vast stirs beneath the ice: Murm the Colossus. The Tide has generals.'] } },
+  { level: 250, title: GUARDIAN, seq: {
+    pt: ['Defender não basta. Se a luz há de voltar, alguém precisa levá-la estrada afora.',
+         'Reacenda os antigos faróis, Pyr. Empurre a Maré de volta ao seu berço.'],
+    en: ['Defense is not enough. If light is to return, someone must carry it down the road.',
+         'Relight the old beacons, Pyr. Push the Tide back toward its cradle.'] } },
+  { level: 500, title: GUARDIAN, seq: {
+    pt: ['Este frio não é da natureza. É um pacto.',
+         'Um rei chamado Gorr ofereceu o calor de seu povo ao Inverno para salvá-los da fome.',
+         'O Inverno aceitou — e nunca devolveu. Desde então, todos eles têm fome.'],
+    en: ['This cold is not natural. It is a pact.',
+         'A king named Gorr offered his people’s warmth to the Winter to save them from famine.',
+         'The Winter accepted — and never gave it back. Ever since, all of them hunger.'] } },
+  { level: 1000, title: GUARDIAN, seq: {
+    pt: ['Preciso te contar a verdade da Chama. Ela não arde sozinha.',
+         'O Bastião se alimenta do mesmo calor que Gorr cobiça.',
+         'Somos a última brasa de um fogo que, há muito, também foi roubado.'],
+    en: ['I must tell you the truth of the Flame. It does not burn on its own.',
+         'The Bastion feeds on the very warmth Gorr covets.',
+         'We are the last ember of a fire that was, long ago, also stolen.'] } },
+  { level: 1500, title: GUARDIAN, seq: {
+    pt: ['A estrada agora sobe para Vharn, o trono congelado.',
+         'Lá no alto, Gorr espera, coroado de fome. Termine isto, Pyr.'],
+    en: ['The road now climbs to Vharn, the frozen throne.',
+         'High above, Gorr waits, crowned in hunger. End this, Pyr.'] } },
+  { level: 2000, title: { pt: 'Gorr, o Rei Faminto', en: 'Gorr, the Hungry King' }, seq: {
+    pt: ['Então a fagulha chegou ao meu portão.',
+         'Eu também já fui caloroso. Dei tudo para salvar os meus, e o Inverno me deu uma eternidade vazia.',
+         'Junte-se a mim, Arcano — ou alimente-me.'],
+    en: ['So the spark has reached my gate.',
+         'I too was once warm. I gave everything to save my people, and the Winter gave me an empty eternity.',
+         'Join me, Arcanist — or feed me.'] } },
+  { level: 2500, title: GUARDIAN, seq: {
+    pt: ['É o fim, Pyr. Gorr caiu — mas o pacto ainda respira na Chama que nos mantém.',
+         'Para quebrar o ciclo, o Bastião deve apagar. Deixe a última brasa esfriar...',
+         'E devolva o calor roubado ao vale. A primavera retorna a Auren.',
+         'Obrigado, Arcano. No fim, a luz era você.'],
+    en: ['It is over, Pyr. Gorr has fallen — but the pact still breathes in the Flame that sustains us.',
+         'To break the cycle, the Bastion must go dark. Let the last ember cool...',
+         'And return the stolen warmth to the vale. Spring comes back to Auren.',
+         'Thank you, Arcanist. In the end, the light was you.'] } },
+];
+function openStory(then, title, seq) { G.story = { page: 0, then, title: L(title), seq: L(seq) }; G.state = 'story'; }
 
 /* ===== Habilidade ativa + Ultimate ===== */
 const skillRect = () => ({ x: cw - 58, y: ch - 230, w: 46, h: 46 });
@@ -854,10 +950,13 @@ function drawKing(cx, cy, s) {
 }
 function drawStory() {
   overlay(); drawKing(CX, ch * 0.3, 1.7);
+  const s = G.story || { seq: [''], title: L(GUARDIAN), page: 0 };
   const x = 26, y = ch * 0.5, w = cw - 52, h = 150; panel(x, y, w, h, 16);
-  ctx.fillStyle = '#ffcf5e'; ctx.font = '800 18px system-ui'; ctx.textAlign = 'left'; ctx.fillText('O Guardião', x + 18, y + 32);
-  ctx.fillStyle = '#fff'; ctx.font = '500 16px system-ui'; wrapText(STORY[Math.min(G.story.page, STORY.length - 1)], x + 18, y + 62, w - 36, 24);
-  ctx.fillStyle = '#8b93a5'; ctx.font = '700 13px system-ui'; ctx.textAlign = 'right'; ctx.fillText('toque para continuar >', x + w - 16, y + h - 14); ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffcf5e'; ctx.font = '800 18px system-ui'; ctx.textAlign = 'left'; ctx.fillText(s.title, x + 18, y + 32);
+  ctx.fillStyle = '#fff'; ctx.font = '500 16px system-ui'; wrapText(s.seq[Math.min(s.page, s.seq.length - 1)], x + 18, y + 62, w - 36, 24);
+  // pontos de progresso da cutscene
+  const n = s.seq.length, dx = x + 18; for (let i = 0; i < n; i++) { ctx.beginPath(); ctx.arc(dx + i * 14, y + h - 18, 4, 0, 6.28); ctx.fillStyle = i === Math.min(s.page, n - 1) ? '#ffcf5e' : 'rgba(255,255,255,.25)'; ctx.fill(); }
+  ctx.fillStyle = '#8b93a5'; ctx.font = '700 13px system-ui'; ctx.textAlign = 'right'; ctx.fillText(t('cont'), x + w - 16, y + h - 14); ctx.textAlign = 'left';
 }
 function drawSettings() {
   overlay(); title(t('settings'), ch * 0.24); const x = CX - 130, w = 260;
@@ -868,7 +967,7 @@ function drawSettings() {
 }
 function drawToast() { if (!G.toast) return; ctx.font = '800 16px system-ui'; const tw = ctx.measureText(G.toast.msg).width, w = tw + 40, x = CX - w / 2, y = ch * 0.8; ctx.globalAlpha = clamp(G.toast.life * 1.6, 0, 1); rr(x, y, w, 44, 16); ctx.fillStyle = 'rgba(20,26,38,0.96)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#9D4EDD'; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(G.toast.msg, CX, y + 28); ctx.textAlign = 'left'; ctx.globalAlpha = 1; }
 
-window.BR = { start: startLevel, spawn: (ty, el) => { if (G.state === 'playing') spawnEnemy(ty, el); }, skill: useSkill, ult: useUlt, go: (s) => { G.state = s; if (s === 'story') G.story = { page: 0 }; if (s === 'campaign') G.campSel = Math.min(META.clearedMax + 1, TOTAL_LEVELS); }, charge: () => { if (G.ultCharge != null) G.ultCharge = 1; }, money: () => { META.coins += 9999; META.gems += 999; saveMeta(); }, cleared: (n) => { META.clearedMax = n; saveMeta(); }, gen: genLevel, state: () => G.state, hero: () => { const h = G.hero || {}; const s = wScreen(h.x || 0, h.z || 0); return { x: +(h.x || 0).toFixed(2), z: +(h.z || 0).toFixed(2), sx: Math.round(s.x), sy: Math.round(s.y), vis: s.vis, hp: G.heroHp, hpMax: G.heroHpMax, lives: G.lives, invuln: +(G.invuln || 0).toFixed(2), fired: G.fired || 0 }; }, enemies: () => (G.enemies || []).map(e => ({ type: e.type, hp: e.maxHp, dmg: e.dmg, val: e.value, armor: e.armor, elite: e.elite && e.elite.id })), build: (i) => buyTower(i), eco: () => ({ battle: G.battle | 0, coins: META.coins | 0, gems: META.gems | 0 }) };
+window.BR = { start: startLevel, spawn: (ty, el) => { if (G.state === 'playing') spawnEnemy(ty, el); }, skill: useSkill, ult: useUlt, go: (s) => { if (s === 'story') return openStory('menu', INTRO.title, INTRO.seq); G.state = s; if (s === 'campaign') G.campSel = Math.min(META.clearedMax + 1, TOTAL_LEVELS); }, intro: () => openStory('intro', INTRO.title, INTRO.seq), interlude: (lv) => { const il = INTERLUDES.find(x => x.level === lv); if (il) openStory('won', il.title, il.seq); return !!il; }, charge: () => { if (G.ultCharge != null) G.ultCharge = 1; }, money: () => { META.coins += 9999; META.gems += 999; saveMeta(); }, cleared: (n) => { META.clearedMax = n; saveMeta(); }, gen: genLevel, state: () => G.state, hero: () => { const h = G.hero || {}; const s = wScreen(h.x || 0, h.z || 0); return { x: +(h.x || 0).toFixed(2), z: +(h.z || 0).toFixed(2), sx: Math.round(s.x), sy: Math.round(s.y), vis: s.vis, hp: G.heroHp, hpMax: G.heroHpMax, lives: G.lives, invuln: +(G.invuln || 0).toFixed(2), fired: G.fired || 0 }; }, enemies: () => (G.enemies || []).map(e => ({ type: e.type, hp: e.maxHp, dmg: e.dmg, val: e.value, armor: e.armor, elite: e.elite && e.elite.id })), build: (i) => buyTower(i), eco: () => ({ battle: G.battle | 0, coins: META.coins | 0, gems: META.gems | 0 }) };
 </script>
 </body>
 </html>
