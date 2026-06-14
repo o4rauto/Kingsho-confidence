@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>LAB — Esboço / Esqueleto (Bastion Rush)</title>
+<style>
+  :root { color-scheme: dark; }
+  html,body { margin:0; height:100%; background:#070b16; overflow:hidden; font-family:ui-monospace,monospace; }
+  #c { display:block; width:100vw; height:100vh; }
+  #hud { position:fixed; left:12px; top:12px; padding:8px 11px; border-radius:8px;
+    background:rgba(0,0,0,.45); color:#bfe6ff; font-size:12px; line-height:1.55; pointer-events:none;
+    border:1px solid rgba(111,208,255,.25); }
+  #hud b { color:#7fe0ff; }
+  #err { color:#ff8a8a; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "../vendor/three.module.js",
+  "three/addons/": "../vendor/addons/"
+} }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div><b>LAB · ESBOÇO / ESQUELETO</b></div>
+  <div>Anatomia: <span id="who">hero</span></div>
+  <div>ossos + juntas · base p/ músculo/tecido</div>
+  <div id="err"></div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { buildSkeleton, buildSkeletonMesh, SKELETONS } from './skeleton.js';
+
+const LAB = window.LAB = { ready:false, error:null, frames:0, rev:THREE.REVISION, webgl:null, who:'hero' };
+function fail(m){ LAB.error=String(m); document.getElementById('err').textContent='ERRO: '+LAB.error; console.error(m); }
+window.addEventListener('error', e=>fail(e.message));
+window.addEventListener('unhandledrejection', e=>fail(e.reason&&e.reason.message||e.reason));
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, preserveDrawingBuffer:true });
+LAB.webgl = renderer.capabilities.isWebGL2 ? 'webgl2' : 'webgl';
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x070b16);
+
+const which = new URLSearchParams(location.search).get('c') || 'hero';
+LAB.who = which;
+document.getElementById('who').textContent = which + (SKELETONS[which] ? '' : ' (fallback hero)');
+
+const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+camera.position.set(0, 1.2, 6.6); camera.lookAt(0, 1.05, 0);
+
+// ── grade "papel-projeto" (blueprint): piso + parede de fundo ──
+const grid = new THREE.GridHelper(8, 16, 0x2a4a6a, 0x16314a);
+grid.position.y = 0; scene.add(grid);
+const back = new THREE.GridHelper(8, 16, 0x1d3850, 0x122838);
+back.rotation.x = Math.PI/2; back.position.set(0, 2, -2.4); scene.add(back);
+// linha do chão (eixo)
+const axisMat = new THREE.LineBasicMaterial({ color:0x3a6a90 });
+const axis = new THREE.Line(new THREE.BufferGeometry().setFromPoints(
+  [new THREE.Vector3(-2.2,0,0), new THREE.Vector3(2.2,0,0)]), axisMat);
+scene.add(axis);
+
+// ── esqueleto ──
+const turntable = new THREE.Group(); scene.add(turntable);
+let skel, mesh;
+function load(){
+  skel = buildSkeleton(which);
+  mesh = buildSkeletonMesh(skel);
+  turntable.add(mesh);
+  window.__lab = { root: mesh, skel, camera, THREE };
+}
+load();
+
+// post: bloom (faz ossos/juntas "brilharem" como raio-x)
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(1,1), 0.7, 0.6, 0.2);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+function resize(){
+  const w=innerWidth,h=innerHeight;
+  renderer.setSize(w,h,false); composer.setSize(w,h); bloom.setSize(w,h);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+LAB.setAngle = (deg)=>{ turntable.rotation.y = deg*Math.PI/180; };
+LAB.spin = true;
+
+const clock = new THREE.Clock();
+function tick(){
+  const t = clock.getElapsedTime();
+  if (LAB.spin) turntable.rotation.y = t*0.6;
+  composer.render();
+  LAB.frames++; LAB.ready = true;
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
+</body>
+</html>
