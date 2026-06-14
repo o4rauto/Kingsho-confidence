@@ -121,3 +121,84 @@ export function buildGrunt(opts = {}) {
   outlineAll(model, 0.045);
   return { model, lights: [] };
 }
+
+// fita esvoaçante (cachecol/cauda): cadeia de blocos achatados afunilando
+function ribbon(start, color, segs = 4, len = 0.34, w = 0.26, curve = 0.5) {
+  const g = new THREE.Group();
+  let p = start.clone(), ang = curve;
+  for (let i = 0; i < segs; i++) {
+    const ww = w * (1 - i / (segs + 1));
+    const seg = rbox(ww, 0.06, len, color, 0.03);
+    ang += curve * (i % 2 ? -1 : 1) * 0.5 - 0.25; // ondinha
+    seg.rotation.x = ang;
+    seg.position.copy(p);
+    g.add(seg);
+    p.add(new THREE.Vector3(0, Math.sin(ang) * len * 0.9, -Math.cos(ang) * len * 0.9));
+  }
+  return g;
+}
+
+// ════════════════════════════ RUNNER (batedor veloz, digitígrado) ════════════════════════════
+export function buildRunner(opts = {}) {
+  const SKIN = opts.skin ?? 0xd07a38;   // terracota
+  const SKIN2 = opts.skin2 ?? 0x9c531f;  // sombra
+  const BELLY = opts.belly ?? 0xf0c98c;
+  const SCARF = opts.scarf ?? 0xe23b3b;  // cachecol vermelho (velocidade)
+
+  const FOOT = 0x3a2c22;
+  const model = new THREE.Group();
+  const HEADR = 0.52;
+  const HEADY = 1.72;
+
+  // ── pernas esguias e longas + pés esportivos grandes ──
+  for (const sx of [-1, 1]) {
+    const thigh = capsule(0.12, 0.32, SKIN); thigh.position.set(sx * 0.21, 0.92, 0.02); model.add(thigh);
+    const shin = capsule(0.1, 0.34, SKIN); shin.position.set(sx * 0.21, 0.5, 0.0); model.add(shin);
+    // tênis/pé grande (velocidade)
+    const foot = rbox(0.26, 0.18, 0.5, FOOT, 0.08); foot.position.set(sx * 0.21, 0.13, 0.14); model.add(foot);
+    const sole = rbox(0.28, 0.07, 0.52, 0xe8e2d2, 0.03); sole.position.set(sx * 0.21, 0.05, 0.14); model.add(sole);
+  }
+
+  // ── corpo magro ──
+  const body = blob(0.32, 0.5, 0.3, SKIN); body.position.set(0, 1.24, 0); model.add(body);
+  const belly = new THREE.Mesh(new THREE.CircleGeometry(0.17, 18),
+    new THREE.MeshBasicMaterial({ color: BELLY, toneMapped: false }));
+  belly.scale.set(1, 1.9, 1); belly.position.set(0, 1.18, 0.29); belly.userData.noOutline = true; model.add(belly);
+
+  // ── braços finos levemente pra trás ──
+  for (const sx of [-1, 1]) {
+    const arm = capsule(0.075, 0.46, SKIN); arm.position.set(sx * 0.33, 1.22, -0.08); arm.rotation.x = -0.45; arm.rotation.z = sx * -0.2; model.add(arm);
+    const hand = glove(0.12, SKIN2); hand.position.set(sx * 0.4, 0.96, -0.28); model.add(hand);
+  }
+
+  // ── CABEÇA ereta e redonda (rosto bem legível) ──
+  const head = ball(HEADR, SKIN); head.position.set(0, HEADY, 0); head.scale.set(1.02, 1, 1); model.add(head);
+
+  // orelhas altas levemente pra trás (silhueta), mas visíveis
+  for (const sx of [-1, 1]) {
+    const ear = cone(0.15, 0.66, SKIN, 12); ear.position.set(sx * 0.34, HEADY + 0.5, -0.08);
+    ear.rotation.z = sx * -0.5; ear.rotation.x = -0.35; model.add(ear);
+    const earIn = cone(0.07, 0.44, SCARF, 10); earIn.position.set(sx * 0.32, HEADY + 0.48, -0.02);
+    earIn.rotation.z = sx * -0.5; earIn.rotation.x = -0.35; earIn.userData.noOutline = true; model.add(earIn);
+  }
+
+  // olhos GRANDES e ansiosos (a bandana já emoldura o rosto; sem sobrancelha flutuante)
+  for (const sx of [-1, 1]) {
+    const e = eye(0.2, 0xff9a2a, 'normal'); e.position.set(sx * 0.23, HEADY + 0.02, HEADR * 0.94); e.userData.noOutline = true; model.add(e);
+  }
+  // focinho/nariz pequeno + grande sorriso
+  const nose = blob(0.09, 0.07, 0.1, 0x2a1c14); nose.position.set(0, HEADY - 0.14, HEADR * 1.0); nose.userData.noOutline = true; model.add(nose);
+  const grin = fangMouth(0.22); grin.position.set(0, HEADY - 0.32, HEADR * 0.86); model.add(grin);
+
+  // ── BANDANA na testa com duas pontas esvoaçando pra trás (= velocidade) ──
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(HEADR * 1.02, HEADR * 1.02, 0.16, 24, 1, true), vinyl(SCARF));
+  band.position.set(0, HEADY + 0.16, 0); band.userData.noOutline = true; model.add(band);
+  model.add(ribbon(new THREE.Vector3(-0.36, HEADY + 0.18, -0.2), SCARF, 4, 0.32, 0.18, 0.45));
+  model.add(ribbon(new THREE.Vector3(-0.42, HEADY + 0.08, -0.18), SCARF, 3, 0.3, 0.14, 0.6));
+
+  // ── cauda fina esvoaçando ──
+  model.add(ribbon(new THREE.Vector3(0, 1.02, -0.26), SKIN, 4, 0.3, 0.2, 0.4));
+
+  outlineAll(model, 0.045);
+  return { model, lights: [] };
+}
