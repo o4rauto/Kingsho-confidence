@@ -34,6 +34,7 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Rig } from './chibi.js';
 import { buildHeroMage } from './hero.js';
@@ -96,25 +97,34 @@ podTop.position.y = 0.01; scene.add(podTop);
 
 // turntable + personagem
 const turntable = new THREE.Group(); scene.add(turntable);
-let rig;
+let rig, model;
 function loadChar(){
-  const { model } = CH.build();
+  ({ model } = CH.build());
   rig = new Rig(model);
   turntable.add(rig);
   window.__lab = { root: model, camera, THREE };
 }
 loadChar();
 
-// post: bloom (faz o orbe/estrela/olhos "brilharem")
+// post: contorno de SILHUETA única (linha limpa em volta do personagem, sem
+// riscar as interseções internas) + bloom (orbe/estrela/olhos "brilham")
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
+const outline = new OutlinePass(new THREE.Vector2(1,1), scene, camera, [model]);
+outline.edgeStrength = 5.0;
+outline.edgeGlow = 0.0;
+outline.edgeThickness = 1.4;
+outline.pulsePeriod = 0;
+outline.visibleEdgeColor.set('#0b0d14');
+outline.hiddenEdgeColor.set('#0b0d14');
+composer.addPass(outline);
 const bloom = new UnrealBloomPass(new THREE.Vector2(1,1), 0.5, 0.45, 0.96);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
 function resize(){
   const w=innerWidth,h=innerHeight;
-  renderer.setSize(w,h,false); composer.setSize(w,h); bloom.setSize(w,h);
+  renderer.setSize(w,h,false); composer.setSize(w,h); bloom.setSize(w,h); outline.setSize(w,h);
   camera.aspect=w/h; camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize); resize();

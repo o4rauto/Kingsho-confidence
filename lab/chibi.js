@@ -74,11 +74,12 @@ export function outline(mesh, dist = 0.045, color = 0x10141f) {
   return o;
 }
 
-// percorre um grupo e contorna todas as meshes "de corpo" (pula olhos/glow/sprites)
+// percorre um grupo e contorna as meshes "de corpo".
+// NOTA: o contorno agora é feito por SILHUETA única no viewer (OutlinePass),
+// que dá uma linha limpa em volta do personagem sem riscar as interseções
+// internas (o contorno por-peça criava "rachaduras" em cada sobreposição).
+// Mantido como no-op p/ não quebrar as chamadas existentes.
 export function outlineAll(group, dist = 0.045) {
-  group.traverse(o => {
-    if (o.isMesh && !o.userData.outline && !o.userData.noOutline) outline(o, dist);
-  });
   return group;
 }
 
