@@ -25,7 +25,7 @@
 <div id="hud">
   <div><b>LAB · Personagens chibi</b></div>
   <div>Atual: <span id="who">Mago Herói</span></div>
-  <div>Three r<span id="rev">?</span> · toon vinil + contorno + bloom</div>
+  <div>Three r<span id="rev">?</span> · mesh detalhada (sculpt) + contorno + bloom</div>
   <div id="err"></div>
 </div>
 
@@ -111,9 +111,9 @@ loadChar();
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 const outline = new OutlinePass(new THREE.Vector2(1,1), scene, camera, [model]);
-outline.edgeStrength = 5.0;
+outline.edgeStrength = 6.5;
 outline.edgeGlow = 0.0;
-outline.edgeThickness = 1.4;
+outline.edgeThickness = 2.2;
 outline.pulsePeriod = 0;
 outline.visibleEdgeColor.set('#0b0d14');
 outline.hiddenEdgeColor.set('#0b0d14');
