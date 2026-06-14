@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>LAB — Skin GTA-SA (formas básicas + textura da ficha)</title>
+<style>
+  :root { color-scheme: dark; }
+  html,body { margin:0; height:100%; background:#0b1018; overflow:hidden; font-family:system-ui,sans-serif; }
+  #c { display:block; width:100vw; height:100vh; }
+  #hud { position:fixed; left:12px; top:12px; padding:8px 11px; border-radius:10px;
+    background:rgba(0,0,0,.45); color:#cfe; font-size:12px; line-height:1.5; pointer-events:none; }
+  #hud b { color:#9fe0ff; } #err { color:#ff8a8a; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "../vendor/three.module.js", "three/addons/": "../vendor/addons/" } }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div><b>LAB · Skin GTA-SA</b> (formas básicas + skin da ficha)</div>
+  <div>Atual: <span id="who">Pyr</span></div>
+  <div>low-poly + textura projetada da ilustração</div>
+  <div id="err"></div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { CanvasChar } from './canvas-engine.js';
+
+const CHARS = {
+  pyr: { url:'concept/pyr-heroi.png', label:'Pyr (herói)', crop:{x:182,y:54,w:150,h:206,scale:4} },
+};
+const LAB = window.LAB = { ready:false, error:null, frames:0, who:'pyr' };
+const errEl = document.getElementById('err');
+function fail(m){ LAB.error=String(m&&m.message||m); errEl.textContent='ERRO: '+LAB.error; console.error(m); }
+addEventListener('error', e=>fail(e.message));
+addEventListener('unhandledrejection', e=>fail(e.reason));
+
+const which = new URLSearchParams(location.search).get('c') || 'pyr';
+const CH = CHARS[which] || CHARS.pyr;
+LAB.who = which; document.getElementById('who').textContent = CH.label;
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, preserveDrawingBuffer:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio||1, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0c1320);
+const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+camera.position.set(0, 1.7, 7.2); camera.lookAt(0, 1.5, 0);
+
+scene.add(new THREE.HemisphereLight(0xdfeaff, 0x202a3a, 0.95));
+const key = new THREE.DirectionalLight(0xfff0d8, 1.0); key.position.set(3,5,6); scene.add(key);
+const rim = new THREE.DirectionalLight(0x88b4ff, 0.5); rim.position.set(-4,3,-3); scene.add(rim);
+
+// chão
+const ground = new THREE.Mesh(new THREE.CircleGeometry(8,40), new THREE.MeshStandardMaterial({ color:0x16202e, roughness:1 }));
+ground.rotation.x = -Math.PI/2; scene.add(ground);
+const turntable = new THREE.Group(); scene.add(turntable);
+
+// dimensões da figura (silhueta) no mundo
+const FH = 3.0;            // altura
+let FW = 2.2;              // largura (ajustada pela proporção da textura)
+const minY = 0, maxY = FH;
+function planarUV(geo){
+  const minX = -FW/2, maxX = FW/2;
+  const pos = geo.attributes.position, uv = [];
+  for (let i=0;i<pos.count;i++){
+    uv.push((pos.getX(i)-minX)/(maxX-minX), (pos.getY(i)-minY)/(maxY-minY));
+  }
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
+}
+// caixa básica posicionada no footprint da arte (nx,ny normalizados 0..1)
+function part(nx, ny, wN, hN, depth){
+  const w = wN*FW, h = hN*FH, d = depth;
+  const g = new THREE.BoxGeometry(w, h, d, 1,1,1);
+  g.translate((nx-0.5)*FW, ny*FH, 0);
+  planarUV(g);
+  return g;
+}
+
+(async () => {
+  // SKIN: recorte da ficha (cor + alfa) → textura
+  const p = await CanvasChar.process(CH.url, CH.crop);
+  FW = FH * (p.W / p.H);
+  const tc = document.createElement('canvas'); tc.width=p.W; tc.height=p.H;
+  tc.getContext('2d').putImageData(new ImageData(p.color, p.W, p.H), 0, 0);
+  const tex = new THREE.CanvasTexture(tc);
+  tex.colorSpace = THREE.SRGBColorSpace; tex.flipY = true;
+  const mat = new THREE.MeshStandardMaterial({ map:tex, transparent:true, alphaTest:0.5, roughness:0.85, metalness:0, side:THREE.DoubleSide });
+
+  // FORMAS BÁSICAS no footprint da Pyr (nx,ny,wN,hN,depth)
+  const geos = [
+    part(0.50, 0.30, 0.62, 0.46, 1.05),  // robe/quadril (sino)
+    part(0.50, 0.10, 0.46, 0.20, 0.85),  // botas/base
+    part(0.50, 0.52, 0.40, 0.26, 0.70),  // tronco
+    part(0.50, 0.72, 0.30, 0.20, 0.55),  // cabeça
+    part(0.50, 0.90, 0.52, 0.22, 0.55),  // chapéu (aba+cone simplificado)
+    part(0.24, 0.50, 0.20, 0.30, 0.45),  // braço esq.
+    part(0.74, 0.58, 0.20, 0.30, 0.45),  // braço dir.
+    part(0.80, 0.55, 0.10, 0.85, 0.30),  // cajado
+  ];
+  for (const g of geos){ const m = new THREE.Mesh(g, mat); turntable.add(m); }
+
+  LAB.ready = true; LAB.parts = geos.length;
+  requestAnimationFrame(loop);
+})().catch(fail);
+
+function resize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+
+LAB.setAngle = (deg)=>{ turntable.rotation.y = deg*Math.PI/180; };
+LAB.spin = true;
+function loop(t){
+  if (LAB.spin) turntable.rotation.y = Math.sin(t*0.0006)*0.5;
+  renderer.render(scene, camera); LAB.frames++;
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

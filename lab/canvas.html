@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>LAB — Canvas próprio (modelo 3D simulado)</title>
+<style>
+  :root { color-scheme: dark; }
+  html,body { margin:0; height:100%; background:#0b1018; overflow:hidden; font-family:system-ui,sans-serif; }
+  #c { display:block; width:100vw; height:100vh; }
+  #hud { position:fixed; left:12px; top:12px; padding:8px 11px; border-radius:10px;
+    background:rgba(0,0,0,.45); color:#cfe; font-size:12px; line-height:1.5; pointer-events:none; }
+  #hud b { color:#9fe0ff; } #err { color:#ff8a8a; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div><b>LAB · Canvas próprio</b> (Canvas 2D puro · 0 libs)</div>
+  <div>Atual: <span id="who">Pyr</span></div>
+  <div>ilustração da ficha → relevo + luz pixel a pixel</div>
+  <div id="err"></div>
+</div>
+
+<script type="module">
+import { CanvasChar } from './canvas-engine.js';
+
+// registro de personagens: ficha + recorte da figura
+const CHARS = {
+  pyr: { url:'concept/pyr-heroi.png', label:'Pyr (herói)', crop:{x:182,y:54,w:150,h:206,scale:3} },
+};
+
+const LAB = window.LAB = { ready:false, error:null, frames:0, who:'pyr' };
+const errEl = document.getElementById('err');
+function fail(m){ LAB.error=String(m&&m.message||m); errEl.textContent='ERRO: '+LAB.error; console.error(m); }
+addEventListener('error', e=>fail(e.message));
+addEventListener('unhandledrejection', e=>fail(e.reason));
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let DPR = Math.min(devicePixelRatio||1, 2);
+function resize(){ canvas.width=innerWidth*DPR; canvas.height=innerHeight*DPR; }
+addEventListener('resize', resize); resize();
+
+const which = new URLSearchParams(location.search).get('c') || 'pyr';
+const CH = CHARS[which] || CHARS.pyr;
+LAB.who = which; document.getElementById('who').textContent = CH.label;
+
+// buffer offscreen do personagem sombreado
+const buf = document.createElement('canvas');
+let proc = null;
+
+(async () => {
+  proc = await CanvasChar.process(CH.url, CH.crop);
+  buf.width = proc.W; buf.height = proc.H;
+  LAB.proc = proc;
+  requestAnimationFrame(loop);
+})().catch(fail);
+
+// fundo: arena gelada (gradiente radial + rachaduras)
+function drawArena(w, h) {
+  const g = ctx.createRadialGradient(w*0.5, h*0.62, 40, w*0.5, h*0.62, Math.max(w,h)*0.7);
+  g.addColorStop(0,'#1b2636'); g.addColorStop(0.55,'#111a27'); g.addColorStop(1,'#0a0f17');
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+}
+
+LAB.opts = { lightAngle:-0.6, depth:26, ambient:0.42 };
+
+function render() {
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h); drawArena(w,h);
+  if (!proc) return;
+
+  // figura sombreada com a luz atual
+  const shaded = CanvasChar.shade(proc, LAB.opts);
+  buf.getContext('2d').putImageData(shaded, 0, 0);
+
+  // enquadra a figura em pé no centro-baixo
+  const targetH = h * 0.66;
+  const scale = targetH / proc.H;
+  const dw = proc.W * scale, dh = proc.H * scale;
+  const cx = w*0.5, baseY = h*0.84;
+  const dx = cx - dw/2, dy = baseY - dh;
+
+  // sombra de contato
+  const sg = ctx.createRadialGradient(cx, baseY, 0, cx, baseY, dw*0.55);
+  sg.addColorStop(0,'rgba(0,0,0,0.5)'); sg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.save(); ctx.translate(cx, baseY); ctx.scale(1, 0.32); ctx.translate(-cx,-baseY);
+  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(cx, baseY, dw*0.55, 0, Math.PI*2); ctx.fill(); ctx.restore();
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(buf, dx, dy, dw, dh);
+}
+
+function loop(t) {
+  // luz orbitando devagar (revela o relevo → sensação de 3D)
+  LAB.opts.lightAngle = -0.6 + Math.sin(t*0.0008) * 0.9;
+  render();
+  LAB.frames++; LAB.ready = true;
+  requestAnimationFrame(loop);
+}
+
+LAB.setLight = (a)=>{ LAB.opts.lightAngle = a; render(); };
+</script>
+</body>
+</html>
