@@ -122,7 +122,111 @@ export function buildGrunt(opts = {}) {
   return { model, lights: [] };
 }
 
-// fita esvoaçante (cachecol/cauda): cadeia de blocos achatados afunilando
+// ════════════════════════════ SHIELD (orc blindado, tanque) ════════════════════════════
+export function buildShield(opts = {}) {
+  const SKIN = opts.skin ?? 0x88a256;   // pele orc verde-acinzentada
+  const SKIN2 = opts.skin2 ?? 0x5f7438;
+  const IRON = opts.iron ?? 0x828ea1;   // ferro
+  const IRON2 = opts.iron2 ?? 0x515a69;  // ferro escuro
+  const BRONZE = 0xcf9438;
+  const EMBLEM = opts.emblem ?? 0xd13b3b;
+
+  const model = new THREE.Group();
+  const HEADR = 0.42;
+  const HEADY = 1.62;
+
+  // ── pernas curtas e grossas, blindadas ──
+  for (const sx of [-1, 1]) {
+    const leg = rbox(0.34, 0.5, 0.42, IRON, 0.1); leg.position.set(sx * 0.28, 0.42, 0); model.add(leg);
+    const boot = rbox(0.4, 0.26, 0.56, IRON2, 0.08); boot.position.set(sx * 0.28, 0.15, 0.08); model.add(boot);
+    const knee = ball(0.13, BRONZE); knee.position.set(sx * 0.28, 0.55, 0.22); model.add(knee);
+  }
+
+  // ── TORSO largo e quadrado (silhueta de tanque) ──
+  const torso = rbox(1.02, 0.92, 0.62, IRON, 0.16); torso.position.y = 1.1; model.add(torso);
+  // peitoral com sulco + rebites
+  const plate = rbox(0.7, 0.66, 0.12, IRON2, 0.1); plate.position.set(0, 1.14, 0.34); model.add(plate);
+  for (const sx of [-1, 1]) for (const yy of [1.32, 1.0]) {
+    const rivet = ball(0.05, BRONZE); rivet.position.set(sx * 0.26, yy, 0.42); model.add(rivet);
+  }
+  // cinto
+  const belt = rbox(1.04, 0.16, 0.64, 0x3a2a1c, 0.05); belt.position.y = 0.78; model.add(belt);
+  const buckle = rbox(0.2, 0.16, 0.1, BRONZE, 0.04); buckle.position.set(0, 0.78, 0.36); model.add(buckle);
+
+  // ── pauldrons (ombreiras grandes) ──
+  for (const sx of [-1, 1]) {
+    const pad = blob(0.32, 0.28, 0.34, IRON); pad.position.set(sx * 0.6, 1.5, 0.02); model.add(pad);
+    const spike = cone(0.1, 0.24, IRON2, 10); spike.position.set(sx * 0.66, 1.7, 0.02); spike.rotation.z = sx * -0.3; model.add(spike);
+  }
+
+  // ── CABEÇA: rosto orc bravo sob elmo aberto ──
+  const head = ball(HEADR, SKIN); head.position.set(0, HEADY, 0.04); head.scale.set(1.05, 0.95, 1); model.add(head);
+  // elmo (skullcap ACIMA dos olhos + protetor de nariz + laterais)
+  const helm = new THREE.Mesh(new THREE.SphereGeometry(HEADR * 1.14, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.5), vinyl(IRON));
+  helm.position.set(0, HEADY + 0.14, 0.0); model.add(helm);
+  const helmRim = new THREE.Mesh(new THREE.TorusGeometry(HEADR * 1.12, 0.05, 10, 24), vinyl(BRONZE));
+  helmRim.rotation.x = Math.PI / 2; helmRim.position.set(0, HEADY + 0.16, 0.0); model.add(helmRim);
+  const nasal = rbox(0.09, 0.3, 0.1, IRON, 0.03); nasal.position.set(0, HEADY + 0.04, HEADR * 1.02); model.add(nasal);
+  for (const sx of [-1, 1]) {
+    const cheek = rbox(0.09, 0.26, 0.34, IRON, 0.04); cheek.position.set(sx * HEADR * 1.04, HEADY - 0.02, 0.0); model.add(cheek);
+    const horn = cone(0.1, 0.36, BRONZE, 10); horn.position.set(sx * 0.44, HEADY + 0.5, -0.02); horn.rotation.z = sx * -0.7; model.add(horn);
+  }
+
+  // sobrancelha pesada + olhos raivosos brilhando
+  for (const sx of [-1, 1]) {
+    const brow = rbox(0.22, 0.09, 0.07, SKIN2, 0.03); brow.position.set(sx * 0.18, HEADY + 0.13, HEADR * 0.92); brow.rotation.z = sx * -0.4; model.add(brow);
+    const e = eye(0.14, 0xffcf2a, 'normal'); e.position.set(sx * 0.18, HEADY + 0.02, HEADR * 0.94); e.userData.noOutline = true; model.add(e);
+  }
+  // nariz achatado + rosnado entre presas (underbite)
+  const nose = blob(0.13, 0.08, 0.13, SKIN2); nose.position.set(0, HEADY - 0.14, HEADR * 1.0); model.add(nose);
+  const jaw = blob(0.3, 0.16, 0.2, SKIN); jaw.position.set(0, HEADY - 0.3, HEADR * 0.78); model.add(jaw);
+  const snarl = new THREE.Mesh(new THREE.CircleGeometry(0.16, 16),
+    new THREE.MeshBasicMaterial({ color: 0x2a0d10, toneMapped: false }));
+  snarl.scale.set(1.2, 0.55, 1); snarl.position.set(0, HEADY - 0.28, HEADR * 0.95); snarl.userData.noOutline = true; model.add(snarl);
+  for (const sx of [-1, 1]) {
+    const tusk = cone(0.07, 0.26, 0xeae3cf, 8); tusk.position.set(sx * 0.16, HEADY - 0.22, HEADR * 0.96);
+    tusk.userData.noOutline = true; model.add(tusk);
+  }
+
+  // ── braço direito com maça ──
+  const armR = capsule(0.15, 0.3, SKIN); armR.position.set(0.62, 1.18, -0.02); armR.rotation.z = -0.5; model.add(armR);
+  const fistR = glove(0.2, SKIN2); fistR.position.set(0.84, 1.42, 0.06); model.add(fistR);
+  const haft = capsule(0.06, 0.5, 0x5a3719); haft.position.set(0.92, 1.7, 0.06); model.add(haft);
+  const maceHead = ball(0.2, IRON2); maceHead.position.set(0.96, 2.0, 0.06); model.add(maceHead);
+  for (const a of [0, 1.05, 2.1, 3.15, 4.2, 5.25]) {
+    const spk = cone(0.07, 0.16, IRON, 8);
+    spk.position.set(0.96 + Math.cos(a) * 0.22, 2.0 + Math.sin(a) * 0.22, 0.06);
+    spk.rotation.z = a - Math.PI / 2; model.add(spk);
+  }
+
+  // ── ESCUDÃO no braço esquerdo (domina a silhueta) ──
+  const shieldGrp = new THREE.Group(); shieldGrp.position.set(-0.66, 1.02, 0.46); shieldGrp.rotation.y = 0.25;
+  const sBack = rbox(1.0, 1.4, 0.12, IRON2, 0.26); shieldGrp.add(sBack);
+  const sFace = rbox(0.86, 1.24, 0.14, IRON, 0.24); sFace.position.z = 0.06; shieldGrp.add(sFace);
+  const rim = rbox(0.94, 1.32, 0.1, BRONZE, 0.26); rim.position.z = 0.02; shieldGrp.add(rim);
+  const boss = ball(0.18, BRONZE); boss.position.z = 0.16; shieldGrp.add(boss);
+  // emblema (estrela) no escudo
+  const emblem = new THREE.Mesh(starGeoM(0.26, 0.12, 4), glow(EMBLEM));
+  emblem.position.set(0, 0.36, 0.15); emblem.userData.noOutline = true; shieldGrp.add(emblem);
+  const armL = capsule(0.14, 0.26, SKIN); armL.position.set(-0.5, 1.16, 0.18); armL.rotation.z = 0.4; model.add(armL);
+  model.add(shieldGrp);
+
+  outlineAll(model, 0.05);
+  return { model, lights: [] };
+}
+
+// estrela utilitária (também usada pelo escudo)
+function starGeoM(outer, inner, points) {
+  const s = new THREE.Shape();
+  for (let i = 0; i < points * 2; i++) {
+    const r = i % 2 ? inner : outer;
+    const a = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
+    const x = Math.cos(a) * r, y = Math.sin(a) * r;
+    i ? s.lineTo(x, y) : s.moveTo(x, y);
+  }
+  s.closePath();
+  return new THREE.ShapeGeometry(s);
+}
 function ribbon(start, color, segs = 4, len = 0.34, w = 0.26, curve = 0.5) {
   const g = new THREE.Group();
   let p = start.clone(), ang = curve;
