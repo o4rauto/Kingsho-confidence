@@ -38,8 +38,12 @@ const config: Phaser.Types.Core.GameConfig = {
     powerPreference: 'high-performance',
   },
   fps: {
+    // A low `min` stops Phaser from clamping the frame delta on slow/software-
+    // rendered devices, so timers (wave spawns) keep real-time pace. The
+    // GameScene sub-steps its own simulation with a hard cap, so this can't
+    // trigger a death spiral.
     target: 60,
-    min: 30,
+    min: 5,
   },
   scene: [
     BootScene,

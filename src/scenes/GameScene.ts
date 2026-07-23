@@ -86,6 +86,7 @@ export class GameScene extends Phaser.Scene implements IArena {
   private bastionSprite!: Phaser.GameObjects.Image;
 
   private bastionFlash = 0;
+  private lastSimNow = 0;
 
   constructor() {
     super('Game');
@@ -112,8 +113,9 @@ export class GameScene extends Phaser.Scene implements IArena {
     this.state = 'intro';
     this.cards = [];
 
-    this.cameras.main.fadeIn(300, 5, 7, 15);
     this.cameras.main.setBackgroundColor(realm.ground2);
+    // Clear any leftover navigation guard from a previous run.
+    (this as Phaser.Scene & { __transitioning?: boolean }).__transitioning = false;
 
     this.drawField(realm);
     this.buildPaths(realm.lanes);
@@ -143,16 +145,21 @@ export class GameScene extends Phaser.Scene implements IArena {
       g.fillStyle(mix(realm.ground, realm.ground2, t), 1);
       g.fillRect(0, (GAME_HEIGHT / bands) * i, GAME_WIDTH, GAME_HEIGHT / bands + 1);
     }
-    // Subtle ground texture blotches.
-    for (let i = 0; i < 40; i++) {
+    // Subtle ground texture blotches (drawn once, cheap).
+    for (let i = 0; i < 32; i++) {
       const x = Math.random() * GAME_WIDTH;
       const y = this.fieldTop + Math.random() * (GAME_HEIGHT - this.fieldTop);
       g.fillStyle(mix(realm.ground, Palette.black, 0.25), 0.15);
       g.fillCircle(x, y, 20 + Math.random() * 50);
     }
-    // Vignette.
-    const vig = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'fx:glow-rush').setDisplaySize(GAME_WIDTH * 2, GAME_HEIGHT * 2).setTint(Palette.night0).setAlpha(0.5).setDepth(DEPTH.decal);
-    vig.setBlendMode(Phaser.BlendModes.MULTIPLY);
+    // Cheap static vignette: dark edges baked once into the same Graphics (no
+    // per-frame full-screen blended image, which is very costly on software GL).
+    g.fillStyle(Palette.night0, 0.5);
+    g.fillRect(0, 0, GAME_WIDTH, 40);
+    g.fillRect(0, GAME_HEIGHT - 40, GAME_WIDTH, 40);
+    g.fillStyle(Palette.night0, 0.35);
+    g.fillRect(0, 40, 26, GAME_HEIGHT - 80);
+    g.fillRect(GAME_WIDTH - 26, 40, 26, GAME_HEIGHT - 80);
   }
 
   private buildPaths(lanes: number) {
@@ -221,9 +228,10 @@ export class GameScene extends Phaser.Scene implements IArena {
   damageEnemy(e: Enemy, dmg: number, opts: DamageOpts) {
     if (!e.alive) return;
     e.applyDamage(dmg);
-    // Impact FX.
+    // Impact FX (kept light — sparks only on crits / an occasional hit).
     if (opts.x !== undefined && opts.y !== undefined) {
-      this.burst(opts.x, opts.y, opts.crit ? Palette.ember0 : Palette.white, opts.crit ? 6 : 3, 'fx:spark');
+      if (opts.crit) this.burst(opts.x, opts.y, Palette.ember0, 5, 'fx:spark');
+      else if (Math.random() < 0.5) this.burst(opts.x, opts.y, Palette.white, 2, 'fx:spark');
     }
     if (opts.crit) this.floatText(e.x, e.y - e.radius * 2, `${Math.round(dmg)}`, Palette.ember0, true);
 
@@ -283,7 +291,7 @@ export class GameScene extends Phaser.Scene implements IArena {
   }
 
   burst(x: number, y: number, color: number, count = 6, key = 'fx:soft') {
-    const n = Math.min(count, 14);
+    const n = Math.min(count, 8);
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
       const spd = 30 + Math.random() * 120;
@@ -421,11 +429,19 @@ export class GameScene extends Phaser.Scene implements IArena {
   // ────────────────────────────────────────────────────────
   // Main loop
   // ────────────────────────────────────────────────────────
-  override update(_time: number, delta: number) {
-    if (this.state !== 'playing') return;
-    const dt = Math.min(delta / 1000, 0.05);
+  override update(_time: number, _delta: number) {
+    if (this.state !== 'playing') {
+      this.lastSimNow = 0; // reset so resuming doesn't jump the sim
+      return;
+    }
 
-    // Feed warden movement from the active joystick pointer.
+    // Real wall-clock delta — Phaser smooths/clamps its own `delta`, which would
+    // make the game run in slow motion on low-FPS devices.
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const realDelta = this.lastSimNow ? (now - this.lastSimNow) / 1000 : 1 / 60;
+    this.lastSimNow = now;
+
+    // Feed warden movement from the active joystick pointer (once per frame).
     if (this.joyActive && this.joyPointer) {
       const dx = (this.joyPointer.x - this.joyOrigin.x) / 60;
       const dy = (this.joyPointer.y - this.joyOrigin.y) / 60;
@@ -434,6 +450,35 @@ export class GameScene extends Phaser.Scene implements IArena {
       this.warden.setMove(0, 0);
     }
 
+    // Fixed-timestep sub-stepping: keeps the simulation at real-time speed and
+    // free of tunnelling even when the render frame rate is low (software GL /
+    // weak devices). We advance the sim in 1/60s steps, capped so a huge hitch
+    // can't trigger a death spiral.
+    const STEP = 1 / 60;
+    let remaining = Math.min(realDelta, 0.1);
+    let steps = 0;
+    while (remaining > 1e-4 && steps < 6 && this.state === 'playing') {
+      const dt = Math.min(remaining, STEP);
+      this.stepSim(dt);
+      remaining -= dt;
+      steps++;
+    }
+
+    this.updateHud(STEP);
+
+    // Wave complete → boon or victory (checked once per frame).
+    if (this.state === 'playing' && this.waveComplete()) {
+      const realm = getRealm(this.realmId);
+      if (this.waveIndex >= realm.waves.length - 1) {
+        this.endRun(true);
+      } else {
+        this.offerBoon();
+      }
+    }
+  }
+
+  /** One fixed simulation step. */
+  private stepSim(dt: number) {
     this.warden.update(dt, this.wardenBounds);
     for (const c of this.champions) c.update(dt);
     for (const e of this.enemies) e.update(dt);
@@ -469,18 +514,6 @@ export class GameScene extends Phaser.Scene implements IArena {
     // Cooldowns.
     for (let i = 0; i < this.cardCooldown.length; i++) {
       if (this.cardCooldown[i] > 0) this.cardCooldown[i] = Math.max(0, this.cardCooldown[i] - dt);
-    }
-
-    this.updateHud(dt);
-
-    // Wave complete → boon or victory.
-    if (this.waveComplete()) {
-      const realm = getRealm(this.realmId);
-      if (this.waveIndex >= realm.waves.length - 1) {
-        this.endRun(true);
-      } else {
-        this.offerBoon();
-      }
     }
   }
 
@@ -1008,16 +1041,16 @@ export class GameScene extends Phaser.Scene implements IArena {
     c.add([t, s]);
     c.setScale(0.7).setAlpha(0);
     this.tweens.add({ targets: c, scale: 1, alpha: 1, duration: 400, ease: 'Back.out' });
-    this.tweens.add({
-      targets: c,
-      alpha: 0,
-      delay: 1100,
-      duration: 400,
-      onComplete: () => {
-        c.destroy();
-        onDone?.();
-      },
-    });
+    // Drive the follow-up on a wall-clock timer so gameplay (e.g. the first
+    // wave) still starts even when the frame rate — and therefore tween
+    // progress — is very low on software-rendered devices.
+    window.setTimeout(() => {
+      if (c.active) {
+        this.tweens.add({ targets: c, alpha: 0, duration: 300, onComplete: () => c.destroy() });
+        this.time.delayedCall(600, () => c.active && c.destroy());
+      }
+      onDone?.();
+    }, 1300);
   }
 
   private togglePause() {

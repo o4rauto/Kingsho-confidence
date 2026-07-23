@@ -266,15 +266,38 @@ export function formatNum(n: number): string {
   return Math.floor(n).toLocaleString('en-US');
 }
 
-/** Fade the camera in from black — used on every scene start. */
-export function fadeIn(scene: Phaser.Scene, ms = 320) {
-  scene.cameras.main.fadeIn(ms, 5, 7, 15);
+/**
+ * Scene appears instantly.
+ *
+ * We deliberately do NOT use a camera fade-in: a camera fade starts the scene
+ * fully black and animates to clear, and its progress is driven by the render
+ * delta. On low-FPS / software-rendered devices (e.g. a Kali VM with no GPU)
+ * that leaves the scene black for seconds. Cutting straight in is robust.
+ */
+export function fadeIn(scene: Phaser.Scene, _ms = 0) {
+  // Clear the transition guard whenever a scene (re)enters, so returning to a
+  // scene doesn't leave its navigation permanently blocked.
+  (scene as Phaser.Scene & { __transitioning?: boolean }).__transitioning = false;
 }
 
-/** Fade out to black then run a callback (scene transition). */
+/**
+ * Run `cb` (a scene transition) after `ms`, driven by a wall-clock timer.
+ *
+ * Camera-fade completion events stall when the frame rate is low, which would
+ * make menus feel like the buttons are dead. `window.setTimeout` fires after
+ * real milliseconds regardless of how slowly the game is rendering, so
+ * navigation always works. A short cosmetic fade runs on top when it can.
+ */
 export function fadeTo(scene: Phaser.Scene, ms: number, cb: () => void) {
-  scene.cameras.main.fadeOut(ms, 5, 7, 15);
-  scene.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, cb);
+  const s = scene as Phaser.Scene & { __transitioning?: boolean };
+  if (s.__transitioning) return; // ignore rapid double-taps
+  s.__transitioning = true;
+  try {
+    scene.cameras.main.fadeOut(Math.min(ms, 180), 5, 7, 15);
+  } catch {
+    /* fade is cosmetic only */
+  }
+  window.setTimeout(cb, ms);
 }
 
 /** A transient toast message near the top of the screen. */
