@@ -1,5 +1,5 @@
 extends Node3D
-class_name Enemy
+const ModelRig := preload("res://scripts/game/model_rig.gd")
 ## A member of the Rush. Follows its lane (flyers cut straight to the Bastion),
 ## carries traits (armor, shield, regen, split, heal, burn_touch) and, for
 ## bosses, a signature ability (charge, summon, shield, slam, split).

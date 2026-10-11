@@ -1,4 +1,6 @@
 extends Control
+const Screen := preload("res://scripts/ui/screen.gd")
+const UIKit := preload("res://scripts/ui/ui_kit.gd")
 ## Realm select — ten realms, each a different game: layout, biome, hazard, boss.
 
 const HAZARD_NAME := {

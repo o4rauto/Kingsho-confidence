@@ -1,5 +1,5 @@
 extends Node3D
-class_name Warden
+const ModelRig := preload("res://scripts/game/model_rig.gd")
 ## The hero you pilot (the Archero half). Drag to move; auto-fires at the
 ## nearest foe only while standing still. Charges an ultimate. Never dies —
 ## it is knocked down and revives at the Bastion.

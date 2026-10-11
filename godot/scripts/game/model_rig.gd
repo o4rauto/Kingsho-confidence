@@ -1,5 +1,4 @@
 extends Node3D
-class_name ModelRig
 ## Wraps either an imported GLB (AI → Blender → Mixamo pipeline) or a
 ## procedural placeholder, behind one tiny animation API:
 ##     rig.play("idle" | "run" | "attack" | "hit" | "die" | "cast")

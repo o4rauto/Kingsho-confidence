@@ -1,5 +1,4 @@
 extends Node3D
-class_name Projectile
 ## Bolts, arrows and hexes. Light homing toward a locked target; player and
 ## champion shots hit enemies (with pierce), enemy shots hit the Warden.
 

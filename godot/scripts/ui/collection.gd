@@ -1,4 +1,6 @@
 extends Control
+const Screen := preload("res://scripts/ui/screen.gd")
+const UIKit := preload("res://scripts/ui/ui_kit.gd")
 ## Collection — level up with shards + gold, evolve with cores, unlock new champions.
 
 var modal: Control

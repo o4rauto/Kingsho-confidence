@@ -1,0 +1,3 @@
+Sons (.ogg / .wav / .mp3) que substituem os sintetizados:
+shoot hit enemy_die deploy coin click back boon ult boss hurt victory defeat
+music (menu) e music_<id_do_reino> (ex.: music_frostpeak_pass.ogg)

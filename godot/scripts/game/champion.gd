@@ -1,5 +1,5 @@
 extends Node3D
-class_name Champion
+const ModelRig := preload("res://scripts/game/model_rig.gd")
 ## A deployed champion card. Holds ground and fights by role:
 ## melee blocks & slows, ranged/tower shoot, support heals (Ashen Queen: fire nova).
 

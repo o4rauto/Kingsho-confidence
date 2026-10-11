@@ -1,5 +1,4 @@
 extends RefCounted
-class_name UIKit
 ## UIKit — chunky, touch-friendly widgets with a consistent look.
 ## Buttons react on press-down for snappy mobile feel.
 
@@ -21,7 +20,16 @@ static var _font: Font
 
 static func font() -> Font:
 	if _font == null:
-		_font = load(FONT_PATH) if ResourceLoader.exists(FONT_PATH) else ThemeDB.fallback_font
+		# Raw file first: works on a fresh clone before the editor has imported
+		# anything. Exported builds only ship the imported resource.
+		if FileAccess.file_exists(FONT_PATH):
+			var f := FontFile.new()
+			if f.load_dynamic_font(FONT_PATH) == OK:
+				_font = f
+		if _font == null and ResourceLoader.exists(FONT_PATH):
+			_font = load(FONT_PATH)
+		if _font == null:
+			_font = ThemeDB.fallback_font
 	return _font
 
 static func box(bg: Color, border: Color = STROKE, radius := 22, bw := 3) -> StyleBoxFlat:
@@ -141,11 +149,11 @@ static func art(rel: String) -> Texture2D:
 		return _art_cache[rel]
 	var path := "res://assets/art/" + rel
 	var tex: Texture2D = null
-	if ResourceLoader.exists(path):
-		tex = load(path)
-	elif FileAccess.file_exists(path):
+	if FileAccess.file_exists(path):
 		var img := Image.load_from_file(ProjectSettings.globalize_path(path))
 		if img: tex = ImageTexture.create_from_image(img)
+	if tex == null and ResourceLoader.exists(path):
+		tex = load(path)
 	_art_cache[rel] = tex
 	return tex
 

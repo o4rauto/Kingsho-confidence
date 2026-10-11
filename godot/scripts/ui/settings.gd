@@ -1,4 +1,6 @@
 extends Control
+const Screen := preload("res://scripts/ui/screen.gd")
+const UIKit := preload("res://scripts/ui/ui_kit.gd")
 ## Settings — audio, feedback, record and reset.
 
 func _ready() -> void:

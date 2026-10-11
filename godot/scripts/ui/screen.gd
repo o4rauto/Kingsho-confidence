@@ -1,5 +1,5 @@
 extends RefCounted
-class_name Screen
+const UIKit := preload("res://scripts/ui/ui_kit.gd")
 ## Shared layout helpers for menu screens.
 
 ## Builds backdrop + header (back button, title) and returns the content VBox.

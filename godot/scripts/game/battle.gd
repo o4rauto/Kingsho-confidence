@@ -1,4 +1,6 @@
 extends Node3D
+const UIKit := preload("res://scripts/ui/ui_kit.gd")
+const WorldBuilder := preload("res://scripts/game/world_builder.gd")
 ## Battle — the 3D battlefield where the three influences fuse:
 ##  · Kingdom Rush: enemies march lanes toward your Bastion.
 ##  · Clash Royale: regenerating Aether deploys champion cards.

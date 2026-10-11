@@ -1,4 +1,6 @@
 extends Node
+const ModelRig := preload("res://scripts/game/model_rig.gd")
+const UIKit := preload("res://scripts/ui/ui_kit.gd")
 ## AssetLib — the bridge between the AI asset pipeline and the game.
 ##
 ## make("pyre_knight", ...) looks for res://assets/models/pyre_knight.glb.
@@ -12,7 +14,23 @@ const ModelRigScript := preload("res://scripts/game/model_rig.gd")
 var _mats: Dictionary = {}
 
 func has_model(id: String) -> bool:
-	return ResourceLoader.exists(MODEL_DIR + id + ".glb")
+	var path := MODEL_DIR + id + ".glb"
+	return FileAccess.file_exists(path) or ResourceLoader.exists(path)
+
+## Loads a GLB. Raw file first (works right after dropping it in, even before
+## the editor imports it); falls back to the imported scene in exported builds.
+func _load_glb(path: String) -> Node3D:
+	if FileAccess.file_exists(path):
+		var doc := GLTFDocument.new()
+		var state := GLTFState.new()
+		if doc.append_from_file(path, state) == OK:
+			var n := doc.generate_scene(state)
+			if n is Node3D:
+				return n
+	if ResourceLoader.exists(path):
+		var packed: PackedScene = load(path)
+		return packed.instantiate() as Node3D
+	return null
 
 func mat(color: Color, emissive := 0.0) -> StandardMaterial3D:
 	var key := "%s_%.2f" % [color.to_html(), emissive]
@@ -34,10 +52,10 @@ func make(id: String, kind: String, color: Color, height: float, evolved := fals
 	var rig: ModelRig = ModelRigScript.new()
 	rig.name = id
 	if has_model(id):
-		var packed: PackedScene = load(MODEL_DIR + id + ".glb")
-		var inst := packed.instantiate() as Node3D
-		rig.setup_glb(inst, height * (1.15 if evolved else 1.0))
-		return rig
+		var inst := _load_glb(MODEL_DIR + id + ".glb")
+		if inst:
+			rig.setup_glb(inst, height * (1.15 if evolved else 1.0))
+			return rig
 	var body := Node3D.new()
 	body.name = "Body"
 	rig.add_child(body)

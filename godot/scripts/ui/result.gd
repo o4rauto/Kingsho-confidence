@@ -1,4 +1,5 @@
 extends Control
+const UIKit := preload("res://scripts/ui/ui_kit.gd")
 ## After-action report with count-up rewards.
 
 func _ready() -> void:

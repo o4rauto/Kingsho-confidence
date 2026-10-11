@@ -1,4 +1,5 @@
 extends CanvasLayer
+const UIKit := preload("res://scripts/ui/ui_kit.gd")
 ## Battle HUD. Values are only re-set when they change (cheap on weak GPUs).
 
 var battle

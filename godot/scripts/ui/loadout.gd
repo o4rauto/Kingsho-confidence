@@ -1,4 +1,6 @@
 extends Control
+const Screen := preload("res://scripts/ui/screen.gd")
+const UIKit := preload("res://scripts/ui/ui_kit.gd")
 ## Loadout — the Warden + a deck of four champions. Tap a slot to swap.
 
 var realm: Dictionary

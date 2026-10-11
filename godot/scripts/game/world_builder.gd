@@ -1,5 +1,4 @@
 extends RefCounted
-class_name WorldBuilder
 ## Builds a realm's battlefield: ground, lanes (8 distinct layouts), sky,
 ## light, fog, weather and the biome's own set pieces. Every realm differs.
 ##

@@ -60,6 +60,15 @@ func haptic(ms := 25) -> void:
 func _load_slot(name: String) -> AudioStream:
 	for ext in [".ogg", ".wav", ".mp3"]:
 		var path: String = "res://assets/audio/" + name + ext
+		if FileAccess.file_exists(path):
+			var raw: AudioStream = null
+			match ext:
+				".ogg": raw = AudioStreamOggVorbis.load_from_file(path)
+				".mp3":
+					var mp := AudioStreamMP3.new()
+					mp.data = FileAccess.get_file_as_bytes(path)
+					raw = mp
+			if raw: return raw
 		if ResourceLoader.exists(path):
 			return load(path)
 	if name == "music":
@@ -160,7 +169,7 @@ func play_realm_music(realm: Dictionary) -> void:
 		_menu_stream = _music.stream
 	var key: String = "music_" + realm.id
 	if not _realm_music.has(key):
-		var slot = _load_slot(key) if ResourceLoader.exists("res://assets/audio/%s.ogg" % key) else null
+		var slot = _load_slot(key) if (FileAccess.file_exists("res://assets/audio/%s.ogg" % key) or ResourceLoader.exists("res://assets/audio/%s.ogg" % key)) else null
 		if slot == null:
 			var m: Dictionary = realm.music
 			slot = _synth_realm(m.root, MODES.get(m.mode, MODES.minor), m.tempo, m.wave, hash(realm.id))

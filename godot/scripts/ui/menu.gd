@@ -1,4 +1,5 @@
 extends Control
+const UIKit := preload("res://scripts/ui/ui_kit.gd")
 ## Main menu — title, a live 3D turntable of the Warden (shows your real
 ## pipeline model once assets/models/warden.glb exists), and navigation.
 
