@@ -13,6 +13,7 @@ var crit := false
 var burn := 0.0
 var slow := 0.0
 var chain := 0
+var true_dmg := false
 var life := 2.5
 var alive := true
 var _hit: Array = []
@@ -29,6 +30,7 @@ func setup(b, from: Vector3, tgt, dmg: float, src: String, opts: Dictionary = {}
 	burn = opts.get("burn", 0.0)
 	slow = opts.get("slow", 0.0)
 	chain = opts.get("chain", 0)
+	true_dmg = opts.get("true_dmg", false)
 	var dir: Vector3 = opts.get("dir", Vector3.ZERO)
 	if dir == Vector3.ZERO and tgt != null:
 		dir = _aim(tgt) - from
@@ -64,7 +66,7 @@ func step(dt: float) -> void:
 		var ep: Vector3 = e.hit_point()
 		if position.distance_to(ep) < e.radius + 0.35:
 			_hit.append(e)
-			battle.hit_enemy(e, damage, {"source": source, "crit": crit, "burn": burn, "slow": slow, "chain": chain})
+			battle.hit_enemy(e, damage, {"source": source, "crit": crit, "burn": burn, "slow": slow, "chain": chain, "true_dmg": true_dmg})
 			if pierce > 0:
 				pierce -= 1
 			else:

@@ -24,14 +24,21 @@ answer them in Portuguese).
   - ids come from `scripts/autoload/game_data.gd`; dump them with `--export-data`.
 
 ## Code map (godot/)
-- `scripts/autoload/`: `game_data.gd` (all content: champions, 34 enemies, boons, 10 realms —
-  each realm differs in lanes/layout, palette, weather, hazard, roster, boss, music),
-  `save.gd` (profile + progression math), `asset_lib.gd` (slots + placeholders + icons),
-  `sfx.gd` (slots + synth), `nav.gd` (scenes + dev flags).
-- `scripts/game/`: `battle.gd` (waves, hazards, combat API, input, auto-play),
-  `world_builder.gd` (terrain, 8 lane layouts, set pieces, weather), `enemy.gd`, `champion.gd`,
-  `warden.gd`, `projectile.gd`, `model_rig.gd`.
-- `scripts/ui/`: `ui_kit.gd`, `hud.gd`, menu screens.
+- Flow: title (`menu`) → 3 local save slots → castle-gate transition (`ui/gate.gd`, via
+  `Nav.go(scene, params, true)`) → world map (`map`) → battle → result. Map bottom bar:
+  Herói, Campeões, Melhorias (star tree), Bestiário, Conquistas.
+- `scripts/autoload/`: `game_data.gd` (towers, champions = tower specializations, 34 enemies,
+  boons, upgrade tree, achievements, 10 realms — each realm differs in lanes/layout, palette,
+  hazard, roster, boss, music), `save.gd` (slots + global settings + progression math),
+  `asset_lib.gd` (GLB slots; otherwise hand-built chibi characters/towers baked into ONE
+  vertex-coloured mesh each, toon + ink outline), `sfx.gd`, `nav.gd` (scenes, gates, dev flags).
+- `scripts/game/`: `battle.gd` (gold economy, build spots, waves, hazards, combat API, input,
+  auto-play), `world_builder.gd` (terrain, 8 lane layouts, build pads, props, weather),
+  `champion.gd` (a tower: archer/barracks/mage/artillery, tiers, specialization),
+  `soldier.gd` (barracks units that block enemies), `enemy.gd`, `warden.gd` (the hero,
+  tap-to-move), `projectile.gd`, `model_rig.gd`. `scripts/dev_gallery.gd` = model lineup.
+- `scripts/ui/`: `ui_kit.gd` (wood/parchment widgets), `icon.gd` (drawn icons), `hud.gd`
+  (incl. the radial build ring), screens.
 
 ## Rules
 - Performance first: the dev machine may render in software. No full-screen blended
@@ -40,5 +47,6 @@ answer them in Portuguese).
 - Verify before claiming done:
   `godot --headless --path godot --quit-after 120` (no SCRIPT ERROR), then auto-play the
   affected realms: `-- --scene=battle --realm=<id> --auto --level=<n>` and read AUTO_RESULT,
-  and take screenshots with `-- --shot=/tmp/x.png --frames=90 --scene=<scene>` (needs a display).
+  and take screenshots with `-- --shot=/tmp/x.png --frames=90 --scene=<scene> --slot=1` (needs a display).
+  Character/tower lineup: `-- --scene=dev_gallery --gallery=heroes|enemies|towers`.
 - Headless "Parameter \"m\" is null" / ObjectDB leak lines are harmless noise.

@@ -1,8 +1,9 @@
 extends Node3D
 const ModelRig := preload("res://scripts/game/model_rig.gd")
-## The hero you pilot (the Archero half). Drag to move; auto-fires at the
-## nearest foe only while standing still. Charges an ultimate. Never dies —
-## it is knocked down and revives at the Bastion.
+## Your hero (name + cape from the Hero screen). Tap the ground to walk there;
+## when standing still he shoots the nearest enemy on his own. Charges the
+## special "Chuva de Brasas". Never dies — knocked down, he gets back up at
+## the Bastion.
 
 var battle
 var rig: ModelRig
@@ -10,7 +11,8 @@ var hp := 100.0
 var max_hp := 100.0
 var alive := true
 var ult := 0.0
-var move_input := Vector2.ZERO
+var move_input := Vector2.ZERO     # optional (auto-play)
+var target_pos := Vector3.INF      # tap-to-move destination
 var vel := Vector3.ZERO
 var fire_cd := 0.0
 var iframes := 0.0
@@ -21,36 +23,63 @@ var damage := 14.0
 var atk_range := 9.0
 var speed := 6.5
 var fire_interval := 0.52
+var _marker: MeshInstance3D
 
 func setup(b) -> void:
 	battle = b
 	recompute(true)
-	rig = AssetLib.make("warden", "warden", Color("ffbf5e"), 1.8)
+	rig = AssetLib.make("warden", "warden", Save.hero_cape(), 2.0)
 	add_child(rig)
 	var aura := MeshInstance3D.new()
-	var disc := CylinderMesh.new(); disc.top_radius = 0.9; disc.bottom_radius = 0.9; disc.height = 0.02
-	aura.mesh = disc
-	aura.material_override = AssetLib.mat(Color("ff8a3d"), 1.5)
-	aura.position.y = 0.03
+	var t := TorusMesh.new(); t.inner_radius = 0.75; t.outer_radius = 0.95; t.rings = 24; t.ring_segments = 4
+	aura.mesh = t
+	aura.material_override = AssetLib.mat(Color("ffcf3d"), 1.2)
+	aura.position.y = 0.06
+	aura.scale = Vector3(1, 0.3, 1)
 	add_child(aura)
+	var tag := Label3D.new()
+	tag.text = Save.hero_name()
+	tag.font = load("res://scripts/ui/ui_kit.gd").font()
+	tag.font_size = 54
+	tag.outline_size = 14
+	tag.modulate = Color("ffe08a")
+	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	tag.no_depth_test = true
+	tag.pixel_size = 0.01
+	tag.position = Vector3(0, 2.75, 0)
+	add_child(tag)
+	_marker = MeshInstance3D.new()
+	var mt := TorusMesh.new(); mt.inner_radius = 0.4; mt.outer_radius = 0.55; mt.rings = 16; mt.ring_segments = 4
+	_marker.mesh = mt
+	_marker.material_override = AssetLib.mat(Color("7ed957"), 1.5)
+	_marker.visible = false
+	battle.add_child.call_deferred(_marker)
 
-## Re-derive stats from Warden level + run boons (keeps hp ratio).
+## Re-derive stats from hero level + star upgrades + run boons (keeps hp ratio).
 func recompute(full := false) -> void:
-	var lvl: int = int(Save.data.warden_level)
+	var st := Save.hero_stats()
 	var m: Dictionary = battle.mods
 	var frac := 1.0 if full else hp / max_hp
-	max_hp = GameData.WARDEN.max_hp * (1.0 + (lvl - 1) * 0.07) + m.warden_hp
+	max_hp = st.hp + m.warden_hp
 	hp = max_hp * frac
-	damage = GameData.WARDEN.damage * (1.0 + (lvl - 1) * 0.09) * m.warden_dmg
-	atk_range = GameData.WARDEN.range * m.warden_range
-	speed = GameData.WARDEN.speed * m.warden_speed
-	fire_interval = GameData.WARDEN.fire_cd / m.warden_aspd
+	damage = st.damage * m.warden_dmg
+	atk_range = GameData.HERO.range * m.warden_range
+	speed = GameData.HERO.speed * m.warden_speed
+	fire_interval = GameData.HERO.fire_cd / m.warden_aspd
+
+func walk_to(p: Vector3) -> void:
+	if downed: return
+	target_pos = Vector3(clampf(p.x, -6.2, 6.2), 0, clampf(p.z, -20.0, 3.2))
+	_marker.position = target_pos + Vector3(0, 0.08, 0)
+	_marker.visible = true
+	_marker.scale = Vector3(1.6, 0.3, 1.6)
+	_marker.create_tween().tween_property(_marker, "scale", Vector3(1, 0.3, 1), 0.2)
 
 func ult_ready() -> bool:
-	return ult >= GameData.WARDEN.ult_max
+	return ult >= GameData.HERO.ult_max
 
 func add_ult(n: float) -> void:
-	ult = minf(GameData.WARDEN.ult_max, ult + n)
+	ult = minf(GameData.HERO.ult_max, ult + n * (1.0 + float(battle.upgrade_mods.get("hero_ult", 0.0))))
 
 func heal(a: float) -> void:
 	if not downed:
@@ -67,10 +96,12 @@ func take_damage(d: float) -> void:
 	battle.shake(0.15)
 	if hp <= 0.0:
 		downed = true
-		down_t = 2.6
+		down_t = 4.0
 		hp = 0.0
 		rig.visible = false
-		battle.banner_small("WARDEN DOWN")
+		target_pos = Vector3.INF
+		_marker.visible = false
+		battle.banner_small("%s CAIU!" % Save.hero_name().to_upper())
 
 func release_ult() -> void:
 	if not ult_ready() or downed:
@@ -84,7 +115,7 @@ func release_ult() -> void:
 		battle.spawn_projectile(position + Vector3(0, 1, 0), null, damage * 1.6, "warden",
 			{"dir": Vector3(cos(a), 0, sin(a)), "pierce": 3, "crit": true, "burn": battle.mods.burn})
 	for e in battle.enemies_near(position, 6.0):
-		battle.hit_enemy(e, damage * 2.4, {"source": "warden", "crit": true, "slow": 0.5})
+		battle.hit_enemy(e, damage * 2.4, {"source": "warden", "crit": true, "slow": 0.6})
 
 func step(dt: float) -> void:
 	iframes = maxf(0.0, iframes - dt)
@@ -96,19 +127,29 @@ func step(dt: float) -> void:
 			iframes = 1.4
 			position = battle.BASTION_POS + Vector3(0, 0, -3.0)
 			rig.visible = true
-			battle.banner_small("RISE AGAIN")
+			battle.banner_small("%s VOLTOU!" % Save.hero_name().to_upper())
 		return
 	rooted_t = maxf(0.0, rooted_t - dt)
-	var want: Vector3 = Vector3(move_input.x, 0, move_input.y) * speed * battle.warden_speed_mul()
+	var dir := Vector3(move_input.x, 0, move_input.y)
+	if target_pos != Vector3.INF:
+		var to := target_pos - position
+		to.y = 0
+		if to.length() < 0.2:
+			target_pos = Vector3.INF
+			_marker.visible = false
+			dir = Vector3.ZERO
+		else:
+			dir = to.normalized() * minf(1.0, to.length() * 2.0)
+	var want: Vector3 = dir * speed * battle.warden_speed_mul()
 	if rooted_t > 0.0:
 		want = Vector3.ZERO
 	# Ice realms: slippery momentum. Elsewhere: snappy.
-	var grip := 2.2 if battle.realm.hazard == "blizzard" else 18.0
+	var grip := 3.0 if battle.realm.hazard == "blizzard" else 18.0
 	vel = vel.lerp(want, minf(1.0, grip * dt))
 	position += vel * dt
 	position.x = clampf(position.x, -6.2, 6.2)
 	position.z = clampf(position.z, -20.0, 3.2)
-	var moving := move_input.length() > 0.15
+	var moving := dir.length() > 0.15
 	if vel.length() > 0.3:
 		rig.rotation.y = lerp_angle(rig.rotation.y, atan2(vel.x, vel.z), 0.25)
 	rig.play("run" if moving else "idle")

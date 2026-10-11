@@ -24,6 +24,9 @@ var burn_dps := 0.0
 var ability_t := 0.0
 var charge_t := 0.0
 var cast_t := 0.0
+var blocker = null      # soldier holding this enemy on the road
+var atk_t := 0.0
+var prev_pos := Vector3.ZERO
 var _bar_bg: MeshInstance3D
 var _bar_fg: MeshInstance3D
 
@@ -65,10 +68,11 @@ func _make_bar(h: float) -> void:
 	_bar_fg.visible = false
 	add_child(_bar_fg)
 
-func take_damage(dmg: float) -> float:
+func take_damage(dmg: float, ignore_armor := false) -> float:
 	if not alive:
 		return 0.0
-	dmg *= 1.0 - def.get("armor", 0.0)
+	if not ignore_armor:
+		dmg *= 1.0 - def.get("armor", 0.0)
 	if shield > 0.0:
 		var absorbed := minf(shield, dmg)
 		shield -= absorbed
@@ -101,6 +105,7 @@ func hp_frac() -> float:
 func step(dt: float) -> void:
 	if not alive:
 		return
+	prev_pos = position
 	if slow_t > 0.0:
 		slow_t -= dt
 		if slow_t <= 0.0: slow_f = 1.0
@@ -128,6 +133,19 @@ func step(dt: float) -> void:
 		position += to.normalized() * speed * dt
 		_face(to)
 	else:
+		if blocker != null and (not is_instance_valid(blocker) or not blocker.alive):
+			blocker = null
+		if blocker != null and position.distance_to(blocker.position) < radius + 1.1:
+			# Held by a soldier: stand and fight instead of marching.
+			_face(blocker.position - position)
+			rig.play("idle")
+			atk_t -= dt
+			if atk_t <= 0.0:
+				atk_t = 1.0
+				rig.play("attack")
+				blocker.take_damage(def.damage * 0.8 + def.get("burn_touch", 0.0))
+			return
+		rig.play("run")
 		var prev := position
 		dist += speed * dt
 		if dist >= curve.get_baked_length() - 0.3:

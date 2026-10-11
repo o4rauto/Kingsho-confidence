@@ -1,20 +1,37 @@
 extends Node3D
 ## Wraps either an imported GLB (AI → Blender → Mixamo pipeline) or a
-## procedural placeholder, behind one tiny animation API:
-##     rig.play("idle" | "run" | "attack" | "hit" | "die" | "cast")
-## GLB animation names are matched loosely, so Mixamo exports such as
-## "Armature|mixamo.com|Layer0" renamed to "Run" / "run_forward" all work.
-## See /pipeline/04_mixamo_animations.md for the naming convention.
+## procedural chibi character, behind one tiny animation API:
+##     rig.play("idle" | "run" | "attack" | "hit" | "die" | "cast" | "fly")
+## GLB animation names are matched loosely ("Armature|Run", "run_forward"…).
+##
+## Chibi characters are animated procedurally and always BLENDED (never snap):
+##   idle   — breathing, gentle arm sway
+##   run    — hop-bob, forward lean, legs and arms swing in opposition
+##   attack — wind-up then a fast strike with the weapon arm + body lunge
+##   cast   — both arms raise, body lifts
+##   hit    — squash and recoil backwards
+##   die    — topples over, sinks and shrinks
 
 var anim_player: AnimationPlayer
 var is_placeholder := true
-var current := ""
+var current := "idle"
 var _t := 0.0
+var _phase := 0.0
 var _base_y := 0.0
 var _attack_t := 0.0
+var _cast_t := 0.0
 var _hit_t := 0.0
+var _die_t := 0.0
+var _run_w := 0.0
 var _body: Node3D  # placeholder part that squashes/bobs
 var _wings: Array[Node3D] = []
+var _limbs := {}         # name -> Node3D
+var _rest := {}          # name -> Vector3 rest rotation
+var _height := 1.0
+
+const ATTACK_TIME := 0.32
+const CAST_TIME := 0.5
+const HIT_TIME := 0.18
 
 func setup_glb(scene_root: Node3D, target_height: float) -> void:
 	is_placeholder = false
@@ -23,17 +40,25 @@ func setup_glb(scene_root: Node3D, target_height: float) -> void:
 	anim_player = _find_anim(scene_root)
 	play("idle")
 
-func setup_placeholder(body: Node3D, wings: Array[Node3D] = []) -> void:
+func setup_placeholder(body: Node3D, wings: Array[Node3D] = [], limbs := {}) -> void:
 	is_placeholder = true
 	_body = body
 	_wings = wings
+	_limbs = limbs
+	for k in limbs:
+		_rest[k] = (limbs[k] as Node3D).rotation
 	_base_y = body.position.y
+	_t = randf() * 10.0
+	var aabb := _aabb(body, Transform3D.IDENTITY)
+	_height = maxf(0.3, aabb.size.y)
 
 func play(name: String) -> void:
-	if name == "attack" or name == "cast":
-		_attack_t = 0.18
+	if name == "attack":
+		_attack_t = ATTACK_TIME
+	elif name == "cast":
+		_cast_t = CAST_TIME
 	elif name == "hit":
-		_hit_t = 0.12
+		_hit_t = HIT_TIME
 	if anim_player:
 		var found := _match_anim(name)
 		if found != "" and (found != anim_player.current_animation or name == "attack"):
@@ -49,16 +74,65 @@ func _process(delta: float) -> void:
 		return
 	_t += delta
 	_attack_t = maxf(0.0, _attack_t - delta)
+	_cast_t = maxf(0.0, _cast_t - delta)
 	_hit_t = maxf(0.0, _hit_t - delta)
-	var speed := 14.0 if current == "run" else 3.0
-	var amp := 0.08 if current == "run" else 0.025
-	_body.position.y = _base_y + absf(sin(_t * speed)) * amp
-	var s := 1.0 + (0.18 if _attack_t > 0.0 else 0.0) - (0.12 if _hit_t > 0.0 else 0.0)
-	_body.scale = Vector3(s, 2.0 - s, s)
+	var running := current == "run" or current == "fly"
+	_run_w = move_toward(_run_w, 1.0 if running else 0.0, delta * 6.0)
+	_phase += delta * lerpf(2.0, 10.0, _run_w)
+	var h := _height
+
+	# Body: breathing + hop, lean, lunge, recoil.
+	var breathe := sin(_t * 2.2) * 0.012 * h
+	var hop := absf(sin(_phase)) * 0.07 * h * _run_w
+	var atk := _attack_curve()
+	var cast_k := sin(clampf(1.0 - _cast_t / CAST_TIME, 0.0, 1.0) * PI) if _cast_t > 0.0 else 0.0
+	var hit_k := _hit_t / HIT_TIME
+	_body.position.y = _base_y + breathe + hop + cast_k * 0.06 * h
+	_body.position.z = atk * 0.12 * h - hit_k * 0.08 * h
+	_body.rotation.x = 0.14 * _run_w + atk * 0.18 - hit_k * 0.3
+	_body.rotation.z = sin(_phase) * 0.05 * _run_w
+	var sq := 1.0 + sin(_t * 2.2) * 0.015 - hit_k * 0.12 + absf(cos(_phase)) * 0.04 * _run_w
+	_body.scale = _body.scale.lerp(Vector3(2.0 - sq, sq, 2.0 - sq) * _body_scale_base(), minf(1.0, delta * 20.0))
+
+	# Limbs swing in opposition; weapon arm strikes; both arms rise to cast.
+	var swing := sin(_phase)
+	_set_limb("leg_l", Vector3(swing * 0.75 * _run_w, 0, 0), delta)
+	_set_limb("leg_r", Vector3(-swing * 0.75 * _run_w, 0, 0), delta)
+	var idle_sway := sin(_t * 2.2) * 0.08
+	_set_limb("arm_l", Vector3(-swing * 0.6 * _run_w + idle_sway - cast_k * 2.3, 0, 0), delta)
+	_set_limb("arm_r", Vector3(swing * 0.6 * _run_w - idle_sway - cast_k * 2.3 - atk * 2.0 + _windup() * 1.2, 0, 0), delta)
+
 	for i in _wings.size():
-		_wings[i].rotation.z = sin(_t * 18.0) * 0.7 * (1.0 if i % 2 == 0 else -1.0)
+		_wings[i].rotation.z = sin(_t * 16.0) * 0.8 * (1.0 if i % 2 == 0 else -1.0)
 	if current == "die":
-		rotation.z = minf(rotation.z + delta * 6.0, PI / 2)
+		_die_t += delta
+		rotation.z = lerpf(rotation.z, PI / 2.2, minf(1.0, delta * 8.0))
+		position.y = lerpf(position.y, -0.2 * h, minf(1.0, delta * 3.0))
+
+var _scale_base := Vector3.ZERO
+func _body_scale_base() -> Vector3:
+	if _scale_base == Vector3.ZERO:
+		_scale_base = _body.scale
+	return _scale_base
+
+## 0 → 1 → 0 over the attack: slow wind-up, snappy strike, ease back.
+func _attack_curve() -> float:
+	if _attack_t <= 0.0: return 0.0
+	var k := 1.0 - _attack_t / ATTACK_TIME
+	if k < 0.35: return -k / 0.35 * 0.4          # wind-up (lean back)
+	if k < 0.55: return lerpf(-0.4, 1.0, (k - 0.35) / 0.2)   # strike
+	return lerpf(1.0, 0.0, (k - 0.55) / 0.45)    # recover
+
+func _windup() -> float:
+	if _attack_t <= 0.0: return 0.0
+	var k := 1.0 - _attack_t / ATTACK_TIME
+	return k / 0.35 if k < 0.35 else maxf(0.0, 1.0 - (k - 0.35) / 0.1)
+
+func _set_limb(name: String, add: Vector3, delta: float) -> void:
+	var n: Node3D = _limbs.get(name)
+	if n == null: return
+	var target: Vector3 = _rest[name] + add
+	n.rotation = n.rotation.lerp(target, minf(1.0, delta * 18.0))
 
 func _match_anim(name: String) -> String:
 	if anim_player == null:

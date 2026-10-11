@@ -85,9 +85,10 @@ def build_jobs(data, quality):
         jobs.append({"cat": cat, "out": out, "prompt": prompt, "size": size,
                      "transparent": transparent, "ref": ref, "quality": q or quality})
 
-    heroes = [{"id": "warden", "name": "The Warden", "title": "Keeper of the Last Light",
+    heroes = [{"id": "warden", "name": "Kael", "title": "the Last Keeper of the Flame",
                "role": "ranged", "color": "ffbf5e",
-               "lore": "the last Warden, a heroic archer in ember-gold armor with a short red cape and a radiant bow"}]
+               "lore": "a young hero archer, former lighthouse apprentice, in ember-gold armor with a short red cape, "
+                       "a radiant bow and a small flame floating above his hand"}]
     heroes += data["champions"]
 
     # Characters: turnaround (for Tripo) + parts sheet (video method) + portrait.

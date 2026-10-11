@@ -38,6 +38,23 @@ Abra o Claude Code **na raiz deste repositório** — ele lê o `CLAUDE.md` e o
 
 ## 1. Imagens com o ChatGPT (estilo cartoon tipo Clash Royale)
 
+### Jeito grátis — usando o SEU ChatGPT (sem API, sem créditos)
+
+```bash
+sudo apt install xclip                                # para copiar o prompt sozinho
+pip install pillow                                    # converte/encolhe as imagens
+python3 pipeline/tools/chatgpt_helper.py              # começa pelo que mais aparece no jogo
+```
+
+O script copia um prompt por vez. Você cola no ChatGPT (Ctrl+V), espera a
+imagem e clica em **baixar**. O script percebe o arquivo novo em
+`~/Downloads`, converte e coloca no lugar certo do jogo, depois passa para o
+próximo prompt. `s`+Enter pula uma imagem; `q`+Enter sai (continua de onde
+parou na próxima vez). `--list` mostra o que falta e `--all` inclui as
+fichas para o Tripo.
+
+### Jeito automático — API da OpenAI (pago à parte)
+
 ```bash
 export OPENAI_API_KEY=sk-...                         # nunca coloque no git
 python3 pipeline/tools/generate_art.py --dry-run     # mostra prompts e custo (pipeline/prompts.md)

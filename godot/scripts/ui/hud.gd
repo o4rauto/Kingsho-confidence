@@ -1,29 +1,27 @@
 extends CanvasLayer
 const UIKit := preload("res://scripts/ui/ui_kit.gd")
-## Battle HUD. Values are only re-set when they change (cheap on weak GPUs).
+const Icon := preload("res://scripts/ui/icon.gd")
+## Battle HUD (wood & parchment). Values are only re-set when they change.
+##   top:    ♥ Bastion · gold · wave · pause
+##   bottom: hero portrait + HP · "call wave" · special button
+##   popup:  build menu for the tapped stone spot
 
 var battle
 var root: Control
-var integrity_bar: ProgressBar
-var integrity_lbl: Label
-var wave_lbl: Label
+var hp_lbl: Label
 var gold_lbl: Label
-var aether_bar: ProgressBar
-var aether_lbl: Label
-var warden_bar: ProgressBar
+var wave_lbl: Label
+var hero_bar: ProgressBar
 var ult_btn: Button
+var ult_lbl: Label
+var call_btn: Button
 var boss_box: Control
 var boss_bar: ProgressBar
 var boss_lbl: Label
 var warning_lbl: Label
 var hint_lbl: Label
-var cards: Array = []       # [{btn, cd, sel, cost}]
+var build_panel: Control
 var overlay: Control
-var joy: Control
-var auto_vec := Vector2.ZERO
-var _joy_origin := Vector2.ZERO
-var _joy_pos := Vector2.ZERO
-var _joy_on := false
 var _last := {}
 
 func setup(b) -> void:
@@ -32,189 +30,120 @@ func setup(b) -> void:
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-	_top_bar()
+	_top()
 	_bottom()
-	_side()
-	joy = JoyView.new()
-	joy.set_anchors_preset(Control.PRESET_FULL_RECT)
-	joy.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(joy)
-	warning_lbl = UIKit.label("", 44, UIKit.DANGER)
+	warning_lbl = UIKit.label("", 46, UIKit.DANGER)
 	warning_lbl.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	warning_lbl.position = Vector2(-330, 250)
-	warning_lbl.size = Vector2(660, 80)
-	warning_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	warning_lbl.offset_left = -340; warning_lbl.offset_right = 340; warning_lbl.offset_top = 250; warning_lbl.offset_bottom = 330
 	root.add_child(warning_lbl)
-	hint_lbl = UIKit.label("", 24, UIKit.EMBER_HI)
+	hint_lbl = UIKit.label("", 26, UIKit.EMBER_HI)
+	hint_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint_lbl.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	hint_lbl.position = Vector2(-320, 150)
-	hint_lbl.size = Vector2(640, 90)
-	hint_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint_lbl.offset_left = -320; hint_lbl.offset_right = 320; hint_lbl.offset_top = 150; hint_lbl.offset_bottom = 250
 	root.add_child(hint_lbl)
+
+func _top() -> void:
+	var bar := HBoxContainer.new()
+	bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	bar.offset_left = 12; bar.offset_right = -12; bar.offset_top = 12; bar.offset_bottom = 92
+	bar.add_theme_constant_override("separation", 8)
+	root.add_child(bar)
+	var c1 := UIKit.counter("heart", "100", UIKit.TEXT)
+	hp_lbl = c1.get_meta("label")
+	bar.add_child(c1)
+	var c2 := UIKit.counter("coin", "0", UIKit.GOLD)
+	gold_lbl = c2.get_meta("label")
+	bar.add_child(c2)
+	var c3 := UIKit.counter("skull", "1/1", UIKit.TEXT)
+	wave_lbl = c3.get_meta("label")
+	bar.add_child(c3)
+	var sp := Control.new(); sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_child(sp)
+	var pause := UIKit.button("II", func(): battle.toggle_pause(), UIKit.WOOD, Vector2(84, 80), 36)
+	bar.add_child(pause)
+	boss_box = VBoxContainer.new()
+	boss_box.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	boss_box.offset_left = 30; boss_box.offset_right = -30; boss_box.offset_top = 100; boss_box.offset_bottom = 170
+	boss_box.visible = false
+	boss_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(boss_box)
+	boss_lbl = UIKit.label("", 28, UIKit.DANGER)
+	boss_box.add_child(boss_lbl)
+	boss_bar = _bar(UIKit.DANGER, 24)
+	boss_box.add_child(boss_bar)
 
 func _bar(color: Color, h: int) -> ProgressBar:
 	var p := ProgressBar.new()
 	p.show_percentage = false
 	p.custom_minimum_size = Vector2(0, h)
-	p.add_theme_stylebox_override("background", UIKit.box(Color(0, 0, 0, 0.6), Color(0, 0, 0, 0.6), h / 2, 0))
-	p.add_theme_stylebox_override("fill", UIKit.box(color, color.darkened(0.3), h / 2, 0))
+	p.add_theme_stylebox_override("background", UIKit.box(UIKit.WOOD_DARK, UIKit.NIGHT, h / 2, 3))
+	p.add_theme_stylebox_override("fill", UIKit.box(color, UIKit.NIGHT, h / 2, 3))
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return p
 
-func _top_bar() -> void:
-	var top := UIKit.panel(Color(0.04, 0.06, 0.12, 0.85))
-	top.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	top.offset_left = 12; top.offset_right = -12; top.offset_top = 12; top.offset_bottom = 110
-	root.add_child(top)
-	var h := HBoxContainer.new()
-	h.add_theme_constant_override("separation", 14)
-	top.add_child(h)
-	var left := VBoxContainer.new()
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	h.add_child(left)
-	integrity_lbl = UIKit.label("BASTIÃO 100", 24, UIKit.TEXT, HORIZONTAL_ALIGNMENT_LEFT)
-	left.add_child(integrity_lbl)
-	integrity_bar = _bar(UIKit.GOOD, 20)
-	integrity_bar.max_value = GameData.BASTION_MAX
-	left.add_child(integrity_bar)
-	var pause := UIKit.button("II", func(): battle.toggle_pause(), UIKit.PANEL_HI, Vector2(80, 76), 34)
-	h.add_child(pause)
-	var right := VBoxContainer.new()
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	h.add_child(right)
-	wave_lbl = UIKit.label("ONDA 1", 30, UIKit.TEXT, HORIZONTAL_ALIGNMENT_RIGHT)
-	right.add_child(wave_lbl)
-	gold_lbl = UIKit.label("OURO 0", 24, UIKit.GOLD, HORIZONTAL_ALIGNMENT_RIGHT)
-	right.add_child(gold_lbl)
-	# Boss bar
-	boss_box = VBoxContainer.new()
-	boss_box.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	boss_box.offset_left = 30; boss_box.offset_right = -30; boss_box.offset_top = 120; boss_box.offset_bottom = 190
-	boss_box.visible = false
-	boss_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(boss_box)
-	boss_lbl = UIKit.label("", 26, UIKit.DANGER)
-	boss_box.add_child(boss_lbl)
-	boss_bar = _bar(UIKit.DANGER, 22)
-	boss_box.add_child(boss_bar)
-
 func _bottom() -> void:
-	var tray := UIKit.panel(Color(0.04, 0.06, 0.12, 0.92))
-	tray.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	tray.offset_top = -270; tray.offset_left = 8; tray.offset_right = -8; tray.offset_bottom = -8
-	root.add_child(tray)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 8)
-	tray.add_child(v)
-	var ab := Control.new()
-	ab.custom_minimum_size = Vector2(0, 34)
-	v.add_child(ab)
-	aether_bar = _bar(UIKit.AETHER, 34)
-	aether_bar.max_value = GameData.AETHER_MAX
-	aether_bar.set_anchors_preset(Control.PRESET_FULL_RECT)
-	ab.add_child(aether_bar)
-	aether_lbl = UIKit.label("AETHER 5/10", 24, UIKit.TEXT)
-	aether_lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
-	ab.add_child(aether_lbl)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	v.add_child(row)
-	for i in battle.deck.size():
-		var def := GameData.champion(battle.deck[i])
-		var btn := Button.new()
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.custom_minimum_size = Vector2(0, 190)
-		btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
-		var rc: Color = GameData.RARITY_COLOR[def.rarity]
-		btn.add_theme_stylebox_override("normal", UIKit.box(UIKit.PANEL_HI, rc, 18, 4))
-		btn.add_theme_stylebox_override("hover", UIKit.box(UIKit.PANEL_HI, rc, 18, 4))
-		btn.add_theme_stylebox_override("pressed", UIKit.box(UIKit.PANEL, rc, 18, 4))
-		btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-		var idx: int = i
-		btn.pressed.connect(func(): battle.select_card(idx))
-		row.add_child(btn)
-		var inner := VBoxContainer.new()
-		inner.set_anchors_preset(Control.PRESET_FULL_RECT)
-		inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		inner.offset_top = 10; inner.offset_bottom = -8
-		btn.add_child(inner)
-		var swatch := TextureRect.new()
-		swatch.texture = AssetLib.icon(def.id, Save.champ(def.id).evolved)
-		swatch.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		swatch.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		swatch.custom_minimum_size = Vector2(0, 92)
-		swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var swrap := MarginContainer.new()
-		swrap.add_theme_constant_override("margin_left", 22); swrap.add_theme_constant_override("margin_right", 22)
-		swrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		swrap.add_child(swatch)
-		inner.add_child(swrap)
-		var cost := UIKit.label(str(def.cost), 32, UIKit.AETHER)
-		cost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		inner.add_child(cost)
-		var nm := UIKit.label(def.name, 20, UIKit.TEXT)
-		nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		inner.add_child(nm)
-		var cd := ColorRect.new()
-		cd.color = Color(0, 0, 0, 0.6)
-		cd.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		cd.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-		btn.add_child(cd)
-		var sel := Panel.new()
-		var ss := StyleBoxFlat.new()
-		ss.draw_center = false
-		ss.border_color = UIKit.EMBER_HI
-		ss.set_border_width_all(8)
-		ss.set_corner_radius_all(18)
-		sel.add_theme_stylebox_override("panel", ss)
-		sel.set_anchors_preset(Control.PRESET_FULL_RECT)
-		sel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		sel.visible = false
-		btn.add_child(sel)
-		cards.append({"btn": btn, "cd": cd, "sel": sel, "cost": def.cost, "max_cd": 4.0 + def.cost * 0.6})
-
-func _side() -> void:
-	warden_bar = _bar(UIKit.EMBER, 22)
-	warden_bar.max_value = 1.0
-	warden_bar.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	warden_bar.position = Vector2(20, -320)
-	warden_bar.size = Vector2(240, 22)
-	warden_bar.anchor_top = 1.0; warden_bar.anchor_bottom = 1.0
-	warden_bar.offset_top = -316; warden_bar.offset_bottom = -294; warden_bar.offset_left = 20; warden_bar.offset_right = 260
-	root.add_child(warden_bar)
-	ult_btn = UIKit.button("ULT", func(): battle.warden.release_ult(), UIKit.PANEL, Vector2(130, 130), 38)
-	ult_btn.anchor_left = 1.0; ult_btn.anchor_right = 1.0; ult_btn.anchor_top = 1.0; ult_btn.anchor_bottom = 1.0
-	ult_btn.offset_left = -150; ult_btn.offset_right = -20; ult_btn.offset_top = -420; ult_btn.offset_bottom = -290
+	# Hero portrait (who you are) + HP
+	var hero := VBoxContainer.new()
+	hero.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	hero.offset_left = 14; hero.offset_right = 174; hero.offset_top = -200; hero.offset_bottom = -14
+	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(hero)
+	var frame := PanelContainer.new()
+	frame.add_theme_stylebox_override("panel", UIKit.box(Save.hero_cape().darkened(0.3), UIKit.NIGHT, 70, 5))
+	frame.custom_minimum_size = Vector2(140, 130)
+	frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hero.add_child(frame)
+	var pic := TextureRect.new()
+	pic.texture = AssetLib.icon("warden")
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(pic)
+	var nm := UIKit.label("%s Nv%d" % [Save.hero_name(), Save.hero_level()], 22)
+	hero.add_child(nm)
+	hero_bar = _bar(UIKit.GOOD, 18)
+	hero_bar.max_value = 1.0
+	hero.add_child(hero_bar)
+	# Special
+	ult_btn = UIKit.button("", func(): battle.warden.release_ult(), UIKit.WOOD, Vector2(150, 150), 30)
+	ult_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	ult_btn.offset_left = -170; ult_btn.offset_right = -20; ult_btn.offset_top = -200; ult_btn.offset_bottom = -50
 	root.add_child(ult_btn)
+	var ic := Icon.make("star", 70)
+	ic.position = Vector2(40, 18)
+	ult_btn.add_child(ic)
+	ult_lbl = UIKit.label("0%", 26)
+	ult_lbl.position = Vector2(0, 92)
+	ult_lbl.size = Vector2(150, 40)
+	ult_btn.add_child(ult_lbl)
+	var ult_name := UIKit.label(GameData.HERO.ult_name, 18, UIKit.EMBER_HI)
+	ult_name.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	ult_name.offset_left = -200; ult_name.offset_right = -10; ult_name.offset_top = -46; ult_name.offset_bottom = -14
+	root.add_child(ult_name)
+	# Call next wave
+	call_btn = UIKit.button("INICIAR ONDA ▶", func(): battle.call_wave(), UIKit.DANGER, Vector2(330, 100), 34)
+	call_btn.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	call_btn.offset_left = -165; call_btn.offset_right = 165; call_btn.offset_top = -140; call_btn.offset_bottom = -40
+	call_btn.visible = false
+	root.add_child(call_btn)
 
 ## Called once per frame; only touches widgets whose value changed.
 func refresh() -> void:
-	_set_if("integ", int(ceil(battle.integrity)), func(v):
-		integrity_bar.value = v
-		integrity_lbl.text = "BASTIÃO %d" % v
-		var c := UIKit.GOOD if v > 50 else (UIKit.GOLD if v > 25 else UIKit.DANGER)
-		integrity_bar.add_theme_stylebox_override("fill", UIKit.box(c, c.darkened(0.3), 10, 0)))
-	_set_if("gold", battle.gold, func(v): gold_lbl.text = "OURO %d" % v)
-	_set_if("aether", int(battle.aether * 4.0), func(_v):
-		aether_bar.value = battle.aether
-		aether_lbl.text = "AETHER %d/%d" % [int(battle.aether), int(GameData.AETHER_MAX)])
-	_set_if("whp", int(battle.warden.hp), func(_v): warden_bar.value = battle.warden.hp / battle.warden.max_hp)
+	_set_if("integ", int(ceil(battle.integrity)), func(v): hp_lbl.text = str(v))
+	_set_if("gold", battle.gold, func(v):
+		gold_lbl.text = str(v)
+		if build_panel and battle.selected_pad >= 0: show_build(battle.selected_pad))
+	_set_if("whp", int(battle.warden.hp), func(_v): hero_bar.value = battle.warden.hp / battle.warden.max_hp)
 	_set_if("ult", int(battle.warden.ult), func(_v):
 		var ready: bool = battle.warden.ult_ready()
-		ult_btn.text = "ULT!" if ready else "%d%%" % int(battle.warden.ult)
-		ult_btn.add_theme_stylebox_override("normal", UIKit.box(UIKit.EMBER if ready else UIKit.PANEL, UIKit.EMBER, 65, 4)))
-	for i in cards.size():
-		var c: Dictionary = cards[i]
-		var cdv: float = battle.card_cd[i]
-		var affordable: bool = battle.aether >= c.cost and cdv <= 0.0
-		var key := "%d|%d|%d" % [int(affordable), int(battle.selected_card == i), int(ceil(cdv / c.max_cd * 10.0))]
-		if _last.get("card%d" % i) == key: continue
-		_last["card%d" % i] = key
-		c.btn.modulate = Color.WHITE if affordable else Color(0.6, 0.6, 0.7)
-		c.sel.visible = battle.selected_card == i
-		var frac: float = cdv / c.max_cd
-		c.cd.offset_top = -c.btn.size.y * frac
+		ult_lbl.text = "PRONTO!" if ready else "%d%%" % int(battle.warden.ult)
+		ult_btn.add_theme_stylebox_override("normal", UIKit.face(UIKit.EMBER if ready else UIKit.WOOD)))
+	if battle.between:
+		_set_if("call", int(ceil(battle.between_t)), func(v):
+			var bonus := int(maxf(0.0, battle.between_t) * 2.0)
+			call_btn.text = ("INICIAR ONDA ▶  %ds" % v) if battle.wave_index < 0 else ("PRÓXIMA ONDA  +%d ouro" % bonus))
 	var boss = null
 	for e in battle.enemies:
 		if e.is_boss and e.alive: boss = e
@@ -229,13 +158,124 @@ func _set_if(key: String, v, apply: Callable) -> void:
 	apply.call(v)
 
 func set_wave(n: int, total: int) -> void:
-	wave_lbl.text = "ONDA %d/%d" % [n, total]
-	UIKit.pop_in(wave_lbl)
+	wave_lbl.text = "%d/%d" % [n, total]
 
+func show_call(on: bool) -> void:
+	call_btn.visible = on
+	_last.erase("call")
+	if on:
+		UIKit.pop_in(call_btn)
+
+# ── Build ring (pops around the tapped stone spot) ─────────
+func show_build(i: int) -> void:
+	hide_build()
+	battle.selected_pad = i
+	var vp := root.get_viewport_rect().size
+	var p: Vector2 = battle.cam.unproject_position(battle.world.pads[i] + Vector3(0, 0.6, 0))
+	p.x = clampf(p.x, 170.0, vp.x - 170.0)
+	p.y = clampf(p.y, 300.0, vp.y - 260.0)
+	build_panel = Control.new()
+	build_panel.position = p
+	build_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(build_panel)
+	var ring := Panel.new()
+	var rs := StyleBoxFlat.new()
+	rs.bg_color = Color(0.1, 0.05, 0.0, 0.35)
+	rs.border_color = Color("ffe08a")
+	rs.set_border_width_all(5)
+	rs.set_corner_radius_all(150)
+	ring.add_theme_stylebox_override("panel", rs)
+	ring.position = Vector2(-140, -140)
+	ring.size = Vector2(280, 280)
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	build_panel.add_child(ring)
+	var c = battle.pad_owner[i]
+	if c == null:
+		var spots := [Vector2(-105, -105), Vector2(105, -105), Vector2(-105, 105), Vector2(105, 105)]
+		for k in GameData.TOWER_ORDER.size():
+			var fam: String = GameData.TOWER_ORDER[k]
+			var t: Dictionary = GameData.TOWERS[fam]
+			var fam_c := fam
+			_ring_button(spots[k], t.icon, t.name.replace("Torre de ", "").replace("Torre ", ""), int(t.cost[0]), battle.gold >= int(t.cost[0]), t.color.darkened(0.25), func(): battle.build(i, fam_c))
+	else:
+		_plaque(c.title(), Vector2(0, -205))
+		if c.cost_next() >= 0:
+			var nx: int = c.cost_next()
+			_ring_button(Vector2(0, -120), "up", "Melhorar", nx, battle.gold >= nx, UIKit.GOOD.darkened(0.2), func(): battle.upgrade_pad(i))
+		elif c.can_specialize():
+			var specs: Array = GameData.family_specs(c.family)
+			var n := specs.size()
+			for k in n:
+				var sd: Dictionary = specs[k]
+				var ang := -PI / 2 + (k - (n - 1) / 2.0) * 0.75
+				var pos := Vector2(cos(ang), sin(ang)) * 130.0
+				var unlocked := Save.champ_unlocked(sd.id)
+				var cost := GameData.spec_cost(sd)
+				var sid: String = sd.id
+				var b := _ring_button(pos, "", sd.name.split(" ")[0] if unlocked else "Bloqueado", cost, unlocked and battle.gold >= cost, sd.color.darkened(0.3) if unlocked else Color("5a4a3a"), func(): battle.specialize_pad(i, sid))
+				var pic := TextureRect.new()
+				pic.texture = AssetLib.icon(sid, Save.evo(sid) > 0)
+				pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				pic.position = Vector2(6, 4)
+				pic.size = Vector2(84, 84)
+				pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				if not unlocked: pic.modulate = Color(0, 0, 0, 0.8)
+				b.add_child(pic)
+		else:
+			_plaque("NÍVEL MÁXIMO", Vector2(0, -120))
+		_ring_button(Vector2(0, 125), "coin", "Vender", -c.sell_value(), true, UIKit.GOLD.darkened(0.35), func(): battle.sell_pad(i))
+	build_panel.scale = Vector2(0.5, 0.5)
+	build_panel.create_tween().tween_property(build_panel, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+## Round button with an icon, a caption and a price tag (negative = refund).
+func _ring_button(at: Vector2, icon: String, caption: String, price: int, ok: bool, col: Color, cb: Callable) -> Button:
+	var b := UIKit.button("", func():
+		if ok: cb.call()
+		else: Sfx.play("back"), col if ok else Color("5a4a3a"), Vector2(96, 96), 20)
+	for st in ["normal", "hover", "pressed", "disabled"]:
+		(b.get_theme_stylebox(st) as StyleBoxFlat).set_corner_radius_all(48)
+	b.position = at - Vector2(48, 48)
+	build_panel.add_child(b)
+	if icon != "":
+		var ic := Icon.make(icon, 60)
+		ic.position = Vector2(18, 14)
+		ic.size = Vector2(60, 60)
+		b.add_child(ic)
+	var tag := PanelContainer.new()
+	tag.add_theme_stylebox_override("panel", UIKit.box(UIKit.WOOD_DARK, UIKit.NIGHT, 12, 3))
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tl := UIKit.label(("+%d" % -price) if price < 0 else str(price), 22, UIKit.GOLD if ok else UIKit.DANGER)
+	tag.add_child(tl)
+	tag.position = Vector2(14, 80)
+	b.add_child(tag)
+	var cap := UIKit.label(caption, 17, UIKit.TEXT)
+	cap.position = Vector2(-30, 116)
+	cap.size = Vector2(156, 26)
+	b.add_child(cap)
+	return b
+
+func _plaque(text: String, at: Vector2) -> void:
+	var p := UIKit.wood_panel()
+	(p.get_theme_stylebox("panel") as StyleBoxFlat).content_margin_top = 4
+	(p.get_theme_stylebox("panel") as StyleBoxFlat).content_margin_bottom = 4
+	p.add_child(UIKit.label(text, 24, UIKit.EMBER_HI))
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	build_panel.add_child(p)
+	p.position = at - Vector2(130, 24)
+	p.custom_minimum_size = Vector2(260, 0)
+
+func hide_build() -> void:
+	if build_panel:
+		build_panel.queue_free()
+		build_panel = null
+	if battle: battle.selected_pad = -1
+
+# ── Messages ────────────────────────────────────────────────
 func hazard_hint(text: String) -> void:
 	hint_lbl.text = text
 	var tw := hint_lbl.create_tween()
-	tw.tween_interval(6.0)
+	tw.tween_interval(7.0)
 	tw.tween_property(hint_lbl, "modulate:a", 0.0, 0.8)
 
 func flash_warning(text: String) -> void:
@@ -249,41 +289,35 @@ func flash_warning(text: String) -> void:
 func banner(title: String, sub: String, color: Color) -> void:
 	var v := VBoxContainer.new()
 	v.set_anchors_preset(Control.PRESET_CENTER)
-	v.position = Vector2(-340, -200)
-	v.size = Vector2(680, 200)
+	v.offset_left = -340; v.offset_right = 340; v.offset_top = -240; v.offset_bottom = -60
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(UIKit.label(title, 64, color))
+	var t := UIKit.label(title, 60, color)
+	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(t)
 	if sub != "":
-		v.add_child(UIKit.label(sub, 28, UIKit.DIM))
+		v.add_child(UIKit.label(sub, 28, UIKit.TEXT))
 	root.add_child(v)
 	UIKit.pop_in(v)
 	var tw := v.create_tween()
-	tw.tween_interval(1.4)
+	tw.tween_interval(1.6)
 	tw.tween_property(v, "modulate:a", 0.0, 0.4)
 	tw.tween_callback(v.queue_free)
 
-func _dim_overlay() -> Control:
-	overlay = ColorRect.new()
-	(overlay as ColorRect).color = Color(0.02, 0.03, 0.06, 0.85)
-	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	root.add_child(overlay)
-	return overlay
-
 func show_boons(boons: Array) -> void:
-	var o := _dim_overlay()
+	overlay = UIKit.modal(root)
+	var p := UIKit.parchment_panel()
+	p.set_anchors_preset(Control.PRESET_CENTER)
+	p.offset_left = -330; p.offset_right = 330; p.offset_top = -470; p.offset_bottom = 470
+	overlay.add_child(p)
 	var v := VBoxContainer.new()
-	v.set_anchors_preset(Control.PRESET_FULL_RECT)
-	v.offset_left = 40; v.offset_right = -40; v.offset_top = 220; v.offset_bottom = -200
-	v.add_theme_constant_override("separation", 22)
-	o.add_child(v)
-	v.add_child(UIKit.label("ESCOLHA UMA BÊNÇÃO", 48, UIKit.EMBER_HI))
-	v.add_child(UIKit.label("Onda %d vencida" % (battle.wave_index + 1), 26, UIKit.DIM))
+	v.add_theme_constant_override("separation", 16)
+	p.add_child(v)
+	v.add_child(UIKit.ink("ONDA %d VENCIDA!" % (battle.wave_index + 1), 44, Color("8a2a10")))
+	v.add_child(UIKit.ink("Escolha uma bênção para %s:" % Save.hero_name(), 26))
 	for k in boons.size():
 		var b: Dictionary = boons[k]
 		var rc: Color = GameData.RARITY_COLOR.get(b.rarity, UIKit.DIM)
-		var btn := UIKit.button("%s\n%s" % [b.name, b.desc], func(): battle.pick_boon(b), UIKit.PANEL_HI, Vector2(620, 150), 32)
-		btn.add_theme_stylebox_override("normal", UIKit.box(UIKit.PANEL_HI, rc, 24, 5))
+		var btn := UIKit.button("%s\n%s" % [b.name, b.desc], func(): battle.pick_boon(b), rc.darkened(0.25), Vector2(0, 170), 30)
 		var bi := UIKit.art("boons/%s.png" % b.id)
 		if bi:
 			btn.icon = bi
@@ -300,47 +334,15 @@ func show_pause(on: bool) -> void:
 	if not on:
 		hide_boons()
 		return
-	var o := _dim_overlay()
+	overlay = UIKit.modal(root)
+	var p := UIKit.wood_panel()
+	p.set_anchors_preset(Control.PRESET_CENTER)
+	p.offset_left = -250; p.offset_right = 250; p.offset_top = -220; p.offset_bottom = 220
+	overlay.add_child(p)
 	var v := VBoxContainer.new()
-	v.set_anchors_preset(Control.PRESET_CENTER)
-	v.position = Vector2(-230, -200)
-	v.add_theme_constant_override("separation", 24)
-	o.add_child(v)
-	v.add_child(UIKit.label("PAUSADO", 64, UIKit.TEXT))
-	v.add_child(UIKit.button("CONTINUAR", func(): battle.toggle_pause(), UIKit.EMBER, Vector2(460, 100), 40))
-	v.add_child(UIKit.button("DESISTIR", func(): battle.abandon(), UIKit.PANEL_HI, Vector2(460, 90), 34))
-
-# ── Floating joystick ──────────────────────────────────────
-func joystick_start(p: Vector2) -> void:
-	_joy_on = true
-	_joy_origin = p
-	_joy_pos = p
-	joy.set_state(true, _joy_origin, _joy_pos)
-
-func joystick_move(p: Vector2) -> void:
-	if not _joy_on: return
-	_joy_pos = p
-	joy.set_state(true, _joy_origin, _joy_pos)
-
-func joystick_end() -> void:
-	_joy_on = false
-	joy.set_state(false, _joy_origin, _joy_pos)
-
-func joystick_vector() -> Vector2:
-	if auto_vec != Vector2.ZERO: return auto_vec
-	if not _joy_on: return Vector2.ZERO
-	var d := (_joy_pos - _joy_origin) / 90.0
-	return d.limit_length(1.0)
-
-class JoyView extends Control:
-	var on := false
-	var o := Vector2.ZERO
-	var p := Vector2.ZERO
-	func set_state(v: bool, origin: Vector2, pos: Vector2) -> void:
-		on = v; o = origin; p = pos
-		queue_redraw()
-	func _draw() -> void:
-		if not on: return
-		draw_circle(o, 90, Color(0, 0, 0, 0.35))
-		draw_arc(o, 90, 0, TAU, 40, Color(1, 0.6, 0.3, 0.6), 4)
-		draw_circle(o + (p - o).limit_length(90), 40, Color(1, 0.6, 0.3, 0.85))
+	v.add_theme_constant_override("separation", 20)
+	p.add_child(v)
+	v.add_child(UIKit.label("PAUSADO", 60, UIKit.EMBER_HI))
+	v.add_child(UIKit.sound_toggles())
+	v.add_child(UIKit.button("CONTINUAR", func(): battle.toggle_pause(), UIKit.GOOD.darkened(0.15), Vector2(0, 96), 38))
+	v.add_child(UIKit.button("DESISTIR", func(): battle.abandon(), UIKit.DANGER, Vector2(0, 86), 32))

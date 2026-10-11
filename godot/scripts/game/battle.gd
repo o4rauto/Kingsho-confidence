@@ -2,9 +2,10 @@ extends Node3D
 const UIKit := preload("res://scripts/ui/ui_kit.gd")
 const WorldBuilder := preload("res://scripts/game/world_builder.gd")
 ## Battle — the 3D battlefield where the three influences fuse:
-##  · Kingdom Rush: enemies march lanes toward your Bastion.
-##  · Clash Royale: regenerating Aether deploys champion cards.
-##  · Archero: pilot the Warden; draft a Boon after every wave.
+##  · Kingdom Rush: enemies march the roads; you BUILD defenses on stone spots
+##    with gold from kills; barracks soldiers block the road.
+##  · Clash Royale: collectible champions (levels, evolutions) become tower specializations.
+##  · Archero: pilot your hero; draft a Boon after every wave.
 ## Each realm adds its own hazard so no two maps play alike.
 
 const BASTION_POS := Vector3(0, 0, 6.0)
@@ -22,19 +23,25 @@ var cam: Camera3D
 var hud
 var warden
 var enemies: Array = []
-var champions: Array = []
+var champions: Array = []      # defenses on pads
+var soldiers: Array = []
 var projectiles: Array = []
+var pad_owner: Array = []      # pad index → defense or null
+var selected_pad := -1
+var upgrade_mods := {}
+var builds := 0
+var bosses_killed := 0
+var integrity_max := GameData.BASTION_MAX
+var between := false           # waiting for the player to call the next wave
+var between_t := 0.0
 var mods: Dictionary
 var state := "intro"   # intro | playing | boon | paused | over
 var integrity := GameData.BASTION_MAX
-var aether := GameData.AETHER_START
 var wave_index := -1
 var wave_time := 0.0
 var pending: Array = []      # [{t, enemy, lane}]
 var gold := 0
 var kills := 0
-var selected_card := -1
-var card_cd: Array = []
 var auto := false
 var _auto_t := 0.0
 var _shake := 0.0
@@ -65,15 +72,27 @@ func _ready() -> void:
 		for a in OS.get_cmdline_user_args():
 			if a.begins_with("--level="):
 				var lv := int(a.substr(8))
-				Save.data.warden_level = lv
+				Save.data.hero.level = mini(lv * 2 - 1, GameData.HERO_MAX_LEVEL)
 				for id in Save.data.champions:
-					Save.data.champions[id].level = mini(lv, GameData.MAX_LEVEL)
+					Save.data.champions[id].level = clampi(lv, 1, GameData.MAX_LEVEL)
+				Save.data.cleared = []
+				for r in GameData.realms:
+					if r.index < realm.index: Save.data.cleared.append(r.id)
+				var stars := mini(lv * 3 - 3, 30)
+				for u in GameData.UPGRADES:
+					var t := 0
+					while t < 4 and stars >= int(GameData.UPGRADE_COSTS[t]):
+						stars -= int(GameData.UPGRADE_COSTS[t]); t += 1
+					Save.data.upgrades[u.id] = t
 	mods = GameData.fresh_mods()
-	card_cd = []
-	for i in deck.size(): card_cd.append(0.0)
+	upgrade_mods = Save.upgrade_mods()
+	integrity_max = GameData.BASTION_MAX + float(upgrade_mods.get("bastion_hp", 0.0))
+	integrity = integrity_max
+	gold = 300 + realm.index * 50 + maxi(0, realm.lanes - 2) * 60 + int(upgrade_mods.get("start_gold", 0.0))
 	_shared_resources()
 	world = WorldBuilder.new()
 	world.build(realm, self)
+	for i in world.pads.size(): pad_owner.append(null)
 	_camera()
 	var bastion := AssetLib.make("bastion", "bastion", Color.WHITE, 3.2)
 	bastion.position = BASTION_POS + Vector3(0, 0, 0.8)
@@ -87,12 +106,14 @@ func _ready() -> void:
 	hud = HudScript.new()
 	add_child(hud)
 	hud.setup(self)
+	if p.get("nohud", false) or OS.get_cmdline_user_args().has("--nohud"):
+		hud.visible = false
+		hud.root.visible = false
 	hud.banner(realm.name.to_upper(), realm.subtitle, UIKit.EMBER_HI)
 	hud.hazard_hint(_hazard_text())
 	Sfx.play_realm_music(realm)
-	get_tree().create_timer(1.6).timeout.connect(func():
-		state = "playing"
-		_next_wave())
+	state = "playing"
+	_start_between(30.0 if not auto else 0.5)
 
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
@@ -129,13 +150,13 @@ func _camera() -> void:
 # ── Hazards ─────────────────────────────────────────────────
 func _hazard_text() -> String:
 	return {
-		"none": "Arraste para mover · fique parado para atirar · toque numa carta e depois no chão",
+		"none": "Toque numa PLATAFORMA de pedra para construir · toque no chão para mover o herói",
 		"embers": "BRASAS CAEM DO CÉU — saia dos círculos (elas queimam inimigos também)",
 		"mud_fog": "NEBLINA reduz o alcance · LAMA atrasa quem pisa",
 		"ballista": "A BALISTA mira em VOCÊ — continue se mexendo",
 		"portals": "PORTAIS abrem no meio das pistas",
 		"blizzard": "GELO escorregadio · NEVASCAS congelam tudo",
-		"sandstorm": "TEMPESTADES DE AREIA cortam o alcance · o OÁSIS dá +Aether",
+		"sandstorm": "TEMPESTADES DE AREIA cortam o alcance e aceleram os inimigos",
 		"eruptions": "ERUPÇÕES atingem TODOS — atraia inimigos para elas",
 		"snares": "RAÍZES prendem quem fica parado nelas",
 		"sunbeam": "O RAIO DE SOL fortalece aliados e queima inimigos",
@@ -184,7 +205,7 @@ func _hazards(dt: float) -> void:
 				var lane: Curve3D = world.lanes[randi() % world.lanes.size()]
 				var d := lane.get_baked_length() * randf_range(0.35, 0.6)
 				ring_fx(lane.sample_baked(d), 2.0, Color("a46aff"))
-				for k in 3: spawn_enemy("void_spawn", lane, 1.0 + wave_index * 0.1, d - k * 0.8)
+				for k in 2: spawn_enemy("void_spawn", lane, 1.0 + wave_index * 0.06, d - k * 0.8)
 			"blizzard":
 				hazard_t = 14.0; storm_t = 3.5
 				hud.flash_warning("NEVASCA!")
@@ -263,7 +284,7 @@ func _resolve(tg: Dictionary) -> void:
 			var power := 1.0 if tg.kind == "ember" else 1.8
 			for e in enemies_near(p, r):
 				hit_enemy(e, 60.0 * power, {"source": "hazard", "burn": 8.0})
-			for c in champions:
+			for c in soldiers:
 				if c.alive and c.position.distance_to(p) < r:
 					c.take_damage(30.0 * power)
 			if w_in: warden.take_damage(25.0 * power)
@@ -278,7 +299,7 @@ func _resolve(tg: Dictionary) -> void:
 func boss_slam(boss, r: float) -> void:
 	ring_fx(boss.position, r, Color("ff5470"))
 	shake(0.4)
-	for c in champions:
+	for c in soldiers:
 		if c.alive and c.position.distance_to(boss.position) < r:
 			c.take_damage(boss.def.damage)
 			c.stun_t = 2.0
@@ -298,9 +319,9 @@ func _next_wave() -> void:
 		_end(true)
 		return
 	if wave_index > 0:
-		aether = minf(GameData.AETHER_MAX, aether + GameData.AETHER_WAVE_BONUS)
-		if mods.repair > 0.0:
-			integrity = minf(GameData.BASTION_MAX, integrity + mods.repair)
+		var rep: float = mods.repair + float(upgrade_mods.get("repair", 0.0))
+		if rep > 0.0:
+			integrity = minf(integrity_max, integrity + rep)
 	wave_time = 0.0
 	pending.clear()
 	var is_boss := false
@@ -315,6 +336,7 @@ func _next_wave() -> void:
 		hud.banner("CHEFE!", GameData.enemies[realm.boss].name, UIKit.DANGER)
 
 func spawn_enemy(id: String, lane: Curve3D, hp_scale: float, start_dist := 0.0) -> void:
+	Save.mark_seen(id)
 	var e = EnemyScript.new()
 	add_child(e)
 	e.setup(self, id, lane, hp_scale, maxf(0.0, start_dist))
@@ -336,8 +358,12 @@ func _process(delta: float) -> void:
 	while _sim_acc >= STEP and state == "playing":
 		_sim_acc -= STEP
 		_step(STEP)
+		if between:
+			between_t -= STEP
+			if between_t <= 0.0:
+				call_wave()
 	hud.refresh()
-	if state == "playing" and _wave_done():
+	if state == "playing" and not between and _wave_done():
 		if wave_index >= realm.wave_list.size() - 1:
 			_end(true)
 		else:
@@ -348,10 +374,10 @@ func _step(dt: float) -> void:
 	for s in pending.duplicate():
 		if wave_time >= s.t:
 			pending.erase(s)
-			spawn_enemy(s.enemy, world.lanes[s.lane], ((1.0 + wave_index * 0.02) if GameData.enemies[s.enemy].kind == "boss" else (1.0 + wave_index * 0.09)) * (1.0 + realm.index * 0.04))
-	warden.move_input = hud.joystick_vector()
+			spawn_enemy(s.enemy, world.lanes[s.lane], ((1.0 + wave_index * 0.02) if GameData.enemies[s.enemy].kind == "boss" else (1.0 + wave_index * 0.07)) * (1.0 + realm.index * 0.03))
 	warden.step(dt)
 	for c in champions: c.step(dt)
+	for c in soldiers: c.step(dt)
 	for e in enemies: e.step(dt)
 	for p in projectiles: p.step(dt)
 	_hazards(dt)
@@ -361,9 +387,10 @@ func _step(dt: float) -> void:
 		enemies.erase(e)
 		if not e.reached:
 			kills += 1
-			var bounty := int(e.def.bounty * mods.gold)
+			var bounty := int(e.def.bounty * 1.5 * mods.gold)
 			gold += bounty
 			warden.add_ult(40.0 if e.is_boss else 4.0)
+			if e.is_boss: bosses_killed += 1
 			Sfx.play("enemy_die", 0.7 if e.is_boss else 1.0)
 			if e.is_boss:
 				ring_fx(e.position, 5.0, Color("ffe6a6"))
@@ -372,17 +399,14 @@ func _step(dt: float) -> void:
 				for k in int(e.def.split[1]):
 					spawn_enemy(e.def.split[0], e.curve, 1.0 + wave_index * 0.1, e.dist - k * 0.5)
 		_die_fx(e)
-	for c in champions.duplicate():
+	for c in soldiers.duplicate():
 		if not c.alive:
-			champions.erase(c)
+			soldiers.erase(c)
 			_die_fx(c)
 	for p in projectiles.duplicate():
 		if not p.alive:
 			projectiles.erase(p)
 			p.queue_free()
-	aether = minf(GameData.AETHER_MAX, aether + GameData.AETHER_REGEN * mods.aether_regen * (1.25 if realm.hazard == "sandstorm" else 1.0) * dt)
-	for i in card_cd.size():
-		card_cd[i] = maxf(0.0, card_cd[i] - dt)
 	if auto:
 		_auto_play(dt)
 func _die_fx(n: Node3D) -> void:
@@ -403,7 +427,7 @@ func hit_enemy(e, dmg: float, opts: Dictionary) -> void:
 	if beam and src in ["warden", "champion"]:
 		var shooter_pos: Vector3 = warden.position if src == "warden" else e.position
 		if _in_beam(shooter_pos): dmg *= 1.5
-	var dealt: float = e.take_damage(dmg)
+	var dealt: float = e.take_damage(dmg, opts.get("true_dmg", false))
 	if opts.get("crit", false):
 		float_text(e.position, str(int(dealt)), Color("ffe6a6"))
 	if opts.get("burn", 0.0) > 0.0: e.apply_burn(opts.burn)
@@ -420,7 +444,7 @@ func hit_enemy(e, dmg: float, opts: Dictionary) -> void:
 
 func damage_bastion(d: float) -> void:
 	if state == "over": return
-	integrity = maxf(0.0, integrity - d)
+	integrity = maxf(0.0, integrity - d * GameData.BASTION_MAX / 100.0)
 	Sfx.play("hurt", 0.7)
 	shake(0.2)
 	if integrity <= 0.0:
@@ -436,6 +460,38 @@ func nearest_enemy(p: Vector3, r: float):
 			bd = d; best = e
 	return best
 
+func nearest_ground_enemy(p: Vector3, r: float):
+	var best = null
+	var bd := r * r
+	for e in enemies:
+		if not e.alive or e.def.kind == "flyer": continue
+		var d := Vector2(e.position.x - p.x, e.position.z - p.z).length_squared()
+		if d < bd:
+			bd = d; best = e
+	return best
+
+## Artillery shell: arcs to `to`, then explodes (ground enemies only).
+func lob(from: Vector3, to: Vector3, dmg: float, r: float, opts: Dictionary) -> void:
+	var mi := MeshInstance3D.new()
+	mi.mesh = proj_mesh
+	mi.scale = Vector3.ONE * 1.8
+	mi.material_override = AssetLib.mat(opts.get("color", Color("2a2e38")))
+	mi.position = from
+	add_child(mi)
+	var dest := Vector3(to.x, 0.2, to.z)
+	var flight := 0.65
+	var tw := mi.create_tween()
+	tw.tween_method(func(t: float):
+		mi.position = from.lerp(dest, t) + Vector3(0, sin(t * PI) * 3.0, 0), 0.0, 1.0, flight)
+	tw.tween_callback(func():
+		mi.queue_free()
+		if state == "over": return
+		ring_fx(dest, r, Color("ffb03a"))
+		for e in enemies_near(dest, r):
+			if e.def.kind == "flyer": continue
+			hit_enemy(e, dmg, {"source": "champion", "true_dmg": opts.get("true_dmg", false), "burn": opts.get("burn", 0.0)}))
+	Sfx.play("hit", 0.7)
+
 func enemies_near(p: Vector3, r: float) -> Array:
 	var out: Array = []
 	for e in enemies:
@@ -443,10 +499,17 @@ func enemies_near(p: Vector3, r: float) -> Array:
 			out.append(e)
 	return out
 
+func allies_near(p: Vector3, r: float) -> Array:
+	var out: Array = []
+	for c in soldiers:
+		if c.alive and c.position.distance_to(p) < r: out.append(c)
+	if not warden.downed and warden.position.distance_to(p) < r: out.append(warden)
+	return out
+
 func most_wounded_ally(p: Vector3, r: float):
 	var best = null
 	var bf := 0.98
-	for c in champions:
+	for c in soldiers:
 		if c.alive and c.position.distance_to(p) < r and c.hp / c.max_hp < bf:
 			bf = c.hp / c.max_hp; best = c
 	if not warden.downed and warden.position.distance_to(p) < r and warden.hp / warden.max_hp < bf:
@@ -487,7 +550,7 @@ func banner_small(text: String) -> void:
 	hud.flash_warning(text)
 
 func shake(amount: float) -> void:
-	if Save.data.settings.shake:
+	if Save.settings.shake:
 		_shake = maxf(_shake, amount)
 
 func _update_camera(delta: float) -> void:
@@ -495,16 +558,7 @@ func _update_camera(delta: float) -> void:
 	_shake = maxf(0.0, _shake - delta * 1.5)
 	cam.position = _cam_base + Vector3(randf_range(-1, 1), randf_range(-1, 1), 0) * _shake * 0.6
 
-# ── Deploy ──────────────────────────────────────────────────
-func select_card(i: int) -> void:
-	if state != "playing": return
-	var def := GameData.champion(deck[i])
-	if card_cd[i] > 0.0 or aether < def.cost:
-		Sfx.play("back")
-		return
-	selected_card = -1 if selected_card == i else i
-	Sfx.play("click")
-
+# ── Build spots ─────────────────────────────────────────
 func screen_to_ground(screen: Vector2) -> Vector3:
 	var o := cam.project_ray_origin(screen)
 	var d := cam.project_ray_normal(screen)
@@ -512,41 +566,102 @@ func screen_to_ground(screen: Vector2) -> Vector3:
 	var t := -o.y / d.y
 	return o + d * t
 
-func valid_deploy(p: Vector3) -> bool:
-	if p == Vector3.INF: return false
-	if absf(p.x) > 6.3 or p.z < -21.0 or p.z > 3.5: return false
-	if p.distance_to(BASTION_POS) < 2.2: return false
-	for c in champions:
-		if c.alive and c.position.distance_to(p) < 1.1: return false
+func pad_at(p: Vector3) -> int:
+	var best := -1
+	var bd := 1.5
+	for i in world.pads.size():
+		var q: Vector3 = world.pads[i]
+		var d := Vector2(q.x - p.x, q.z - p.z).length()
+		if d < bd:
+			bd = d; best = i
+	return best
+
+func rally_point_for(pad_pos: Vector3) -> Vector3:
+	return world.rally_point(pad_pos)
+
+func build_cost(family: String) -> int:
+	return int(GameData.TOWERS[family].cost[0])
+
+func select_pad(i: int) -> void:
+	selected_pad = i
+	hud.show_build(i)
+	Sfx.play("click")
+
+func build(i: int, family: String) -> bool:
+	var cost := build_cost(family)
+	if i < 0 or pad_owner[i] != null or gold < cost:
+		Sfx.play("back")
+		return false
+	gold -= cost
+	var c = ChampionScript.new()
+	add_child(c)
+	c.setup(self, family, i, world.pads[i], cost)
+	champions.append(c)
+	pad_owner[i] = c
+	builds += 1
+	ring_fx(world.pads[i], 1.3, GameData.TOWERS[family].color)
+	Sfx.play("deploy")
+	hud.hide_build()
 	return true
 
-func try_deploy(p: Vector3) -> bool:
-	if selected_card < 0: return false
-	var i := selected_card
-	var def := GameData.champion(deck[i])
-	if not valid_deploy(p) or aether < def.cost:
+func upgrade_pad(i: int) -> bool:
+	var c = pad_owner[i]
+	if c == null or c.cost_next() < 0 or gold < c.cost_next():
 		Sfx.play("back")
-		float_text(p if p != Vector3.INF else warden.position, "INVÁLIDO", Color("ff5470"))
 		return false
-	aether -= def.cost
-	card_cd[i] = 4.0 + def.cost * 0.6
-	var stats := Save.stats(def)
-	var evolved: bool = Save.champ(def.id).evolved
-	for k in int(def.count):
-		var c = ChampionScript.new()
-		add_child(c)
-		var off := Vector3((k - (def.count - 1) / 2.0) * 0.9, 0, 0)
-		c.setup(self, def, Vector3(p.x, 0, p.z) + off, stats, evolved)
-		champions.append(c)
-	ring_fx(p, 1.2, def.color)
-	Sfx.play("deploy")
-	selected_card = -1
+	gold -= c.cost_next()
+	c.upgrade()
+	Sfx.play("boon")
+	hud.hide_build()
 	return true
+
+func specialize_pad(i: int, champ_id: String) -> bool:
+	var c = pad_owner[i]
+	var def := GameData.champion(champ_id)
+	var cost := GameData.spec_cost(def)
+	if c == null or not c.can_specialize() or gold < cost or not Save.champ_unlocked(champ_id):
+		Sfx.play("back")
+		return false
+	gold -= cost
+	c.specialize(def)
+	banner_small(def.name.to_upper() + "!")
+	Sfx.play("ult")
+	hud.hide_build()
+	return true
+
+func sell_pad(i: int) -> void:
+	var c = pad_owner[i]
+	if c == null: return
+	gold += c.sell_value()
+	float_text(c.position, "+%d" % c.sell_value(), Color("ffcf3d"))
+	c.remove()
+	champions.erase(c)
+	pad_owner[i] = null
+	_die_fx(c)
+	Sfx.play("coin")
+	hud.hide_build()
+
+# ── Waves: between waves you build, then call the next one ──
+func _start_between(t: float) -> void:
+	between = true
+	between_t = t
+	hud.show_call(true)
+
+## Calling early pays a bonus (like the classic "call wave" skull).
+func call_wave() -> void:
+	if not between: return
+	var bonus := int(maxf(0.0, between_t) * 2.0) if wave_index >= 0 else 0
+	if bonus > 0:
+		gold += bonus
+		float_text(warden.position, "+%d ouro" % bonus, Color("ffcf3d"))
+	between = false
+	hud.show_call(false)
+	_next_wave()
 
 # ── Boons ───────────────────────────────────────────────────
 func _offer_boon() -> void:
 	state = "boon"
-	selected_card = -1
+	hud.hide_build()
 	Sfx.play("boon")
 	var weight := {"common": 10.0, "rare": 6.0, "epic": 3.0}
 	var keyed: Array = []
@@ -562,11 +677,15 @@ func _offer_boon() -> void:
 func pick_boon(b: Dictionary) -> void:
 	if state != "boon": return
 	GameData.apply_boon(mods, b)
+	if mods.bonus_gold > 0.0:
+		gold += int(mods.bonus_gold)
+		mods.bonus_gold = 0.0
 	warden.recompute()
+	for c in champions: c._apply_stats()
 	hud.hide_boons()
 	Sfx.play("victory")
 	state = "playing"
-	_next_wave()
+	_start_between(12.0 if not auto else 0.5)
 
 # ── Pause / end ─────────────────────────────────────────────
 func toggle_pause() -> void:
@@ -588,54 +707,67 @@ func _end(victory: bool) -> void:
 	Sfx.play("victory" if victory else "defeat")
 	hud.banner("REINO CONQUISTADO!" if victory else "O BASTIÃO CAIU", "", UIKit.EMBER_HI if victory else UIKit.DANGER)
 	var waves_done: int = wave_index + (1 if victory else 0)
-	var rewards := Save.settle_run(realm.id, victory, waves_done, gold, kills)
+	var rewards := Save.settle_run(realm.id, victory, waves_done, integrity / integrity_max, kills, builds, bosses_killed)
 	if auto:
-		print("AUTO_RESULT realm=%s victory=%s waves=%d/%d kills=%d gold=%d integrity=%d" % [realm.id, victory, waves_done, realm.wave_list.size(), kills, gold, int(integrity)])
+		print("AUTO_RESULT realm=%s victory=%s waves=%d/%d kills=%d gold=%d integrity=%d stars=%d builds=%d pads=%d" % [realm.id, victory, waves_done, realm.wave_list.size(), kills, gold, int(integrity), int(rewards.stars), builds, world.pads.size()])
 	get_tree().create_timer(1.6).timeout.connect(func():
 		Nav.go("result", {"realm_id": realm.id, "victory": victory, "waves": waves_done,
-			"total": realm.wave_list.size(), "kills": kills, "rewards": rewards}))
+			"total": realm.wave_list.size(), "kills": kills, "rewards": rewards}, true))
 
-# ── Input: drag = joystick, tap = deploy (HUD widgets consume their own taps) ──
+# ── Input: tap a stone spot = build menu · tap ground = hero walks there ──
 func _unhandled_input(event: InputEvent) -> void:
 	if state != "playing": return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			if selected_card >= 0:
-				try_deploy(screen_to_ground(event.position))
-			else:
-				hud.joystick_start(event.position)
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		var g := screen_to_ground(event.position)
+		if g == Vector3.INF: return
+		var i := pad_at(g)
+		if i >= 0:
+			select_pad(i)
 		else:
-			hud.joystick_end()
-	elif event is InputEventMouseMotion:
-		hud.joystick_move(event.position)
+			hud.hide_build()
+			warden.walk_to(g)
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
 		warden.release_ult()
 
-# ── Auto-play (testing): deploys cards, kites, picks boons ──
+# ── Auto-play (testing): builds, upgrades, specializes, walks the hero ──
 func _auto_play(dt: float) -> void:
 	_auto_t -= dt
-	# Human-like kiting: close in to firing range, back off when crowded,
-	# then stand still to shoot (the Warden only fires while stationary).
 	var t = nearest_enemy(warden.position, 40.0)
-	hud.auto_vec = Vector2.ZERO
+	warden.move_input = Vector2.ZERO
 	if t != null:
 		var to: Vector3 = t.position - warden.position
 		to.y = 0
 		var d := to.length()
 		if d < 2.5:
-			hud.auto_vec = Vector2(-to.x, -to.z).normalized()
+			warden.move_input = Vector2(-to.x, -to.z).normalized()
 		elif d > warden.atk_range * range_mul() * 0.85 and fmod(wave_time, 1.2) < 0.7:
-			hud.auto_vec = Vector2(to.x, to.z).normalized()
+			warden.move_input = Vector2(to.x, to.z).normalized()
 	if warden.ult_ready(): warden.release_ult()
 	if _auto_t > 0.0: return
-	_auto_t = 1.5
-	var order := range(deck.size())
-	order.shuffle()
+	_auto_t = 1.0
+	var order: Array = range(world.pads.size())
+	var mid := world.pads.size() / 2
+	order.sort_custom(func(a, b): return absi(a - mid) < absi(b - mid))
+	var plan := ["archer", "barracks", "mage", "artillery", "archer", "mage", "barracks", "artillery", "archer", "mage", "barracks"]
 	for i in order:
-		var def := GameData.champion(deck[i])
-		if card_cd[i] <= 0.0 and aether >= def.cost:
-			var lane: Curve3D = world.lanes[randi() % world.lanes.size()]
-			var p := lane.sample_baked(lane.get_baked_length() * randf_range(0.62, 0.9)) + Vector3(randf_range(-1.6, 1.6), 0, 0)
-			selected_card = i
-			if not try_deploy(p): selected_card = -1
+		if pad_owner[i] == null:
+			var fam: String = plan[builds % plan.size()]
+			if gold >= build_cost(fam):
+				build(i, fam)
 			return
+	# Cheapest affordable improvement first (upgrade or specialization).
+	var best_i := -1
+	var best_cost := 99999
+	var best_spec := ""
+	for i in order:
+		var c = pad_owner[i]
+		if c == null: continue
+		if c.cost_next() >= 0 and c.cost_next() < best_cost:
+			best_i = i; best_cost = c.cost_next(); best_spec = ""
+		elif c.can_specialize():
+			for sd in GameData.family_specs(c.family):
+				if Save.champ_unlocked(sd.id) and GameData.spec_cost(sd) < best_cost:
+					best_i = i; best_cost = GameData.spec_cost(sd); best_spec = sd.id
+	if best_i >= 0 and gold >= best_cost:
+		if best_spec == "": upgrade_pad(best_i)
+		else: specialize_pad(best_i, best_spec)

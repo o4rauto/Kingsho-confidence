@@ -31,7 +31,7 @@ func _ready() -> void:
 		_music.play()
 
 func _music_on() -> bool:
-	return Save.data.settings.music
+	return Save.settings.music
 
 func set_music(on: bool) -> void:
 	if on and not _music.playing:
@@ -40,7 +40,7 @@ func set_music(on: bool) -> void:
 		_music.stop()
 
 func play(name: String, pitch := 1.0) -> void:
-	if not Save.data.settings.sfx:
+	if not Save.settings.sfx:
 		return
 	var s = _streams.get(name)
 	if s == null:
@@ -53,7 +53,7 @@ func play(name: String, pitch := 1.0) -> void:
 			return
 
 func haptic(ms := 25) -> void:
-	if Save.data.settings.haptics:
+	if Save.settings.haptics:
 		Input.vibrate_handheld(ms)
 
 # ── slots / synthesis ───────────────────────────────────────
