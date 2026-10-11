@@ -65,13 +65,12 @@ func _bottom_bar() -> void:
 	bar.add_child(h)
 	var claim := Save.claimable_count()
 	for it in [["back", "MENU", func(): Nav.go("menu", {}, true)],
-			["helmet", "HERÓI", func(): Nav.go("hero", {}, true)],
-			["sword", "CAMPEÕES", func(): Nav.go("collection", {}, true)],
+			["helmet", "HERÓIS", func(): Nav.go("collection", {}, true)],
 			["hammer", "MELHORIAS", func(): Nav.go("upgrades", {}, true)],
 			["book", "BESTIÁRIO", func(): Nav.go("encyclopedia", {}, true)],
 			["trophy", "CONQUISTAS", func(): Nav.go("achievements", {}, true)]]:
 		var w := UIKit.icon_button(it[0], it[2], it[1], 86.0, UIKit.WOOD_HI)
-		w.custom_minimum_size = Vector2(112, 0)
+		w.custom_minimum_size = Vector2(132, 0)
 		h.add_child(w)
 		if it[0] == "hammer" and Save.free_stars() > 0:
 			_badge(w, str(Save.free_stars()))

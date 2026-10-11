@@ -55,9 +55,11 @@ func step(dt: float) -> void:
 		vel = vel.lerp(want, minf(1.0, 6.0 * dt))
 	position += vel * dt
 	if source == "enemy":
-		var w = battle.warden
-		if w.alive and position.distance_to(w.position + Vector3(0, 1, 0)) < 0.8:
-			w.take_damage(damage)
+		var t = target
+		if t == null or not is_instance_valid(t) or not t.alive:
+			return
+		if position.distance_to(t.position + Vector3(0, 1, 0)) < 0.9:
+			t.take_damage(damage)
 			alive = false
 		return
 	for e in battle.enemies:

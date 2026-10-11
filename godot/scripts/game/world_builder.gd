@@ -53,14 +53,14 @@ func _environment() -> void:
 	env.background_color = realm.sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = realm.ambient
-	env.ambient_light_energy = 0.5
+	env.ambient_light_energy = 0.38
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	var we := WorldEnvironment.new()
 	we.environment = env
 	root.add_child(we)
 	var sun := DirectionalLight3D.new()
 	sun.light_color = realm.sun
-	sun.light_energy = {"night": 0.75, "storm": 0.8, "void": 0.8, "toxic": 0.85, "lava": 0.85}.get(realm.tod, 0.9)
+	sun.light_energy = {"night": 0.62, "storm": 0.66, "void": 0.66, "toxic": 0.7, "lava": 0.7}.get(realm.tod, 0.74)
 	sun.rotation_degrees = Vector3(-55.0, -30.0 + rng.randf_range(-15, 15), 0)
 	sun.shadow_enabled = true
 	sun.shadow_opacity = 0.55
@@ -307,7 +307,7 @@ func _scatter_props() -> void:
 				elif roll < 0.75: _rock(p, Color("9a948c"))
 				else: _bush(p, Color("5aa83a"))
 			"forest":
-				if roll < 0.7: _tree(p, roll < 0.18, Color("3a8a2a"))
+				if roll < 0.7: _tree(p, roll < 0.18, [Color("d8742a"), Color("c8a030"), Color("6a9a2a"), Color("b8452a")][rng.randi() % 4])
 				else: _bush(p, Color("4f9a33"))
 			"swamp":
 				if roll < 0.4: _reeds(p)
@@ -374,18 +374,18 @@ func _mushroom(p: Vector3) -> void:
 # ── Mountains around the battlefield (every biome has its own) ──
 func _mountains() -> void:
 	var rock: Color = {"ruins": Color("8a9a7a"), "forest": Color("5f8a4a"), "swamp": Color("5a7a6a"), "keep": Color("8d8a9a"),
-		"rift": Color("6a4a9a"), "ice": Color("a8c0dc"), "desert": Color("d89a58"), "volcano": Color("5a4440"),
+		"rift": Color("6a4a9a"), "ice": Color("a8c0dc"), "desert": Color("b0703a"), "volcano": Color("5a4440"),
 		"mire": Color("4f7a3a"), "sunspire": Color("e0c890")}.get(realm.biome, Color("8a9a7a"))
-	var cap: Color = {"ice": Color("ffffff"), "volcano": Color("ff6a1a"), "rift": Color("d8a8ff"), "desert": Color("f0c070"),
+	var cap: Color = {"ice": Color("ffffff"), "volcano": Color("ff6a1a"), "rift": Color("d8a8ff"), "desert": Color("e8a050"),
 		"sunspire": Color("fff0c0"), "forest": Color("3f8a34"), "mire": Color("8ac04a")}.get(realm.biome, Color("f4f8ff"))
 	var spots: Array[Vector3] = []
 	for i in 9:
-		spots.append(Vector3(-13.0 + i * 3.25 + rng.randf_range(-0.8, 0.8), 0, -31.0 - rng.randf_range(0, 3)))
+		spots.append(Vector3(-16.0 + i * 4.0 + rng.randf_range(-0.8, 0.8), 0, -36.0 - rng.randf_range(0, 3)))
 	for side in [-1.0, 1.0]:
 		for k in 4:
-			spots.append(Vector3(side * rng.randf_range(10.5, 13.0), 0, -24.0 + k * 6.0))
+			spots.append(Vector3(side * rng.randf_range(15.5, 18.0), 0, -30.0 + k * 6.0))
 	for p in spots:
-		var h := rng.randf_range(4.5, 8.5) * (1.0 if p.z < -28.0 else 0.75)
+		var h := rng.randf_range(5.0, 9.0) * (1.0 if p.z < -33.0 else 0.8)
 		var r := h * rng.randf_range(0.55, 0.75)
 		var col := rock.lerp(rock.darkened(0.25), rng.randf())
 		_cone(p, r, h, col, 7).rotation.y = rng.randf() * TAU

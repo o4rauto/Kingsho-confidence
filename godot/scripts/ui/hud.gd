@@ -22,6 +22,9 @@ var warning_lbl: Label
 var hint_lbl: Label
 var build_panel: Control
 var overlay: Control
+var courage_bar: ProgressBar
+var courage_lbl: Label
+var troop_cards: Array = []
 var _last := {}
 
 func setup(b) -> void:
@@ -32,6 +35,7 @@ func setup(b) -> void:
 	add_child(root)
 	_top()
 	_bottom()
+	_troop_bar()
 	warning_lbl = UIKit.label("", 46, UIKit.DANGER)
 	warning_lbl.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	warning_lbl.offset_left = -340; warning_lbl.offset_right = 340; warning_lbl.offset_top = 250; warning_lbl.offset_bottom = 330
@@ -90,18 +94,19 @@ func _bottom() -> void:
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(hero)
 	var frame := PanelContainer.new()
-	frame.add_theme_stylebox_override("panel", UIKit.box(Save.hero_cape().darkened(0.3), UIKit.NIGHT, 70, 5))
+	frame.add_theme_stylebox_override("panel", UIKit.box(Color(GameData.hero_def(Save.active_hero()).color).darkened(0.35), UIKit.NIGHT, 70, 5))
 	frame.custom_minimum_size = Vector2(140, 130)
 	frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hero.add_child(frame)
 	var pic := TextureRect.new()
-	pic.texture = AssetLib.icon("warden")
+	var hid := Save.active_hero()
+	pic.texture = AssetLib.icon(hid, hid != "warden" and Save.evo(hid) > 0)
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(pic)
-	var nm := UIKit.label("%s Nv%d" % [Save.hero_name(), Save.hero_level()], 22)
+	var nm := UIKit.label("%s Nv%d" % [String(GameData.hero_def(Save.active_hero()).name).split(" ")[0], Save.hero_lv(Save.active_hero())], 22)
 	hero.add_child(nm)
 	hero_bar = _bar(UIKit.GOOD, 18)
 	hero_bar.max_value = 1.0
@@ -118,19 +123,88 @@ func _bottom() -> void:
 	ult_lbl.position = Vector2(0, 92)
 	ult_lbl.size = Vector2(150, 40)
 	ult_btn.add_child(ult_lbl)
-	var ult_name := UIKit.label(GameData.HERO.ult_name, 18, UIKit.EMBER_HI)
+	var ult_name := UIKit.label(String(GameData.hero_def(Save.active_hero()).ult_name), 18, UIKit.EMBER_HI)
 	ult_name.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	ult_name.offset_left = -200; ult_name.offset_right = -10; ult_name.offset_top = -46; ult_name.offset_bottom = -14
 	root.add_child(ult_name)
 	# Call next wave
 	call_btn = UIKit.button("INICIAR ONDA ▶", func(): battle.call_wave(), UIKit.DANGER, Vector2(330, 100), 34)
 	call_btn.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	call_btn.offset_left = -165; call_btn.offset_right = 165; call_btn.offset_top = -140; call_btn.offset_bottom = -40
+	call_btn.offset_left = -165; call_btn.offset_right = 165; call_btn.offset_top = -330; call_btn.offset_bottom = -230
 	call_btn.visible = false
 	root.add_child(call_btn)
 
+func _troop_bar() -> void:
+	var box := VBoxContainer.new()
+	box.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	box.offset_left = -178; box.offset_right = 178; box.offset_top = -205; box.offset_bottom = -14
+	box.add_theme_constant_override("separation", 4)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(box)
+	var cb := Control.new()
+	cb.custom_minimum_size = Vector2(0, 30)
+	cb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(cb)
+	courage_bar = _bar(Color("e8452c"), 30)
+	courage_bar.max_value = GameData.COURAGE_MAX
+	courage_bar.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cb.add_child(courage_bar)
+	courage_lbl = UIKit.label("CORAGEM 5", 20)
+	courage_lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cb.add_child(courage_lbl)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(row)
+	for i in GameData.TROOPS.size():
+		var t: Dictionary = GameData.TROOPS[i]
+		var idx := i
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(84, 150)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		b.pressed.connect(func(): battle.select_troop(idx))
+		row.add_child(b)
+		var pic := TextureRect.new()
+		pic.texture = AssetLib.icon("troop_" + t.id)
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		pic.set_anchors_preset(Control.PRESET_FULL_RECT)
+		pic.offset_top = 4; pic.offset_bottom = -50; pic.offset_left = 4; pic.offset_right = -4
+		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(pic)
+		var nm := UIKit.label(t.name, 15)
+		nm.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		nm.offset_top = -50; nm.offset_bottom = -28
+		b.add_child(nm)
+		var cost := UIKit.label(str(t.cost), 22, Color("ffb0a0"))
+		cost.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		cost.offset_top = -30; cost.offset_bottom = -6
+		b.add_child(cost)
+		var lock: Control = null
+		if not battle.troop_unlocked(i):
+			lock = Icon.make("lock", 46)
+			lock.position = Vector2(19, 30)
+			b.add_child(lock)
+		troop_cards.append({"btn": b, "cost": float(t.cost), "unlocked": battle.troop_unlocked(i)})
+
 ## Called once per frame; only touches widgets whose value changed.
 func refresh() -> void:
+	_set_if("courage", int(battle.courage * 4.0), func(_v):
+		courage_bar.value = battle.courage
+		courage_lbl.text = "CORAGEM %d" % int(battle.courage))
+	for i in troop_cards.size():
+		var tc: Dictionary = troop_cards[i]
+		var ok: bool = tc.unlocked and battle.courage >= tc.cost
+		var key := "%d|%d" % [int(ok), int(battle.selected_troop == i)]
+		if _last.get("tc%d" % i) == key: continue
+		_last["tc%d" % i] = key
+		var col := UIKit.EMBER if battle.selected_troop == i else (UIKit.WOOD_HI if ok else Color("5a4a3a"))
+		tc.btn.add_theme_stylebox_override("normal", UIKit.face(col))
+		tc.btn.add_theme_stylebox_override("hover", UIKit.face(col))
+		tc.btn.add_theme_stylebox_override("pressed", UIKit.face(col.darkened(0.2), true))
+		tc.btn.modulate = Color.WHITE if ok else Color(0.75, 0.75, 0.75)
 	_set_if("integ", int(ceil(battle.integrity)), func(v): hp_lbl.text = str(v))
 	_set_if("gold", battle.gold, func(v):
 		gold_lbl.text = str(v)
@@ -172,8 +246,8 @@ func show_build(i: int) -> void:
 	battle.selected_pad = i
 	var vp := root.get_viewport_rect().size
 	var p: Vector2 = battle.cam.unproject_position(battle.world.pads[i] + Vector3(0, 0.6, 0))
-	p.x = clampf(p.x, 170.0, vp.x - 170.0)
-	p.y = clampf(p.y, 300.0, vp.y - 260.0)
+	p.x = clampf(p.x, 215.0, vp.x - 215.0)
+	p.y = clampf(p.y, 330.0, vp.y - 300.0)
 	build_panel = Control.new()
 	build_panel.position = p
 	build_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -185,23 +259,28 @@ func show_build(i: int) -> void:
 	rs.set_border_width_all(5)
 	rs.set_corner_radius_all(150)
 	ring.add_theme_stylebox_override("panel", rs)
-	ring.position = Vector2(-140, -140)
-	ring.size = Vector2(280, 280)
+	ring.position = Vector2(-170, -170)
+	ring.size = Vector2(340, 340)
 	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	build_panel.add_child(ring)
 	var c = battle.pad_owner[i]
 	if c == null:
-		var spots := [Vector2(-105, -105), Vector2(105, -105), Vector2(-105, 105), Vector2(105, 105)]
-		for k in GameData.TOWER_ORDER.size():
+		var n := GameData.TOWER_ORDER.size()
+		for k in n:
 			var fam: String = GameData.TOWER_ORDER[k]
 			var t: Dictionary = GameData.TOWERS[fam]
 			var fam_c := fam
-			_ring_button(spots[k], t.icon, t.name.replace("Torre de ", "").replace("Torre ", ""), int(t.cost[0]), battle.gold >= int(t.cost[0]), t.color.darkened(0.25), func(): battle.build(i, fam_c))
+			var ang := -PI / 2 + k * TAU / n
+			var at := Vector2(cos(ang), sin(ang)) * 158.0
+			var open := GameData.tower_unlocked(fam)
+			var short: String = t.name.replace("Torre de ", "").replace("Torre ", "").replace(" Venenoso", "").replace("do ", "").replace("Mina de ", "")
+			var b := _ring_button(at, t.icon if open else "lock", short if open else "Reino %d" % (int(t.get("unlock_after", 0)) + 1), int(t.cost[0]), open and battle.gold >= int(t.cost[0]), t.color.darkened(0.25), func(): battle.build(i, fam_c))
+			b.scale = Vector2(0.9, 0.9)
 	else:
 		_plaque(c.title(), Vector2(0, -205))
 		if c.cost_next() >= 0:
 			var nx: int = c.cost_next()
-			_ring_button(Vector2(0, -120), "up", "Melhorar", nx, battle.gold >= nx, UIKit.GOOD.darkened(0.2), func(): battle.upgrade_pad(i))
+			_ring_button(Vector2(0, -120), "up" if c.tier < 2 else "star", "Melhorar" if c.tier < 2 else "MESTRE", nx, battle.gold >= nx, UIKit.GOOD.darkened(0.2) if c.tier < 2 else UIKit.GOLD.darkened(0.2), func(): battle.upgrade_pad(i))
 		elif c.can_specialize():
 			var specs: Array = GameData.family_specs(c.family)
 			var n := specs.size()

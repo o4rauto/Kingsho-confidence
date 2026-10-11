@@ -27,7 +27,7 @@ func setup(b, barracks, champ_def: Dictionary, slot: Vector3, start: Vector3, hp
 	position = start
 	speed = 5.0 if def.id == "wolf_pack" else 3.6
 	var kind: String = AssetLib.kind_for(def)
-	var h := 1.0 if kind == "wolf" else (2.1 if kind == "golem" else 1.5)
+	var h := 1.2 if kind == "wolf" else (2.4 if kind == "golem" else 1.8)
 	rig = AssetLib.make(def.id, kind, def.color, h, home.evo > 0)
 	add_child(rig)
 	rig.play("idle")

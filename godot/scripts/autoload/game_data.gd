@@ -40,7 +40,7 @@ const ROLE_NAME := {"melee": "Especialista de Quartel", "ranged": "Especialista 
 ## The four tower families you can build on any stone spot (Kingdom-Rush
 ## structure). Tiers 1-3 are upgrades; at tier 3 you can SPECIALIZE into one
 ## of the family's champions (unlocked by conquering realms).
-const TOWER_ORDER := ["archer", "barracks", "mage", "artillery"]
+const TOWER_ORDER := ["archer", "barracks", "mage", "artillery", "ballista", "cauldron", "tesla", "goldmine"]
 const TOWERS := {
 	"archer": {"name": "Torre de Arqueiros", "icon": "bow", "color": Color("54d06a"),
 		"cost": [70, 110, 160], "damage": [11.0, 19.0, 29.0], "rate": [0.8, 0.7, 0.6], "range": [6.5, 7.0, 7.6],
@@ -54,8 +54,48 @@ const TOWERS := {
 	"artillery": {"name": "Bombarda", "icon": "bomb", "color": Color("c8a070"),
 		"cost": [125, 170, 240], "damage": [18.0, 33.0, 52.0], "rate": [3.0, 3.0, 2.8], "range": [7.5, 8.0, 8.5], "splash": [1.6, 1.8, 2.0],
 		"desc": "Bombas que explodem em área. Não acertam voadores."},
+	"ballista": {"name": "Balista", "icon": "ballista", "color": Color("c8843a"), "unlock_after": 1,
+		"cost": [110, 150, 210], "damage": [40.0, 70.0, 110.0], "rate": [2.2, 2.1, 2.0], "range": [9.0, 9.8, 10.6],
+		"desc": "Virotes enormes de longe que atravessam 2 inimigos."},
+	"cauldron": {"name": "Caldeirão Venenoso", "icon": "cauldron", "color": Color("7ed957"), "unlock_after": 2,
+		"cost": [90, 130, 180], "damage": [7.0, 12.0, 18.0], "rate": [2.6, 2.5, 2.4], "range": [6.0, 6.5, 7.0], "splash": [1.8, 2.0, 2.3],
+		"desc": "Poça de veneno: dano contínuo e lentidão em área."},
+	"tesla": {"name": "Torre do Trovão", "icon": "bolt", "color": Color("5ac8ff"), "unlock_after": 3,
+		"cost": [120, 160, 220], "damage": [16.0, 28.0, 44.0], "rate": [1.6, 1.5, 1.4], "range": [5.5, 6.0, 6.5],
+		"desc": "Raio que salta entre 3, 4 e 5 inimigos."},
+	"goldmine": {"name": "Mina de Ouro", "icon": "coin", "color": Color("ffcf3d"), "unlock_after": 4,
+		"cost": [100, 140, 190], "damage": [8.0, 14.0, 22.0], "rate": [6.0, 6.0, 6.0], "range": [0.0, 0.0, 0.0],
+		"desc": "Não ataca: rende ouro a cada 6 segundos."},
 }
+
+func tower_unlocked(fam: String) -> bool:
+	return Save.data.cleared.size() >= int(TOWERS[fam].get("unlock_after", 0))
 const SPEC_MUL := 2.1
+
+## Troops you send up the roads, paid with COURAGE (refills over time).
+const COURAGE_MAX := 10.0
+const COURAGE_START := 5.0
+const COURAGE_REGEN := 0.45
+const TROOPS := [
+	{"id": "militia", "name": "Milícia", "model": "footman", "color": Color("3a6ab0"), "cost": 3, "count": 3,
+		"hp": 95.0, "damage": 9.0, "atk": 1.0, "range": 0.0, "speed": 2.2, "unlock_after": 0, "desc": "3 soldados que seguram os monstros."},
+	{"id": "bowmen", "name": "Arqueiros", "model": "bowman", "color": Color("3fae4f"), "cost": 3, "count": 2,
+		"hp": 55.0, "damage": 12.0, "atk": 1.1, "range": 5.0, "speed": 2.0, "unlock_after": 0, "desc": "2 arqueiros que atiram de longe (acertam voadores)."},
+	{"id": "wolves", "name": "Lobos", "model": "wolf_pack", "color": Color("94a3c8"), "cost": 4, "count": 3,
+		"hp": 80.0, "damage": 11.0, "atk": 1.5, "range": 0.0, "speed": 3.8, "unlock_after": 1, "desc": "3 lobos muito rápidos."},
+	{"id": "knight", "name": "Cavaleiro", "model": "pyre_knight", "color": Color("ff7a2a"), "cost": 5, "count": 1,
+		"hp": 520.0, "damage": 26.0, "atk": 1.0, "range": 0.0, "speed": 1.8, "unlock_after": 2, "desc": "Um tanque que aguenta muito dano."},
+]
+
+const HERO_IDS := ["warden", "pyre_knight", "thistle_archer", "sister_vale", "runestone", "wolf_pack", "frost_warden", "boulder_golem", "stormcaller", "sunspear_lancer", "ashen_queen"]
+
+## A playable hero as one dictionary (Kael or any champion).
+func hero_def(id: String) -> Dictionary:
+	if id == "warden":
+		return {"id": "warden", "name": Save.hero_name(), "title": HERO.title, "role": "ranged", "color": Save.hero_cape(),
+			"rarity": "legendary", "lore": HERO.lore, "ability": "Arqueiro: atira sozinho quando para de andar.",
+			"ult_name": HERO.ult_name, "ult_desc": HERO.ult_desc, "unlock_after": 0}
+	return champion(id)
 
 func spec_cost(def: Dictionary) -> int:
 	return 150 + int(def.cost) * 20
@@ -113,43 +153,43 @@ const STORY := [
 var champions: Array[Dictionary] = [
 	{"id": "pyre_knight", "family": "barracks", "name": "Cavaleiro da Pira", "title": "Vanguarda de Brasa", "role": "melee", "rarity": "common", "cost": 3,
 	 "hp": 190.0, "damage": 14.0, "atk_speed": 1.0, "range": 1.4, "count": 2, "color": Color("ff7a2a"), "unlock_after": 0,
-	 "lore": "Juraram queimar em dobro para que o Bastião nunca apague.", "ability": "Dois cavaleiros SEGURAM os inimigos na estrada e queimam quem luta com eles. Renascem se caírem.",
+	 "lore": "Juraram queimar em dobro para que o Bastião nunca apague.", "ability": "Corpo a corpo: segura um monstro e queima quem luta com ele.", "ult_name": "Muralha de Chamas", "ult_desc": "Queima todos os monstros em volta e recupera 30% da vida.",
 	 "evo": ["Armadura em brasa: queima mais forte", "Três cavaleiros em vez de dois"]},
 	{"id": "thistle_archer", "family": "archer", "name": "Arqueira do Cardo", "title": "Atiradora do Bosque", "role": "ranged", "rarity": "common", "cost": 2,
 	 "hp": 70.0, "damage": 13.0, "atk_speed": 1.4, "range": 6.5, "count": 1, "color": Color("54d06a"), "unlock_after": 0,
-	 "lore": "Disparou a primeira flecha contra a fenda na noite em que a Torre caiu.", "ability": "Barata e rápida. Acerta voadores.",
+	 "lore": "Disparou a primeira flecha contra a fenda na noite em que a Torre caiu.", "ability": "À distância, muito rápida. Acerta voadores.", "ult_name": "Chuva de Flechas", "ult_desc": "Uma chuva de flechas cai sobre o maior grupo de monstros.",
 	 "evo": ["Flechas duplas", "Alcance +25%"]},
 	{"id": "runestone", "family": "artillery", "name": "Pedra Rúnica", "title": "Catapulta Arcana", "role": "tower", "rarity": "common", "cost": 4,
 	 "hp": 260.0, "damage": 30.0, "atk_speed": 0.5, "range": 8.0, "count": 1, "color": Color("37b6ff"), "unlock_after": 0,
-	 "lore": "Um glifo antigo acordado para arremessar pedras rúnicas.", "ability": "Pedras rúnicas explodem em área e ignoram armadura.",
+	 "lore": "Um glifo antigo acordado para arremessar pedras rúnicas.", "ability": "Arremessa pedras rúnicas que explodem em área.", "ult_name": "Runa Explosiva", "ult_desc": "Uma runa gigante explode e ignora armaduras.",
 	 "evo": ["Explosão maior", "Dano +30%"]},
 	{"id": "sister_vale", "family": "mage", "name": "Irmã Vale", "title": "Guardiã do Santuário", "role": "support", "rarity": "common", "cost": 4,
 	 "hp": 120.0, "damage": 10.0, "atk_speed": 0.8, "range": 5.5, "count": 1, "color": Color("ffe08a"), "unlock_after": 0,
-	 "lore": "Seus hinos costuram carne rasgada.", "ability": "Cura soldados e o herói por perto. Sem feridos, castiga inimigos com luz.",
+	 "lore": "Seus hinos costuram carne rasgada.", "ability": "Cura aliados por perto; sem feridos, castiga com luz.", "ult_name": "Bênção da Chama", "ult_desc": "Cura todos os aliados e conserta o Bastião.",
 	 "evo": ["Cura em área", "Luz sagrada deixa lento"]},
 	{"id": "wolf_pack", "family": "barracks", "name": "Matilha Oca", "title": "Caçadores da Sombra", "role": "melee", "rarity": "rare", "cost": 4,
 	 "hp": 90.0, "damage": 11.0, "atk_speed": 1.7, "range": 1.3, "count": 3, "color": Color("94a3c8"), "unlock_after": 1,
-	 "lore": "Três sombras com dentes.", "ability": "Três lobos rápidos seguram a estrada. Renascem depressa.",
+	 "lore": "Três sombras com dentes.", "ability": "Corpo a corpo, o herói mais rápido do jogo.", "ult_name": "Uivo da Matilha", "ult_desc": "Chama 3 lobos que correm pela estrada.",
 	 "evo": ["Mordida sangra", "Quatro lobos"]},
 	{"id": "frost_warden", "family": "archer", "name": "Guardiã do Gelo", "title": "O Longo Inverno", "role": "tower", "rarity": "rare", "cost": 5,
 	 "hp": 200.0, "damage": 14.0, "atk_speed": 0.9, "range": 7.0, "count": 1, "color": Color("8fe9ff"), "unlock_after": 2,
-	 "lore": "Onde ela respira, a Debandada desacelera.", "ability": "Tiros deixam os inimigos lentos.",
+	 "lore": "Onde ela respira, a Debandada desacelera.", "ability": "À distância: cada tiro deixa o monstro lento.", "ult_name": "Nevasca", "ult_desc": "Congela todos os monstros por perto.",
 	 "evo": ["Lentidão mais forte", "Congela por um instante"]},
 	{"id": "boulder_golem", "family": "barracks", "name": "Golem de Pedra", "title": "O Inabalável", "role": "melee", "rarity": "epic", "cost": 6,
 	 "hp": 900.0, "damage": 30.0, "atk_speed": 0.7, "range": 1.8, "count": 1, "color": Color("8a8478"), "unlock_after": 3,
-	 "lore": "Esculpido da própria muralha do Bastião.", "ability": "Um gigante que segura até 3 inimigos de uma vez.",
+	 "lore": "Esculpido da própria muralha do Bastião.", "ability": "Corpo a corpo, vida enorme: o tanque perfeito.", "ult_name": "Terremoto", "ult_desc": "Atordoa todos os monstros por perto.",
 	 "evo": ["Pancada atordoa", "Vida +40%"]},
 	{"id": "stormcaller", "family": "mage", "name": "Invocadora da Tempestade", "title": "Voz do Trovão", "role": "tower", "rarity": "epic", "cost": 6,
 	 "hp": 180.0, "damage": 26.0, "atk_speed": 0.85, "range": 8.0, "count": 1, "color": Color("6b7bff"), "unlock_after": 4,
-	 "lore": "Ela chama a tempestade e a tempestade obedece.", "ability": "Raios saltam para mais 2 inimigos.",
+	 "lore": "Ela chama a tempestade e a tempestade obedece.", "ability": "À distância: raios saltam entre monstros.", "ult_name": "Tempestade", "ult_desc": "Um raio salta por até 8 monstros.",
 	 "evo": ["Salta para 3", "Salta para 4"]},
 	{"id": "sunspear_lancer", "family": "barracks", "name": "Lanceiro do Sol", "title": "Primeira Luz", "role": "melee", "rarity": "epic", "cost": 5,
 	 "hp": 260.0, "damage": 34.0, "atk_speed": 1.1, "range": 2.0, "count": 2, "color": Color("ffbf5e"), "unlock_after": 5,
-	 "lore": "Cavalga pela estrada deixando o amanhecer para trás.", "ability": "Dois lanceiros de dano altíssimo seguram a estrada.",
+	 "lore": "Cavalga pela estrada deixando o amanhecer para trás.", "ability": "Corpo a corpo, o maior dano por golpe.", "ult_name": "Investida do Sol", "ult_desc": "Atravessa a estrada causando dano enorme.",
 	 "evo": ["Golpe crítico", "Dano +30%"]},
 	{"id": "ashen_queen", "family": "artillery", "name": "A Rainha das Cinzas", "title": "Última da Torre do Sol", "role": "support", "rarity": "legendary", "cost": 7,
 	 "hp": 300.0, "damage": 40.0, "atk_speed": 0.7, "range": 6.0, "count": 1, "color": Color("f25a2a"), "unlock_after": 7,
-	 "lore": "Ela usava a coroa quando a Torre queimou.", "ability": "Explosão de fogo atinge TODOS os inimigos em volta.",
+	 "lore": "Ela usava a coroa quando a Torre queimou.", "ability": "Explosões de fogo em todos os monstros perto dela.", "ult_name": "Inferno", "ult_desc": "Uma explosão de fogo gigante queima tudo em volta.",
 	 "evo": ["Explosão maior", "Deixa o chão em chamas"]},
 ]
 
@@ -175,50 +215,56 @@ const ACHIEVEMENTS := [
 # ability (bosses): summon | charge | shield | slam | split
 var enemies: Dictionary = {
 	# ── Ruins (Broken Gate) ──
-	"wisp": {"name": "Fagulha da Fenda", "kind": "runner", "hp": 36.0, "damage": 6.0, "speed": 2.4, "radius": 0.45, "bounty": 4, "breach": 4, "color": Color("ff4d7d")},
-	"husk": {"name": "Casca Cinzenta", "kind": "runner", "hp": 70.0, "damage": 10.0, "speed": 1.8, "radius": 0.55, "bounty": 6, "breach": 7, "color": Color("c0286a")},
-	"ravager": {"name": "Devastador", "kind": "brute", "hp": 220.0, "damage": 20.0, "speed": 1.35, "radius": 0.75, "bounty": 14, "breach": 12, "color": Color("8a1f4a")},
+	"wisp": {"name": "Fagulha da Fenda", "kind": "runner", "hp": 36.0, "damage": 6.0, "speed": 2.4, "radius": 0.45, "bounty": 4, "breach": 4, "color": Color("ff4d7d"), "evolve": ["husk", 0.55]},
+	"husk": {"name": "Casca Cinzenta", "kind": "runner", "hp": 70.0, "damage": 10.0, "speed": 1.8, "radius": 0.55, "bounty": 6, "breach": 7, "color": Color("c0286a"), "attack": "melee"},
+	"ravager": {"name": "Devastador", "kind": "brute", "hp": 220.0, "damage": 20.0, "speed": 1.35, "radius": 0.75, "bounty": 14, "breach": 12, "color": Color("8a1f4a"), "berserk": true, "attack": "slam"},
 	"the_maw": {"name": "A Bocarra", "kind": "boss", "hp": 1320.0, "damage": 40.0, "speed": 0.95, "radius": 1.4, "bounty": 160, "breach": 30, "color": Color("8a1f4a"), "ability": "charge"},
 	# ── Forest (Emberfall Wood) ──
-	"ember_imp": {"name": "Diabrete de Brasa", "kind": "runner", "hp": 50.0, "damage": 9.0, "speed": 3.0, "radius": 0.42, "bounty": 6, "breach": 5, "color": Color("ff7a2a"), "burn_touch": 8.0},
-	"sapling": {"name": "Muda em Chamas", "kind": "brute", "hp": 240.0, "damage": 18.0, "speed": 1.2, "radius": 0.8, "bounty": 15, "breach": 12, "color": Color("6b4a22"), "regen": 6.0},
+	"ember_imp": {"name": "Diabrete de Brasa", "kind": "runner", "hp": 50.0, "damage": 9.0, "speed": 3.0, "radius": 0.42, "bounty": 6, "breach": 5, "color": Color("ff7a2a"), "burn_touch": 8.0, "attack": "poison"},
+	"sapling": {"name": "Muda em Chamas", "kind": "brute", "hp": 240.0, "damage": 18.0, "speed": 1.2, "radius": 0.8, "bounty": 15, "breach": 12, "color": Color("6b4a22"), "regen": 6.0, "evolve": ["ravager", 0.7]},
 	"gloombat": {"name": "Morcego Sombrio", "kind": "flyer", "hp": 44.0, "damage": 8.0, "speed": 3.2, "radius": 0.5, "bounty": 8, "breach": 6, "color": Color("a267d6")},
 	"cinder_treant": {"name": "Ent de Cinzas", "kind": "boss", "hp": 1870.0, "damage": 45.0, "speed": 0.8, "radius": 1.5, "bounty": 200, "breach": 30, "color": Color("4a2e14"), "ability": "summon", "summon": "ember_imp", "regen": 15.0},
 	# ── Swamp (Sunken March) ──
-	"drowned": {"name": "Soldado Afogado", "kind": "runner", "hp": 90.0, "damage": 12.0, "speed": 1.6, "radius": 0.55, "bounty": 8, "breach": 8, "color": Color("4f7a7a"), "shield": 40.0},
-	"bog_lurker": {"name": "Espreitador do Brejo", "kind": "brute", "hp": 300.0, "damage": 22.0, "speed": 1.1, "radius": 0.85, "bounty": 18, "breach": 14, "color": Color("2f4a3a"), "armor": 0.25},
-	"hexmage": {"name": "Mago do Feitiço", "kind": "caster", "hp": 120.0, "damage": 16.0, "speed": 1.5, "radius": 0.6, "bounty": 16, "breach": 14, "color": Color("d14bff")},
+	"drowned": {"name": "Soldado Afogado", "kind": "runner", "hp": 90.0, "damage": 12.0, "speed": 1.6, "radius": 0.55, "bounty": 8, "breach": 8, "color": Color("4f7a7a"), "shield": 40.0, "attack": "poison"},
+	"bog_lurker": {"name": "Espreitador do Brejo", "kind": "brute", "hp": 300.0, "damage": 22.0, "speed": 1.1, "radius": 0.85, "bounty": 18, "breach": 14, "color": Color("2f4a3a"), "armor": 0.25, "attack": "slam"},
+	"hexmage": {"name": "Mago do Feitiço", "kind": "caster", "hp": 120.0, "damage": 16.0, "speed": 1.5, "radius": 0.6, "bounty": 16, "breach": 14, "color": Color("d14bff"), "aura": "ward", "attack": "spit"},
 	"drowned_king": {"name": "O Rei Afogado", "kind": "boss", "hp": 2310.0, "damage": 50.0, "speed": 0.85, "radius": 1.5, "bounty": 240, "breach": 30, "color": Color("2a5a6a"), "ability": "shield", "shield": 600.0},
 	# ── Keep (Hollow Keep) ──
-	"sentry": {"name": "Sentinela Oca", "kind": "caster", "hp": 120.0, "damage": 18.0, "speed": 1.3, "radius": 0.6, "bounty": 18, "breach": 14, "color": Color("7a7f9a"), "armor": 0.35},
-	"knight": {"name": "Cavaleiro Oco", "kind": "brute", "hp": 300.0, "damage": 26.0, "speed": 1.25, "radius": 0.8, "bounty": 22, "breach": 16, "color": Color("3a3f5a"), "armor": 0.3},
+	"sentry": {"name": "Sentinela Oca", "kind": "caster", "hp": 120.0, "damage": 18.0, "speed": 1.3, "radius": 0.6, "bounty": 18, "breach": 14, "color": Color("7a7f9a"), "armor": 0.35, "saboteur": true, "attack": "spit"},
+	"knight": {"name": "Cavaleiro Oco", "kind": "brute", "hp": 300.0, "damage": 26.0, "speed": 1.25, "radius": 0.8, "bounty": 22, "breach": 16, "color": Color("3a3f5a"), "armor": 0.3, "breaker": true},
 	"siege_titan": {"name": "Titã de Cerco", "kind": "boss", "hp": 2860.0, "damage": 55.0, "speed": 0.75, "radius": 1.7, "bounty": 280, "breach": 30, "color": Color("5a1730"), "ability": "slam", "armor": 0.3},
 	# ── Rift (Rift Throne) ──
 	"void_spawn": {"name": "Cria do Vazio", "kind": "runner", "hp": 80.0, "damage": 10.0, "speed": 2.2, "radius": 0.5, "bounty": 7, "breach": 7, "color": Color("6a2aa8"), "split": ["void_mite", 2]},
-	"void_mite": {"name": "Ácaro do Vazio", "kind": "runner", "hp": 24.0, "damage": 5.0, "speed": 3.0, "radius": 0.3, "bounty": 2, "breach": 3, "color": Color("a46aff")},
-	"ogre": {"name": "Ogro da Fenda", "kind": "brute", "hp": 520.0, "damage": 34.0, "speed": 1.1, "radius": 0.95, "bounty": 30, "breach": 22, "color": Color("7a2140")},
+	"void_mite": {"name": "Ácaro do Vazio", "kind": "runner", "hp": 24.0, "damage": 5.0, "speed": 3.0, "radius": 0.3, "bounty": 2, "breach": 3, "color": Color("a46aff"), "evolve": ["void_spawn", 0.6]},
+	"ogre": {"name": "Ogro da Fenda", "kind": "brute", "hp": 520.0, "damage": 34.0, "speed": 1.1, "radius": 0.95, "bounty": 30, "breach": 22, "color": Color("7a2140"), "breaker": true, "berserk": true, "attack": "slam"},
 	"rift_sovereign": {"name": "Soberano da Fenda", "kind": "boss", "hp": 3850.0, "damage": 65.0, "speed": 0.9, "radius": 1.7, "bounty": 380, "breach": 30, "color": Color("2a0f3a"), "ability": "summon", "summon": "void_spawn"},
 	# ── Ice (Frostpeak Pass) ──
-	"ice_wisp": {"name": "Fagulha de Gelo", "kind": "flyer", "hp": 60.0, "damage": 8.0, "speed": 3.0, "radius": 0.45, "bounty": 8, "breach": 6, "color": Color("bdf2ff")},
-	"yeti": {"name": "Yeti", "kind": "brute", "hp": 480.0, "damage": 36.0, "speed": 1.15, "radius": 1.0, "bounty": 32, "breach": 22, "color": Color("e8f2ff"), "regen": 8.0},
+	"ice_wisp": {"name": "Fagulha de Gelo", "kind": "flyer", "hp": 60.0, "damage": 8.0, "speed": 3.0, "radius": 0.45, "bounty": 8, "breach": 6, "color": Color("bdf2ff"), "saboteur": true},
+	"yeti": {"name": "Yeti", "kind": "brute", "hp": 480.0, "damage": 36.0, "speed": 1.15, "radius": 1.0, "bounty": 32, "breach": 22, "color": Color("e8f2ff"), "regen": 8.0, "berserk": true, "attack": "slam"},
 	"frost_wyrm": {"name": "Serpe Gélida", "kind": "boss", "hp": 4400.0, "damage": 60.0, "speed": 1.0, "radius": 1.7, "bounty": 420, "breach": 30, "color": Color("5ab0d8"), "ability": "charge"},
 	# ── Desert (Sunscar Dunes) ──
-	"scorpion": {"name": "Escorpião das Dunas", "kind": "runner", "hp": 80.0, "damage": 14.0, "speed": 2.6, "radius": 0.55, "bounty": 10, "breach": 9, "color": Color("c98a3a"), "armor": 0.2},
-	"sand_wraith": {"name": "Espectro de Areia", "kind": "flyer", "hp": 70.0, "damage": 12.0, "speed": 2.8, "radius": 0.55, "bounty": 11, "breach": 8, "color": Color("e8c88a")},
+	"scorpion": {"name": "Escorpião das Dunas", "kind": "runner", "hp": 80.0, "damage": 14.0, "speed": 2.6, "radius": 0.55, "bounty": 10, "breach": 9, "color": Color("c98a3a"), "armor": 0.2, "attack": "poison"},
+	"sand_wraith": {"name": "Espectro de Areia", "kind": "flyer", "hp": 70.0, "damage": 12.0, "speed": 2.8, "radius": 0.55, "bounty": 11, "breach": 8, "color": Color("e8c88a"), "attack": "spit"},
 	"sand_colossus": {"name": "Colosso de Areia", "kind": "boss", "hp": 5220.0, "damage": 70.0, "speed": 0.7, "radius": 1.9, "bounty": 480, "breach": 30, "color": Color("a8803a"), "ability": "split", "split": ["scorpion", 6]},
 	# ── Volcano (Ashen Caldera) ──
-	"magma_slime": {"name": "Gosma de Magma", "kind": "brute", "hp": 260.0, "damage": 20.0, "speed": 1.4, "radius": 0.8, "bounty": 16, "breach": 12, "color": Color("ff5a1a"), "split": ["fire_imp", 2], "burn_touch": 10.0},
+	"magma_slime": {"name": "Gosma de Magma", "kind": "brute", "hp": 260.0, "damage": 20.0, "speed": 1.4, "radius": 0.8, "bounty": 16, "breach": 12, "color": Color("ff5a1a"), "split": ["fire_imp", 2], "burn_touch": 10.0, "attack": "slam"},
 	"fire_imp": {"name": "Diabrete de Fogo", "kind": "runner", "hp": 70.0, "damage": 10.0, "speed": 3.1, "radius": 0.4, "bounty": 6, "breach": 6, "color": Color("ffb03a"), "burn_touch": 8.0},
 	"magma_tyrant": {"name": "Tirano de Magma", "kind": "boss", "hp": 6050.0, "damage": 75.0, "speed": 0.8, "radius": 1.9, "bounty": 540, "breach": 30, "color": Color("b8300f"), "ability": "slam", "burn_touch": 20.0},
 	# ── Mire (Gloomroot) ──
-	"spore_toad": {"name": "Sapo de Esporos", "kind": "caster", "hp": 160.0, "damage": 14.0, "speed": 1.4, "radius": 0.65, "bounty": 16, "breach": 12, "color": Color("9be24d"), "heal": 30.0},
-	"root_horror": {"name": "Horror de Raízes", "kind": "brute", "hp": 700.0, "damage": 34.0, "speed": 1.0, "radius": 1.0, "bounty": 34, "breach": 22, "color": Color("3a5a1a"), "regen": 14.0},
+	"spore_toad": {"name": "Sapo de Esporos", "kind": "caster", "hp": 160.0, "damage": 14.0, "speed": 1.4, "radius": 0.65, "bounty": 16, "breach": 12, "color": Color("9be24d"), "heal": 20.0, "aura": "haste"},
+	"root_horror": {"name": "Horror de Raízes", "kind": "brute", "hp": 560.0, "damage": 34.0, "speed": 1.0, "radius": 1.0, "bounty": 34, "breach": 22, "color": Color("3a5a1a"), "regen": 8.0, "breaker": true},
 	"bog_mother": {"name": "Mãe do Pântano", "kind": "boss", "hp": 6880.0, "damage": 70.0, "speed": 0.75, "radius": 2.0, "bounty": 600, "breach": 30, "color": Color("4a6a2a"), "ability": "summon", "summon": "spore_toad", "regen": 30.0},
+	# ── Support monsters (appear in several realms) ──
+	"war_drummer": {"name": "Tamboreiro da Debandada", "kind": "caster", "hp": 150.0, "damage": 10.0, "speed": 1.5, "radius": 0.6, "bounty": 18, "breach": 10, "color": Color("c8642a"), "aura": "haste", "attack": "spit"},
+	"rage_shaman": {"name": "Xamã da Fúria", "kind": "caster", "hp": 170.0, "damage": 12.0, "speed": 1.4, "radius": 0.6, "bounty": 20, "breach": 10, "color": Color("b0202a"), "aura": "rage", "heal": 15.0},
 	# ── Sunspire (finale) ──
-	"eclipse_knight": {"name": "Cavaleiro do Eclipse", "kind": "brute", "hp": 760.0, "damage": 40.0, "speed": 1.2, "radius": 0.95, "bounty": 38, "breach": 24, "color": Color("2a2440"), "armor": 0.35, "shield": 150.0},
-	"radiant_shade": {"name": "Sombra Radiante", "kind": "flyer", "hp": 140.0, "damage": 16.0, "speed": 3.0, "radius": 0.55, "bounty": 14, "breach": 10, "color": Color("fff0b0")},
+	"eclipse_knight": {"name": "Cavaleiro do Eclipse", "kind": "brute", "hp": 760.0, "damage": 40.0, "speed": 1.2, "radius": 0.95, "bounty": 38, "breach": 24, "color": Color("2a2440"), "armor": 0.35, "shield": 150.0, "aura": "ward", "breaker": true},
+	"radiant_shade": {"name": "Sombra Radiante", "kind": "flyer", "hp": 140.0, "damage": 16.0, "speed": 3.0, "radius": 0.55, "bounty": 14, "breach": 10, "color": Color("fff0b0"), "attack": "spit"},
 	"the_eclipse": {"name": "O Eclipse", "kind": "boss", "hp": 9900.0, "damage": 90.0, "speed": 0.85, "radius": 2.1, "bounty": 1000, "breach": 30, "color": Color("1a1428"), "ability": "shield", "shield": 2500.0},
 }
+
+const AURA_COLOR := {"haste": "ffb03a", "ward": "4cc2ff", "rage": "ff3a3a"}
+const AURA_NAME := {"haste": "Aura de pressa (aliados mais rápidos)", "ward": "Aura de proteção (aliados levam -30% dano)", "rage": "Aura de raiva (aliados batem +30%)"}
 
 # Each boon: id, name, desc, rarity, mods: {key: [op, value]}  op = "mul" | "add" | "max"
 var boons: Array[Dictionary] = [
@@ -277,63 +323,63 @@ func _init() -> void:
 	realms = [
 		_realm({"id": "broken_gate", "desc": "Ruínas cercadas de campos verdes. Duas estradas retas — o lugar ideal para aprender a construir.", "map": Vector2(0.22, 0.86), "name": "O Portão Partido", "subtitle": "Onde a primeira fenda se abriu",
 			"lanes": 2, "layout": "straight", "biome": "ruins", "hazard": "none", "weather": "dust", "tod": "dusk",
-			"ground": Color("74b843"), "ground2": Color("5e9c34"), "lane": Color("d6a866"), "accent": Color("ff8a3d"),
-			"sky": Color("8fd3ff"), "fog": Color("cfe8ff"), "sun": Color("fff1d6"), "sun_angle": -25.0, "ambient": Color("c8d4f0"),
+			"ground": Color("6fae45"), "ground2": Color("5a9638"), "lane": Color("d9b07a"), "accent": Color("ff8a3d"),
+			"sky": Color("9fd8f5"), "fog": Color("cfe8ff"), "sun": Color("fff2dc"), "sun_angle": -25.0, "ambient": Color("c9d6ee"),
 			"roster": ["wisp", "husk", "ravager"], "boss": "the_maw", "waves": 6,
 			"music": {"root": 196.0, "mode": "minor", "tempo": 0.46, "wave": "sine"}, "gold": 120, "shards": 6}),
 		_realm({"id": "emberfall_wood", "desc": "Floresta em chamas. As estradas fazem zigue-zague e brasas caem do céu.", "map": Vector2(0.55, 0.8), "name": "Bosque das Brasas", "subtitle": "As copas ainda estão queimando",
 			"lanes": 2, "layout": "zigzag", "biome": "forest", "hazard": "embers", "weather": "embers", "tod": "sunset",
-			"ground": Color("4f9a3a"), "ground2": Color("3e8030"), "lane": Color("b27a40"), "accent": Color("ff7a2a"),
-			"sky": Color("ffb36b"), "fog": Color("ffd8a8"), "sun": Color("ffe0b0"), "sun_angle": -15.0, "ambient": Color("e8c0a0"),
-			"roster": ["ember_imp", "sapling", "gloombat"], "boss": "cinder_treant", "waves": 7,
+			"ground": Color("8a9a3a"), "ground2": Color("6f7f2e"), "lane": Color("b4793e"), "accent": Color("ff7a2a"),
+			"sky": Color("ffb878"), "fog": Color("ffd8a8"), "sun": Color("ffe2b8"), "sun_angle": -15.0, "ambient": Color("e8c8a8"),
+			"roster": ["ember_imp", "sapling", "gloombat", "war_drummer"], "boss": "cinder_treant", "waves": 7,
 			"music": {"root": 220.0, "mode": "dorian", "tempo": 0.36, "wave": "tri"}, "gold": 180, "shards": 8}),
 		_realm({"id": "sunken_march", "desc": "Pântano de três estradas em serpente. Lama atrasa e a neblina encurta o alcance.", "map": Vector2(0.8, 0.7), "name": "O Brejo Afundado", "subtitle": "Estandartes e reis afogados",
 			"lanes": 3, "layout": "serpent", "biome": "swamp", "hazard": "mud_fog", "weather": "fireflies", "tod": "night",
-			"ground": Color("4fa088"), "ground2": Color("3d8470"), "lane": Color("8f7a4c"), "accent": Color("37b6ff"),
-			"sky": Color("5a86c0"), "fog": Color("a0c8e0"), "sun": Color("dceaff"), "sun_angle": -55.0, "ambient": Color("9ec0dc"),
+			"ground": Color("4f9480"), "ground2": Color("3e7a68"), "lane": Color("9c8a5a"), "accent": Color("37b6ff"),
+			"sky": Color("6a9ac8"), "fog": Color("a0c8e0"), "sun": Color("e4eeff"), "sun_angle": -55.0, "ambient": Color("a8c4dc"),
 			"roster": ["drowned", "bog_lurker", "hexmage"], "boss": "drowned_king", "waves": 7,
 			"music": {"root": 174.6, "mode": "phrygian", "tempo": 0.6, "wave": "sine"}, "gold": 260, "shards": 10}),
 		_realm({"id": "hollow_keep", "desc": "Fortaleza tomada pelo inimigo. Estradas cruzadas e uma balista que mira no seu herói.", "map": Vector2(0.62, 0.58), "name": "Fortaleza Oca", "subtitle": "Um forte que a Debandada tomou",
 			"lanes": 2, "layout": "cross", "biome": "keep", "hazard": "ballista", "weather": "rain", "tod": "storm",
-			"ground": Color("8d93a6"), "ground2": Color("737a8e"), "lane": Color("cdbb94"), "accent": Color("ff4d7d"),
-			"sky": Color("6a7898"), "fog": Color("b0b8d0"), "sun": Color("eef2ff"), "sun_angle": -60.0, "ambient": Color("b0b8d4"),
-			"roster": ["sentry", "knight", "husk"], "boss": "siege_titan", "waves": 8,
+			"ground": Color("8a92a2"), "ground2": Color("727a8c"), "lane": Color("c9b892"), "accent": Color("ff4d7d"),
+			"sky": Color("7484a4"), "fog": Color("b0b8d0"), "sun": Color("eef0ff"), "sun_angle": -60.0, "ambient": Color("b4bcd8"),
+			"roster": ["sentry", "knight", "husk", "rage_shaman"], "boss": "siege_titan", "waves": 8,
 			"music": {"root": 146.8, "mode": "minor", "tempo": 0.4, "wave": "saw"}, "gold": 340, "shards": 12}),
 		_realm({"id": "rift_throne", "desc": "O trono roxo da fenda. Portais abrem no meio das estradas e soltam crias do vazio.", "map": Vector2(0.3, 0.56), "name": "O Trono da Fenda", "subtitle": "O trono da Debandada, mas não sua origem",
 			"lanes": 3, "layout": "fork", "biome": "rift", "hazard": "portals", "weather": "void", "tod": "void",
-			"ground": Color("7656b8"), "ground2": Color("5f4298"), "lane": Color("c69cf0"), "accent": Color("a46aff"),
-			"sky": Color("2e1c52"), "fog": Color("8a6ac0"), "sun": Color("f0dcff"), "sun_angle": -70.0, "ambient": Color("b8a0e0"),
-			"roster": ["void_spawn", "ogre", "gloombat"], "boss": "rift_sovereign", "waves": 8,
+			"ground": Color("7a5ab8"), "ground2": Color("6248a0"), "lane": Color("d0a8f4"), "accent": Color("a46aff"),
+			"sky": Color("3a2660"), "fog": Color("8a6ac0"), "sun": Color("f2e2ff"), "sun_angle": -70.0, "ambient": Color("bca4e4"),
+			"roster": ["void_spawn", "ogre", "gloombat", "war_drummer"], "boss": "rift_sovereign", "waves": 8,
 			"music": {"root": 155.6, "mode": "locrian", "tempo": 0.5, "wave": "square"}, "gold": 460, "shards": 14}),
 		_realm({"id": "frostpeak_pass", "desc": "Uma única estrada sinuosa na neve. Gelo escorrega e nevascas congelam tudo.", "map": Vector2(0.14, 0.4), "name": "Passo do Pico Gelado", "subtitle": "Onde até o vento virou inimigo",
 			"lanes": 1, "layout": "serpent", "biome": "ice", "hazard": "blizzard", "weather": "snow", "tod": "day",
-			"ground": Color("e2f0fc"), "ground2": Color("c4dcf0"), "lane": Color("78aedb"), "accent": Color("8fe9ff"),
-			"sky": Color("a8d8ff"), "fog": Color("e0f0ff"), "sun": Color("ffffff"), "sun_angle": -40.0, "ambient": Color("a8c0dc"),
-			"roster": ["ice_wisp", "yeti", "husk"], "boss": "frost_wyrm", "waves": 8,
+			"ground": Color("e2eef8"), "ground2": Color("c4d8ea"), "lane": Color("7eaedb"), "accent": Color("8fe9ff"),
+			"sky": Color("b4dcff"), "fog": Color("e0f0ff"), "sun": Color("ffffff"), "sun_angle": -40.0, "ambient": Color("9cb2d0"),
+			"roster": ["ice_wisp", "yeti", "husk", "rage_shaman"], "boss": "frost_wyrm", "waves": 8,
 			"music": {"root": 261.6, "mode": "lydian", "tempo": 0.55, "wave": "sine"}, "gold": 600, "shards": 20}),
 		_realm({"id": "sunscar_dunes", "desc": "Quatro estradas convergem no deserto. Tempestades de areia cortam o alcance.", "map": Vector2(0.48, 0.38), "name": "Dunas Queimadas", "subtitle": "Areia que lembra cada passo",
 			"lanes": 4, "layout": "converge", "biome": "desert", "hazard": "sandstorm", "weather": "sand", "tod": "noon",
-			"ground": Color("f2c46a"), "ground2": Color("dfa84e"), "lane": Color("c27a3a"), "accent": Color("ffcf4d"),
-			"sky": Color("ffd98a"), "fog": Color("fff0c8"), "sun": Color("fff4dc"), "sun_angle": -70.0, "ambient": Color("dcc090"),
-			"roster": ["scorpion", "sand_wraith", "ravager"], "boss": "sand_colossus", "waves": 8,
+			"ground": Color("ecc274"), "ground2": Color("d8a85a"), "lane": Color("b06a34"), "accent": Color("ffcf4d"),
+			"sky": Color("ffdca0"), "fog": Color("fff0c8"), "sun": Color("fff2d8"), "sun_angle": -70.0, "ambient": Color("d4b890"),
+			"roster": ["scorpion", "sand_wraith", "ravager", "war_drummer"], "boss": "sand_colossus", "waves": 8,
 			"music": {"root": 233.1, "mode": "hijaz", "tempo": 0.32, "wave": "tri"}, "gold": 700, "shards": 22}),
 		_realm({"id": "ashen_caldera", "desc": "Rocha vulcânica e rios de lava. Erupções atingem todos — use-as a seu favor.", "map": Vector2(0.82, 0.32), "name": "Caldeira de Cinzas", "subtitle": "A queda da Torre do Sol ainda fumega",
 			"lanes": 3, "layout": "zigzag", "biome": "volcano", "hazard": "eruptions", "weather": "ash", "tod": "lava",
-			"ground": Color("6a5650"), "ground2": Color("54423e"), "lane": Color("a07858"), "accent": Color("ff5a2a"),
-			"sky": Color("d0562a"), "fog": Color("ffa070"), "sun": Color("ffd0a0"), "sun_angle": -35.0, "ambient": Color("d09080"),
-			"roster": ["magma_slime", "fire_imp", "ogre"], "boss": "magma_tyrant", "waves": 9,
+			"ground": Color("5e4c48"), "ground2": Color("4a3c38"), "lane": Color("a8805c"), "accent": Color("ff5a2a"),
+			"sky": Color("d8603a"), "fog": Color("ffa070"), "sun": Color("ffd4a8"), "sun_angle": -35.0, "ambient": Color("d49a88"),
+			"roster": ["magma_slime", "fire_imp", "ogre", "rage_shaman"], "boss": "magma_tyrant", "waves": 9,
 			"music": {"root": 130.8, "mode": "minor", "tempo": 0.3, "wave": "saw"}, "gold": 820, "shards": 24}),
 		_realm({"id": "gloomroot_mire", "desc": "Raízes tóxicas e três estradas trançadas. Raízes prendem quem fica parado.", "map": Vector2(0.66, 0.18), "name": "Pântano Raiz-Sombria", "subtitle": "Raízes que bebem a luz",
 			"lanes": 3, "layout": "braid", "biome": "mire", "hazard": "snares", "weather": "spores", "tod": "toxic",
-			"ground": Color("68a83c"), "ground2": Color("52902e"), "lane": Color("8a6aa8"), "accent": Color("9be24d"),
-			"sky": Color("4a7a3a"), "fog": Color("b8e090"), "sun": Color("f0ffd0"), "sun_angle": -50.0, "ambient": Color("b0d090"),
-			"roster": ["spore_toad", "root_horror", "gloombat"], "boss": "bog_mother", "waves": 9,
+			"ground": Color("5f9a3a"), "ground2": Color("4a7e2e"), "lane": Color("8e6aa8"), "accent": Color("9be24d"),
+			"sky": Color("5a8a4a"), "fog": Color("b8e090"), "sun": Color("f4ffd8"), "sun_angle": -50.0, "ambient": Color("b4d49a"),
+			"roster": ["spore_toad", "root_horror", "gloombat", "rage_shaman"], "boss": "bog_mother", "waves": 9,
 			"music": {"root": 164.8, "mode": "phrygian", "tempo": 0.52, "wave": "square"}, "gold": 950, "shards": 26}),
 		_realm({"id": "shattered_sunspire", "desc": "A Torre partida, em espiral. Um raio de sol gira: fortalece aliados e queima inimigos.", "map": Vector2(0.36, 0.14), "name": "A Torre do Sol Partida", "subtitle": "Onde a luz quebrou — conserte-a",
 			"lanes": 3, "layout": "spiral", "biome": "sunspire", "hazard": "sunbeam", "weather": "motes", "tod": "dawn",
-			"ground": Color("f0e2c0"), "ground2": Color("dccaa0"), "lane": Color("ffcf6b"), "accent": Color("ffe6a6"),
-			"sky": Color("ffcf9a"), "fog": Color("fff0d8"), "sun": Color("fff0d0"), "sun_angle": -30.0, "ambient": Color("e8d4b4"),
-			"roster": ["eclipse_knight", "radiant_shade", "void_spawn"], "boss": "the_eclipse", "waves": 10,
+			"ground": Color("eee0bc"), "ground2": Color("d6c498"), "lane": Color("f2c862"), "accent": Color("ffe6a6"),
+			"sky": Color("ffd4a0"), "fog": Color("fff0d8"), "sun": Color("fff2d8"), "sun_angle": -30.0, "ambient": Color("e4d0b0"),
+			"roster": ["eclipse_knight", "radiant_shade", "void_spawn", "war_drummer"], "boss": "the_eclipse", "waves": 10,
 			"music": {"root": 293.7, "mode": "major", "tempo": 0.42, "wave": "tri"}, "gold": 1400, "shards": 40}),
 	]
 	for i in realms.size():
@@ -365,7 +411,8 @@ func gen_waves(tier: int, count: int, roster: Array, boss: String, lanes: int) -
 		for gi in n_groups:
 			var enemy: String = roster[(w + gi) % roster.size()]
 			var heavy: bool = enemies[enemy].kind == "brute"
-			var amount := int((2 + tier * 0.3 + w * 0.95) * (0.3 if heavy else 1.0))
+			var flyer: bool = enemies[enemy].kind == "flyer"
+			var amount := int((2.5 + tier * 0.4 + w * 1.1) * (0.35 if heavy else (0.6 if flyer else 1.0)))
 			var gap := clampf(0.95 - tier * 0.03 - w * 0.02, 0.38, 0.95) * (2.2 if heavy else 1.0)
 			groups.append(g(enemy, maxi(1, amount), gi * 3.5 + rng.randf() * 1.0, gap, (gi + w) % lanes))
 		if w == count - 1:
@@ -390,6 +437,17 @@ func enemy_traits(id: String) -> String:
 	if e.has("split"): t.append("Divide-se ao morrer")
 	if e.has("heal"): t.append("Cura aliados")
 	if e.has("burn_touch"): t.append("Queima quem encosta")
+	if e.has("aura"): t.append(AURA_NAME[e.aura])
+	match e.get("attack", "melee"):
+		"spit": t.append("Cospe de longe em tropas e herói")
+		"slam": t.append("Pancada em área")
+		"poison": t.append("Mordida venenosa")
+	if e.get("berserk", false): t.append("Berserker: mais forte e rápido ferido")
+	if e.get("breaker", false): t.append("Esmaga soldados (dano x2)")
+	if e.get("saboteur", false): t.append("Congela torres")
+	if e.has("evolve"): t.append("Evolui para %s se for longe" % enemies[e.evolve[0]].name)
+	if e.kind == "brute": t.append("Fase FÚRIA com metade da vida")
+	if e.kind == "boss": t.append("3 fases")
 	match e.get("ability", ""):
 		"charge": t.append("Investida")
 		"summon": t.append("Invoca lacaios")

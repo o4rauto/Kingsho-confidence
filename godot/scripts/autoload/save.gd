@@ -25,7 +25,7 @@ func _fresh() -> Dictionary:
 	var d := {
 		"version": 2, "gold": 150, "stars": {}, "best_wave": {}, "cleared": [],
 		"champions": {}, "deck": STARTER_DECK.duplicate(),
-		"hero": {"name": GameData.HERO.name, "cape": 0, "level": 1},
+		"hero": {"name": GameData.HERO.name, "cape": 0, "level": 1, "active": "warden"},
 		"upgrades": {}, "seen": [], "claimed": [], "intro_seen": false,
 		"stats": {"runs": 0, "kills": 0, "victories": 0, "builds": 0, "bosses": 0},
 	}
@@ -162,6 +162,30 @@ func hero_level_up() -> bool:
 
 func hero_cape() -> Color:
 	return GameData.CAPES[clampi(int(data.hero.cape), 0, GameData.CAPES.size() - 1)][1]
+
+func active_hero() -> String:
+	var id := String(data.hero.get("active", "warden"))
+	if id != "warden" and (not GameData.HERO_IDS.has(id) or not champ_unlocked(id)):
+		return "warden"
+	return id
+
+func hero_lv(id: String) -> int:
+	return hero_level() if id == "warden" else int(champ(id).level)
+
+## Battle stats for any hero.
+func hero_battle_stats(id: String) -> Dictionary:
+	var up := 1.0 + float(upgrade_mods().get("hero_power", 0.0))
+	var spd_up := 1.0 + float(upgrade_mods().get("hero_speed", 0.0))
+	if id == "warden":
+		var st := hero_stats()
+		return {"hp": st.hp, "damage": st.damage, "range": st.range, "speed": st.speed, "fire_cd": GameData.HERO.fire_cd, "melee": false}
+	var def := GameData.champion(id)
+	var s := stats(def)
+	var melee: bool = def.role == "melee"
+	var spd: float = {"wolf_pack": 7.2, "boulder_golem": 4.6, "sunspear_lancer": 6.2}.get(id, 5.8)
+	return {"hp": round(clampf(s.hp * 1.1 + 90.0, 160.0, 2200.0) * up), "damage": round(s.damage * 1.25 * up * 10.0) / 10.0,
+		"range": 2.0 if melee else maxf(5.5, float(def.range)), "speed": spd * spd_up,
+		"fire_cd": 1.0 / float(def.atk_speed), "melee": melee}
 
 func hero_name() -> String:
 	var n := String(data.hero.name).strip_edges()

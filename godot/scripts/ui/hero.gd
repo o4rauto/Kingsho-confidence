@@ -8,7 +8,7 @@ func _ready() -> void:
 
 func _build() -> void:
 	for c in get_children(): c.queue_free()
-	var v := Screen.make(self, "SEU HERÓI", "map")
+	var v := Screen.make(self, "KAEL", "collection")
 	var list := Screen.scroll(v)
 	var model := AssetLib.make("warden", "warden", Save.hero_cape(), 1.9)
 	list.add_child(Screen.preview(model, 360, 1.2, 6.2))

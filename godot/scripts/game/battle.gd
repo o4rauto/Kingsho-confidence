@@ -15,6 +15,7 @@ const EnemyScript := preload("res://scripts/game/enemy.gd")
 const ChampionScript := preload("res://scripts/game/champion.gd")
 const WardenScript := preload("res://scripts/game/warden.gd")
 const ProjectileScript := preload("res://scripts/game/projectile.gd")
+const TroopScript := preload("res://scripts/game/troop.gd")
 
 var realm: Dictionary
 var deck: Array = []
@@ -25,6 +26,10 @@ var warden
 var enemies: Array = []
 var champions: Array = []      # defenses on pads
 var soldiers: Array = []
+var troops: Array = []
+var courage := GameData.COURAGE_START
+var selected_troop := -1
+var troop_mul := 1.0
 var projectiles: Array = []
 var pad_owner: Array = []      # pad index → defense or null
 var selected_pad := -1
@@ -88,6 +93,7 @@ func _ready() -> void:
 	upgrade_mods = Save.upgrade_mods()
 	integrity_max = GameData.BASTION_MAX + float(upgrade_mods.get("bastion_hp", 0.0))
 	integrity = integrity_max
+	troop_mul = (1.0 + 0.06 * realm.index) * (1.0 + float(upgrade_mods.get("barracks_hp", 0.0)) * 0.5)
 	gold = 300 + realm.index * 50 + maxi(0, realm.lanes - 2) * 60 + int(upgrade_mods.get("start_gold", 0.0))
 	_shared_resources()
 	world = WorldBuilder.new()
@@ -284,7 +290,7 @@ func _resolve(tg: Dictionary) -> void:
 			var power := 1.0 if tg.kind == "ember" else 1.8
 			for e in enemies_near(p, r):
 				hit_enemy(e, 60.0 * power, {"source": "hazard", "burn": 8.0})
-			for c in soldiers:
+			for c in soldiers + troops:
 				if c.alive and c.position.distance_to(p) < r:
 					c.take_damage(30.0 * power)
 			if w_in: warden.take_damage(25.0 * power)
@@ -299,7 +305,7 @@ func _resolve(tg: Dictionary) -> void:
 func boss_slam(boss, r: float) -> void:
 	ring_fx(boss.position, r, Color("ff5470"))
 	shake(0.4)
-	for c in soldiers:
+	for c in soldiers + troops:
 		if c.alive and c.position.distance_to(boss.position) < r:
 			c.take_damage(boss.def.damage)
 			c.stun_t = 2.0
@@ -308,8 +314,10 @@ func boss_slam(boss, r: float) -> void:
 
 func enemy_heal_pulse(src, amount: float) -> void:
 	ring_fx(src.position, 3.0, Color("9be24d"))
+	# Healers can't heal each other — kill them first and the group falls apart.
 	for e in enemies_near(src.position, 3.0):
-		e.hp = minf(e.max_hp, e.hp + amount)
+		if e.def.has("heal"): continue
+		e.hp = minf(e.max_hp, e.hp + amount * (1.0 + e.hp_scale * 0.5))
 
 # ── Waves ───────────────────────────────────────────────────
 func _next_wave() -> void:
@@ -374,10 +382,13 @@ func _step(dt: float) -> void:
 	for s in pending.duplicate():
 		if wave_time >= s.t:
 			pending.erase(s)
-			spawn_enemy(s.enemy, world.lanes[s.lane], ((1.0 + wave_index * 0.02) if GameData.enemies[s.enemy].kind == "boss" else (1.0 + wave_index * 0.07)) * (1.0 + realm.index * 0.03))
+			spawn_enemy(s.enemy, world.lanes[s.lane], ((1.0 + wave_index * 0.02) if GameData.enemies[s.enemy].kind == "boss" else (1.0 + wave_index * 0.08)) * (1.2 + realm.index * 0.05))
+	courage = minf(GameData.COURAGE_MAX, courage + GameData.COURAGE_REGEN * dt)
+	_refresh_auras()
 	warden.step(dt)
 	for c in champions: c.step(dt)
 	for c in soldiers: c.step(dt)
+	for c in troops: c.step(dt)
 	for e in enemies: e.step(dt)
 	for p in projectiles: p.step(dt)
 	_hazards(dt)
@@ -385,6 +396,9 @@ func _step(dt: float) -> void:
 	for e in enemies.duplicate():
 		if e.alive: continue
 		enemies.erase(e)
+		if e.silent:
+			e.queue_free()
+			continue
 		if not e.reached:
 			kills += 1
 			var bounty := int(e.def.bounty * 1.5 * mods.gold)
@@ -402,6 +416,10 @@ func _step(dt: float) -> void:
 	for c in soldiers.duplicate():
 		if not c.alive:
 			soldiers.erase(c)
+			_die_fx(c)
+	for c in troops.duplicate():
+		if not c.alive:
+			troops.erase(c)
 			_die_fx(c)
 	for p in projectiles.duplicate():
 		if not p.alive:
@@ -487,10 +505,66 @@ func lob(from: Vector3, to: Vector3, dmg: float, r: float, opts: Dictionary) -> 
 		mi.queue_free()
 		if state == "over": return
 		ring_fx(dest, r, Color("ffb03a"))
+		var poison: float = opts.get("poison", 0.0)
+		if poison > 0.0:
+			_puddle(dest, r)
 		for e in enemies_near(dest, r):
 			if e.def.kind == "flyer": continue
-			hit_enemy(e, dmg, {"source": "champion", "true_dmg": opts.get("true_dmg", false), "burn": opts.get("burn", 0.0)}))
+			if poison > 0.0:
+				e.apply_burn(poison)
+				e.apply_slow(0.35)
+			else:
+				hit_enemy(e, dmg, {"source": "champion", "true_dmg": opts.get("true_dmg", false), "burn": opts.get("burn", 0.0)}))
 	Sfx.play("hit", 0.7)
+
+func _puddle(p: Vector3, r: float) -> void:
+	var mi := MeshInstance3D.new()
+	var c := CylinderMesh.new(); c.top_radius = r; c.bottom_radius = r; c.height = 0.03; c.radial_segments = 18
+	mi.mesh = c
+	mi.material_override = AssetLib.mat(Color("7ed957"), 0.8)
+	mi.position = Vector3(p.x, 0.04, p.z)
+	add_child(mi)
+	var tw := mi.create_tween()
+	tw.tween_interval(1.2)
+	tw.tween_property(mi, "scale", Vector3(0.1, 1, 0.1), 0.4)
+	tw.tween_callback(mi.queue_free)
+
+## Lightning: hits the target, then leaps to `jumps` more enemies nearby.
+func zap(from: Vector3, first, dmg: float, jumps: int) -> void:
+	var hit: Array = [first]
+	var cur = first
+	for k in jumps:
+		var nxt = null
+		var bd := 3.5
+		for e in enemies:
+			if not e.alive or hit.has(e): continue
+			var d: float = e.position.distance_to(cur.position)
+			if d < bd:
+				bd = d; nxt = e
+		if nxt == null: break
+		hit.append(nxt)
+		cur = nxt
+	var prev := from
+	for i in hit.size():
+		var e = hit[i]
+		var to: Vector3 = e.hit_point()
+		_bolt(prev, to)
+		prev = to
+		hit_enemy(e, dmg * pow(0.8, i), {"source": "champion", "true_dmg": true})
+	Sfx.play("shoot", 1.6)
+
+func _bolt(a: Vector3, b: Vector3) -> void:
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new(); bm.size = Vector3(0.09, 0.09, a.distance_to(b))
+	mi.mesh = bm
+	mi.material_override = AssetLib.mat(Color("bfeaff"), 3.0)
+	add_child(mi)
+	mi.position = (a + b) / 2.0
+	if a.distance_to(b) > 0.01:
+		mi.look_at(b, Vector3.UP if absf((b - a).normalized().y) < 0.99 else Vector3.RIGHT)
+	var tw := mi.create_tween()
+	tw.tween_interval(0.12)
+	tw.tween_callback(mi.queue_free)
 
 func enemies_near(p: Vector3, r: float) -> Array:
 	var out: Array = []
@@ -499,9 +573,52 @@ func enemies_near(p: Vector3, r: float) -> Array:
 			out.append(e)
 	return out
 
+## Auras: every monster near a haste/ward/rage source gets the buff this step.
+func _refresh_auras() -> void:
+	var sources: Array = []
+	for e in enemies:
+		e.buff_haste = false; e.buff_ward = false; e.buff_rage = false
+		if e.alive and e.def.has("aura"): sources.append(e)
+	for s in sources:
+		for e in enemies:
+			if not e.alive or e.position.distance_to(s.position) > 3.5: continue
+			match s.def.aura:
+				"haste": e.buff_haste = true
+				"ward": e.buff_ward = true
+				"rage": e.buff_rage = true
+	# a boss in its final phase drives every monster into a rage
+	for e in enemies:
+		if e.is_boss and e.stage >= 3 and e.alive:
+			for o in enemies: o.buff_rage = true
+			break
+
+## Freezes towers near p for t seconds. Returns how many were hit.
+func disable_towers_near(p: Vector3, r: float, t: float, max_n := 99) -> int:
+	var n := 0
+	for c in champions:
+		if n >= max_n: break
+		if c.alive and c.position.distance_to(p) < r and c.family != "goldmine":
+			c.disable(t)
+			n += 1
+	if n > 0:
+		float_text(p, "TORRES CONGELADAS!", Color("8fe9ff"))
+	return n
+
+## Closest thing a monster can shoot: soldiers, troops or the hero.
+func nearest_ally(p: Vector3, r: float):
+	var best = null
+	var bd := r
+	for c in soldiers + troops:
+		if c.alive:
+			var d: float = c.position.distance_to(p)
+			if d < bd: bd = d; best = c
+	if not warden.downed and warden.position.distance_to(p) < bd:
+		best = warden
+	return best
+
 func allies_near(p: Vector3, r: float) -> Array:
 	var out: Array = []
-	for c in soldiers:
+	for c in soldiers + troops:
 		if c.alive and c.position.distance_to(p) < r: out.append(c)
 	if not warden.downed and warden.position.distance_to(p) < r: out.append(warden)
 	return out
@@ -509,7 +626,7 @@ func allies_near(p: Vector3, r: float) -> Array:
 func most_wounded_ally(p: Vector3, r: float):
 	var best = null
 	var bf := 0.98
-	for c in soldiers:
+	for c in soldiers + troops:
 		if c.alive and c.position.distance_to(p) < r and c.hp / c.max_hp < bf:
 			bf = c.hp / c.max_hp; best = c
 	if not warden.downed and warden.position.distance_to(p) < r and warden.hp / warden.max_hp < bf:
@@ -589,7 +706,7 @@ func select_pad(i: int) -> void:
 
 func build(i: int, family: String) -> bool:
 	var cost := build_cost(family)
-	if i < 0 or pad_owner[i] != null or gold < cost:
+	if i < 0 or pad_owner[i] != null or gold < cost or not GameData.tower_unlocked(family):
 		Sfx.play("back")
 		return false
 	gold -= cost
@@ -640,6 +757,44 @@ func sell_pad(i: int) -> void:
 	_die_fx(c)
 	Sfx.play("coin")
 	hud.hide_build()
+
+# ── Troops: tap a card, then tap a road ─────────────────
+func troop_unlocked(i: int) -> bool:
+	return Save.data.cleared.size() >= int(GameData.TROOPS[i].unlock_after)
+
+func select_troop(i: int) -> void:
+	if not troop_unlocked(i) or courage < float(GameData.TROOPS[i].cost):
+		Sfx.play("back")
+		return
+	selected_troop = -1 if selected_troop == i else i
+	hud.hide_build()
+	Sfx.play("click")
+
+func deploy_troop(i: int, p: Vector3) -> bool:
+	var t: Dictionary = GameData.TROOPS[i]
+	if courage < float(t.cost): return false
+	var best: Curve3D = null
+	var bd := 2.6
+	for c in world.lanes:
+		var d: float = c.get_closest_point(p).distance_to(Vector3(p.x, 0, p.z))
+		if d < bd:
+			bd = d; best = c
+	if best == null:
+		float_text(p, "TOQUE NA ESTRADA", Color("ff5470"))
+		Sfx.play("back")
+		return false
+	var off: float = best.get_closest_offset(Vector3(p.x, 0, p.z))
+	off = clampf(off, 2.0, best.get_baked_length() - 1.0)
+	courage -= float(t.cost)
+	for k in int(t.count):
+		var tr = TroopScript.new()
+		add_child(tr)
+		tr.setup(self, t, best, off + k * 0.5, (k - (int(t.count) - 1) / 2.0) * 0.55)
+		troops.append(tr)
+	ring_fx(best.sample_baked(off), 1.2, t.color)
+	Sfx.play("deploy")
+	selected_troop = -1
+	return true
 
 # ── Waves: between waves you build, then call the next one ──
 func _start_between(t: float) -> void:
@@ -720,6 +875,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		var g := screen_to_ground(event.position)
 		if g == Vector3.INF: return
+		if selected_troop >= 0:
+			deploy_troop(selected_troop, g)
+			return
 		var i := pad_at(g)
 		if i >= 0:
 			select_pad(i)
@@ -745,13 +903,23 @@ func _auto_play(dt: float) -> void:
 	if warden.ult_ready(): warden.release_ult()
 	if _auto_t > 0.0: return
 	_auto_t = 1.0
+	if not enemies.is_empty():
+		for ti in range(GameData.TROOPS.size() - 1, -1, -1):
+			if troop_unlocked(ti) and courage >= float(GameData.TROOPS[ti].cost):
+				var lane: Curve3D = world.lanes[randi() % world.lanes.size()]
+				deploy_troop(ti, lane.sample_baked(lane.get_baked_length() * 0.7))
+				break
 	var order: Array = range(world.pads.size())
 	var mid := world.pads.size() / 2
 	order.sort_custom(func(a, b): return absi(a - mid) < absi(b - mid))
-	var plan := ["archer", "barracks", "mage", "artillery", "archer", "mage", "barracks", "artillery", "archer", "mage", "barracks"]
+	var plan := ["archer", "barracks", "mage", "artillery", "tesla", "ballista", "barracks", "cauldron", "archer", "mage", "goldmine"]
 	for i in order:
 		if pad_owner[i] == null:
 			var fam: String = plan[builds % plan.size()]
+			var tries := 0
+			while not GameData.tower_unlocked(fam) and tries < 12:
+				builds += 1; tries += 1
+				fam = plan[builds % plan.size()]
 			if gold >= build_cost(fam):
 				build(i, fam)
 			return

@@ -29,6 +29,10 @@ var respawn: Array = []
 var model: Node3D
 var shooter: ModelRig
 var um: Dictionary
+var stun_t := 0.0
+var master := false          # 4th upgrade: "Mestre" (big gold sink)
+const MASTER_COST := 320
+var _ice: MeshInstance3D
 
 func setup(b, fam: String, pad_index: int, pos: Vector3, paid: int) -> void:
 	battle = b
@@ -46,7 +50,11 @@ func setup(b, fam: String, pad_index: int, pos: Vector3, paid: int) -> void:
 	create_tween().tween_property(self, "scale", Vector3.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func title() -> String:
+	if master: return "%s MESTRE" % GameData.TOWERS[family].name
 	return spec.name if not spec.is_empty() else "%s %s" % [GameData.TOWERS[family].name, ["I", "II", "III"][tier]]
+
+func can_specialize() -> bool:
+	return false   # champions are now playable heroes, not tower specializations
 
 func unit_id() -> String:
 	return spec.id if not spec.is_empty() else ("footman" if family == "barracks" else "bowman")
@@ -59,6 +67,13 @@ func _rebuild() -> void:
 	model = AssetLib.make_tower(family, tier, spec.get("id", ""))
 	model.position.y = 0.26
 	add_child(model)
+	if master:
+		var crown := MeshInstance3D.new()
+		var t := TorusMesh.new(); t.inner_radius = 1.0; t.outer_radius = 1.18; t.rings = 24; t.ring_segments = 4
+		crown.mesh = t
+		crown.material_override = AssetLib.mat(Color("ffcf3d"), 1.5)
+		crown.position.y = 0.32
+		model.add_child(crown)
 	var top: float = AssetLib.tower_top(family, tier) + 0.26
 	var sid: String = spec.get("id", "")
 	if family == "archer":
@@ -96,6 +111,10 @@ func _apply_stats() -> void:
 		if evo >= 2 and spec.id in ["runestone", "sunspear_lancer"]: damage *= 1.3
 		if evo >= 2 and spec.id == "boulder_golem": soldier_hp *= 1.4
 		if evo >= 2 and spec.id == "thistle_archer": atk_range *= 1.25
+	if master:
+		damage *= 1.6
+		atk_range *= 1.1
+		soldier_hp *= 1.5
 	damage *= dmg_up * battle.mods.champ_dmg
 	atk_range *= range_up
 	if family == "mage": rate /= 1.0 + float(um.get("mage_rate", 0.0))
@@ -106,18 +125,19 @@ func _apply_stats() -> void:
 
 # ── upgrades ────────────────────────────────────────────────
 func cost_next() -> int:
-	if not spec.is_empty() or tier >= 2: return -1
+	if not spec.is_empty() or master: return -1
+	if tier >= 2: return MASTER_COST
 	return int(GameData.TOWERS[family].cost[tier + 1])
-
-func can_specialize() -> bool:
-	return spec.is_empty() and tier >= 2
 
 func sell_value() -> int:
 	return int(spent * GameData.SELL_REFUND)
 
 func upgrade() -> void:
 	spent += cost_next()
-	tier += 1
+	if tier >= 2:
+		master = true
+	else:
+		tier += 1
 	_refresh()
 
 func specialize(def: Dictionary) -> void:
@@ -170,9 +190,29 @@ func remove() -> void:
 		if s != null and is_instance_valid(s):
 			s.alive = false
 
+## Frozen by a saboteur / boss roar: does nothing for t seconds.
+func disable(t: float) -> void:
+	stun_t = maxf(stun_t, t)
+	if _ice == null:
+		_ice = MeshInstance3D.new()
+		var bm := BoxMesh.new(); bm.size = Vector3(1.5, 2.2, 1.5)
+		_ice.mesh = bm
+		var m := StandardMaterial3D.new()
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.albedo_color = Color(0.6, 0.9, 1.0, 0.45)
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_ice.material_override = m
+		_ice.position.y = 1.2
+		add_child(_ice)
+	_ice.visible = true
+
 # ── behaviour ───────────────────────────────────────────────
 func step(dt: float) -> void:
 	if not alive: return
+	if stun_t > 0.0:
+		stun_t -= dt
+		if stun_t <= 0.0 and _ice: _ice.visible = false
+		return
 	if family == "barracks":
 		var wait := 6.0 if spec.get("id", "") == "wolf_pack" else 10.0
 		wait *= 1.0 - float(um.get("barracks_respawn", 0.0))
@@ -189,7 +229,7 @@ func step(dt: float) -> void:
 		cd = rate
 
 func _shot_origin() -> Vector3:
-	return position + Vector3(0, AssetLib.tower_top(family, tier) + 1.0, 0)
+	return position + Vector3(0, AssetLib.tower_top(family, tier) + (1.0 if family in ["archer", "mage"] else 1.2), 0)
 
 func _face(t) -> void:
 	if shooter:
@@ -248,5 +288,28 @@ func _act() -> bool:
 			battle.lob(position + Vector3(0, 1.4, 0), lead, damage, splash, {
 				"true_dmg": sid == "runestone", "burn": float(um.get("artillery_burn", 0.0)),
 				"color": spec.color if sid != "" else Color("2a2e38")})
+			return true
+		"ballista":
+			var t = battle.nearest_enemy(position, rng)
+			if t == null: return false
+			battle.spawn_projectile(_shot_origin(), t, damage, "champion", {
+				"color": Color("e8d8b0"), "speed": 26.0, "pierce": 2})
+			return true
+		"cauldron":
+			var t = battle.nearest_ground_enemy(position, rng)
+			if t == null: return false
+			battle.lob(position + Vector3(0, 1.2, 0), t.position, 0.0, splash, {
+				"poison": damage, "color": Color("7ed957")})
+			return true
+		"tesla":
+			var t = battle.nearest_enemy(position, rng)
+			if t == null: return false
+			battle.zap(_shot_origin(), t, damage, 2 + tier)
+			return true
+		"goldmine":
+			var g := int(damage)
+			battle.gold += g
+			battle.float_text(position, "+%d" % g, Color("ffcf3d"))
+			Sfx.play("coin", 1.2)
 			return true
 	return false

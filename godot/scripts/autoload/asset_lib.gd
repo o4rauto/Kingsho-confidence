@@ -680,6 +680,10 @@ func make_tower(family: String, tier: int, spec := "") -> Node3D:
 		"barracks": _tower_barracks(body, tier, accent, spec != "")
 		"mage": _tower_mage(body, tier, accent, spec != "")
 		"artillery": _tower_artillery(body, tier, accent, spec)
+		"ballista": _tower_ballista(body, tier, accent)
+		"cauldron": _tower_cauldron(body, tier, accent)
+		"tesla": _tower_tesla(body, tier, accent)
+		"goldmine": _tower_goldmine(body, tier, accent)
 	_skip_static = false
 	if cached == null:
 		cached = _bake(body)
@@ -695,6 +699,7 @@ func tower_top(family: String, tier: int) -> float:
 	match family:
 		"archer": return [1.35, 1.6, 1.85][tier]
 		"mage": return [1.7, 1.95, 2.2][tier]
+		"tesla": return [1.9, 2.2, 2.5][tier]
 	return 0.35
 
 func _tower_archer(b: Node3D, tier: int, accent: Color, spec: bool) -> void:
@@ -751,7 +756,7 @@ func _tower_mage(b: Node3D, tier: int, accent: Color, spec: bool) -> void:
 	for i in 4:
 		var a := i * TAU / 4.0 + PI / 4
 		_cone(b, 0.12, 0.45, Vector3(cos(a) * 0.55, top + 0.25, sin(a) * 0.55), accent.darkened(0.25), 0.0, 6)
-	_ball(b, 0.26 + tier * 0.04, Vector3(0, top + 0.55, 0), accent.lightened(0.3), 2.4 if spec else 1.6)
+	_ball(b, 0.26 + tier * 0.04, Vector3(0, top + 0.55, 0), accent, 2.0 if spec else 1.2)
 	if tier >= 2:
 		_torus(b, 0.36, 0.42, Vector3(0, top + 0.55, 0), Color("ffcf3d"), 0.6).rotation.x = PI / 2
 
@@ -782,6 +787,82 @@ func _tower_artillery(b: Node3D, tier: int, accent: Color, spec: String) -> void
 	_torus(b, 0.27 + tier * 0.04, 0.33 + tier * 0.04, Vector3(0, 1.2, 0.22), Color("ffcf3d") if tier == 2 else Color("6a707e"))
 	for k in 3:
 		_ball(b, 0.11, Vector3(-0.5 + k * 0.13, 0.6, 0.45), Color("2a2e38"))
+
+func _tower_ballista(b: Node3D, tier: int, accent: Color) -> void:
+	var wood := Color("a8703c")
+	var stone := Color("a8a090")
+	var hgt := 0.7 + tier * 0.2
+	_cyl(b, 0.8, 0.9, hgt, Vector3(0, hgt / 2.0, 0), stone if tier > 0 else Color("c8a06a"), 0.0, 8)
+	_cyl(b, 0.85, 0.85, 0.1, Vector3(0, hgt, 0), wood, 0.0, 8)
+	var top := hgt + 0.1
+	_box(b, Vector3(0.3, 0.4, 0.3), Vector3(0, top + 0.2, 0), wood.darkened(0.2))
+	_box(b, Vector3(0.18, 0.16, 1.4), Vector3(0, top + 0.45, 0.1), wood)
+	for s in [-1.0, 1.0]:
+		var arm := _box(b, Vector3(0.9, 0.12, 0.12), Vector3(s * 0.42, top + 0.5, 0.55), wood.darkened(0.1))
+		arm.rotation.y = s * 0.35
+	_box(b, Vector3(1.4, 0.03, 0.03), Vector3(0, top + 0.5, 0.25), Color("f2ead8"))
+	_cone(b, 0.08, 0.3, Vector3(0, top + 0.55, 0.95), Color("dfe6f2"), 0.0, 6).rotation.x = PI / 2
+	if tier >= 2:
+		for i in 8:
+			var a := i * TAU / 8.0
+			_box(b, Vector3(0.18, 0.22, 0.14), Vector3(cos(a) * 0.82, hgt + 0.15, sin(a) * 0.82), Color("ffcf3d")).rotation.y = -a
+	_cyl(b, 0.015, 0.015, 0.9, Vector3(-0.6, top + 0.4, -0.4), Color("5a3418"), 0.0, 6)
+	_box(b, Vector3(0.38, 0.26, 0.03), Vector3(-0.4, top + 0.72, -0.4), accent)
+
+func _tower_cauldron(b: Node3D, tier: int, accent: Color) -> void:
+	var wall := Color("8a7a68") if tier == 0 else Color("7a7a8a")
+	_cyl(b, 0.85, 0.95, 0.45, Vector3(0, 0.22, 0), wall, 0.0, 10)
+	for s in [-1.0, 1.0]:
+		_cyl(b, 0.06, 0.06, 1.2 + tier * 0.1, Vector3(s * 0.7, 0.6, 0), Color("6b4423"), 0.0, 6)
+	_box(b, Vector3(1.6, 0.08, 0.08), Vector3(0, 1.2 + tier * 0.1, 0), Color("6b4423"))
+	var pot_r := 0.5 + tier * 0.06
+	_ball(b, pot_r, Vector3(0, 0.75, 0), Color("3a3e48"), 0.0, Vector3(1, 0.85, 1))
+	_torus(b, pot_r * 0.8, pot_r * 0.95, Vector3(0, 0.75 + pot_r * 0.6, 0), Color("4a4e58"))
+	_cyl(b, pot_r * 0.8, pot_r * 0.8, 0.05, Vector3(0, 0.75 + pot_r * 0.62, 0), accent, 1.6, 14)
+	for k in 3:
+		_ball(b, 0.08 + k * 0.03, Vector3(-0.15 + k * 0.15, 0.95 + pot_r * 0.6 + k * 0.12, 0), accent.lightened(0.3), 1.2)
+	for k in 3:
+		var a := k * TAU / 3.0
+		_cone(b, 0.12, 0.3, Vector3(cos(a) * 0.4, 0.55, sin(a) * 0.4), Color("ff8a2a"), 1.8, 6)
+	if tier >= 2:
+		_ball(b, 0.14, Vector3(0.55, 0.6, 0.55), Color("f4ead2"))
+		_ball(b, 0.1, Vector3(0.62, 0.6, 0.62), INK)
+
+func _tower_tesla(b: Node3D, tier: int, accent: Color) -> void:
+	var metal := Color("7a8498")
+	var top := tower_top("tesla", tier)
+	_cyl(b, 0.8, 0.9, 0.35, Vector3(0, 0.17, 0), Color("a8a090"), 0.0, 8)
+	_cyl(b, 0.18, 0.4, top, Vector3(0, top / 2.0 + 0.2, 0), metal, 0.0, 8)
+	for k in 3 + tier:
+		_torus(b, 0.32 - k * 0.03, 0.42 - k * 0.03, Vector3(0, 0.6 + k * (top - 0.4) / (3 + tier), 0), Color("c8843a"))
+	for s in [-1.0, 1.0]:
+		var rod := _cyl(b, 0.04, 0.04, 0.8, Vector3(s * 0.45, top * 0.7, 0), metal.darkened(0.2), 0.0, 6)
+		rod.rotation.z = s * 0.4
+	_ball(b, 0.26 + tier * 0.04, Vector3(0, top + 0.35, 0), accent, 2.6)
+	_torus(b, 0.36, 0.42, Vector3(0, top + 0.35, 0), Color("ffcf3d") if tier == 2 else metal, 0.0).rotation.x = PI / 2
+
+func _tower_goldmine(b: Node3D, tier: int, accent: Color) -> void:
+	var rock := Color("8a7a6a")
+	_ball(b, 1.0, Vector3(0, 0.3, -0.2), rock, 0.0, Vector3(1.1, 0.8, 0.9))
+	_ball(b, 0.6, Vector3(0.6, 0.5, -0.3), rock.lightened(0.08))
+	_box(b, Vector3(0.7, 0.75, 0.3), Vector3(0, 0.38, 0.62), INK)
+	for s in [-1.0, 1.0]:
+		_box(b, Vector3(0.12, 0.9, 0.14), Vector3(s * 0.4, 0.45, 0.7), Color("8a5a2e"))
+	_box(b, Vector3(0.95, 0.14, 0.16), Vector3(0, 0.9, 0.7), Color("8a5a2e"))
+	# mine cart full of gold
+	_box(b, Vector3(0.6, 0.3, 0.42), Vector3(0.75, 0.3, 0.9), Color("6a707e"))
+	for x in [0.55, 0.95]:
+		_cyl(b, 0.1, 0.1, 0.46, Vector3(x, 0.12, 0.9), INK, 0.0, 8).rotation.x = PI / 2
+	for k in 3 + tier * 2:
+		_ball(b, 0.11, Vector3(0.6 + (k % 3) * 0.13, 0.5 + int(k / 3) * 0.08, 0.85 + (k % 2) * 0.1), Color("ffcf3d"), 0.6)
+	var pick := _box(b, Vector3(0.05, 0.6, 0.05), Vector3(-0.7, 0.35, 0.8), Color("8a5a2e"))
+	pick.rotation.z = 0.5
+	_box(b, Vector3(0.4, 0.06, 0.06), Vector3(-0.85, 0.62, 0.8), Color("a8b0c0")).rotation.z = 0.5
+	if tier >= 1:
+		_cone(b, 0.4, 0.5, Vector3(-0.5, 1.15, -0.3), Color("b0402a"), 0.0, 4)
+		_box(b, Vector3(0.6, 0.5, 0.6), Vector3(-0.5, 0.65, -0.3), Color("c8a06a"))
+	if tier >= 2:
+		_ball(b, 0.2, Vector3(0, 1.35, -0.2), Color("ffcf3d"), 1.2)
 
 # ── Portrait icons (rendered once, offscreen) ───────────────
 var _icons: Dictionary = {}
@@ -827,7 +908,13 @@ func icon(id: String, evolved := false) -> Texture2D:
 	vp.add_child(env)
 	var model: Node3D
 	var look_y := 0.95
-	if id.begins_with("tower_"):
+	if id.begins_with("troop_"):
+		var td: Dictionary = {}
+		for t in GameData.TROOPS:
+			if "troop_" + t.id == id: td = t
+		var mk := "wolf" if td.model == "wolf_pack" else ("melee" if td.model == "pyre_knight" else "")
+		model = make(td.model, mk, td.color, 1.25 if td.model == "wolf_pack" else 1.8)
+	elif id.begins_with("tower_"):
 		var parts := id.split("_")
 		model = make_tower(parts[1], 0)
 		look_y = 0.9

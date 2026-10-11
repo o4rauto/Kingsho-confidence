@@ -105,6 +105,21 @@ func _draw() -> void:
 			draw_circle(c + Vector2(-r * 0.25, -r * 0.05), r * 0.18, Color("8a909e"))
 			draw_line(c + Vector2(r * 0.35, -r * 0.4), c + Vector2(r * 0.7, -r * 0.85), Color("c8a070"), r * 0.14)
 			draw_circle(c + Vector2(r * 0.72, -r * 0.88), r * 0.16, Color("ffb03a"))
+		"ballista":
+			draw_line(c + Vector2(-r * 0.9, -r * 0.3), c + Vector2(r * 0.9, -r * 0.3), INK, r * 0.26)
+			draw_line(c + Vector2(-r * 0.9, -r * 0.3), c + Vector2(r * 0.9, -r * 0.3), Color("c8843a"), r * 0.14)
+			draw_line(c + Vector2(0, -r * 0.9), c + Vector2(0, r * 0.9), INK, r * 0.22)
+			draw_line(c + Vector2(0, -r * 0.6), c + Vector2(0, r * 0.9), Color("e8d8b0"), r * 0.1)
+			_poly(PackedVector2Array([c + Vector2(0, -r), c + Vector2(-r * 0.22, -r * 0.6), c + Vector2(r * 0.22, -r * 0.6)]), Color("dfe6f2"))
+		"cauldron":
+			draw_circle(c + Vector2(0, r * 0.2 + s * 0.04), r * 0.75, INK)
+			draw_circle(c + Vector2(0, r * 0.2), r * 0.75, Color("3a3e48"))
+			draw_rect(Rect2(c + Vector2(-r * 0.75, -r * 0.35), Vector2(r * 1.5, r * 0.3)), Color("7ed957"))
+			draw_circle(c + Vector2(-r * 0.2, -r * 0.55), r * 0.16, Color("b8f090"))
+			draw_circle(c + Vector2(r * 0.25, -r * 0.75), r * 0.12, Color("b8f090"))
+		"bolt":
+			_poly(PackedVector2Array([c + Vector2(r * 0.2, -r), c + Vector2(-r * 0.6, r * 0.15), c + Vector2(-r * 0.05, r * 0.15),
+				c + Vector2(-r * 0.25, r), c + Vector2(r * 0.6, -r * 0.2), c + Vector2(r * 0.05, -r * 0.2)]), Color("5ac8ff"))
 		"helmet", "helmet_hero":
 			draw_circle(c + Vector2(0, -r * 0.05), r * 0.8, Color("c8ccd8"))
 			draw_rect(Rect2(c + Vector2(-r * 0.8, -r * 0.05), Vector2(r * 1.6, r * 0.8)), Color("c8ccd8"))
