@@ -4,6 +4,10 @@ Mobile (portrait, Android) last-stand roguelite: Kingdom Rush lanes × Clash Roy
 cards/Aether × Archero hero. **The game is the Godot 4.3 project in `godot/`**
 (GL Compatibility renderer, GDScript). `web-prototype/` is the old Phaser version, kept for reference only.
 
+## ART STANDARD — read first
+Everything is 2D drawn cartoon (no 3D). **All art follows `pipeline/PADRAO_DE_ARTE.md`**
+(style anchor, prompt templates, slots, work list). Never deviate from it.
+
 ## How the project is built (the asset pipeline)
 Same method as the reference video: AI images → 3D parts → assemble in Blender →
 rig (AccuRIG) → Mixamo animations → custom animations by Claude via the Blender MCP

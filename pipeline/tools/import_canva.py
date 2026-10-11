@@ -105,7 +105,7 @@ def _ok(path):
 
 
 def missing(entries):
-    return [e for e in entries if not all(_ok(ART / s) for s in e["slots"])]
+    return [e for e in entries if not e.get("obsolete") and not all(_ok(ART / s) for s in e["slots"])]
 
 
 def newest(folder, since, known):

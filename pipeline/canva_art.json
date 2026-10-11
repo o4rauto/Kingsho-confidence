@@ -1,10 +1,12 @@
 [
  {
   "n": 1,
-  "title": "Kael (herói)",
+  "title": "Kael (herói) (ESTILO ANTIGO - substituído)",
   "media_id": "MAHXvEfypFw",
   "link": "https://www.canva.com/M/MAHXvEfypFw",
-  "slots": [
+  "slots": [],
+  "obsolete": true,
+  "slots_old": [
    "portraits/warden.png"
   ]
  },
@@ -336,10 +338,12 @@
  },
  {
   "n": 38,
-  "title": "Monstro: Casca Cinzenta",
+  "title": "Monstro: Casca Cinzenta (ESTILO ANTIGO - substituído)",
   "media_id": "MAHXvMf5Img",
   "link": "https://www.canva.com/M/MAHXvMf5Img",
-  "slots": [
+  "slots": [],
+  "obsolete": true,
+  "slots_old": [
    "portraits/husk.png"
   ]
  },
@@ -525,10 +529,12 @@
  },
  {
   "n": 59,
-  "title": "Animação: Casca Cinzenta andando",
+  "title": "Animação: Casca Cinzenta andando (ESTILO ANTIGO - substituído)",
   "media_id": "MAHXvbAWdfg",
   "link": "https://www.canva.com/M/MAHXvbAWdfg",
-  "slots": [
+  "slots": [],
+  "obsolete": true,
+  "slots_old": [
    "anims/husk/walk.sheet"
   ]
  },
@@ -539,6 +545,24 @@
   "link": "https://www.canva.com/M/MAHXvbNaa8A",
   "slots": [
    "anims/ravager/attack.sheet"
+  ]
+ },
+ {
+  "n": 61,
+  "title": "Herói: Kael (estilo padrão)",
+  "media_id": "MAHXvUPX584",
+  "link": "https://www.canva.com/M/MAHXvUPX584",
+  "slots": [
+   "portraits/warden.png"
+  ]
+ },
+ {
+  "n": 62,
+  "title": "Monstro: Casca Cinzenta (estilo padrão)",
+  "media_id": "MAHXvY4CaRE",
+  "link": "https://www.canva.com/M/MAHXvY4CaRE",
+  "slots": [
+   "portraits/husk.png"
   ]
  }
 ]
