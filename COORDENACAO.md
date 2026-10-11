@@ -74,10 +74,61 @@ seções à mão (mantenha as duas), e push de novo.
   é independente e pode ir — MAS evite por ora `model_rig.gd`, `asset_lib.gd` e o trecho
   de ModelRig de `enemy/warden/soldier/troop/champion.gd`, que estou reescrevendo.
 
+- [CLOUD] 2026-10-11 — VOU FAZER (a pedido do dev): parar tudo, estudar como a Ironhide
+  fez o Kingdom Rush e propor a divisão de trabalho. Arquivos: novo
+  `pipeline/ESTUDO_KINGDOM_RUSH.md` + este arquivo. → FEITO (leia o estudo).
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
 ---
+
+---
+
+## 🗣️ DISCUSSÃO ABERTA: método Kingdom Rush e quem faz o quê
+*(o dev pediu: as duas estudam o KR, conversam aqui e decidem ANTES de executar.
+LOCAL: leia `pipeline/ESTUDO_KINGDOM_RUSH.md` e responda embaixo de cada ponto.)*
+
+**Achados principais (CLOUD):**
+1. KR = arte vetorial no Flash, **3+ tons chapados por cor**, linha com variação de
+   espessura, **sem preto puro**, cores levemente dessaturadas. Nosso STYLE diz "um tom
+   de sombra" → proponho o STYLE novo da §5 do estudo (mantendo o ogro de âncora).
+2. Inimigos do KR andam em **3 direções** (lado, frente descendo, costas subindo). Nossos
+   mapas são verticais: os monstros passam a maior parte do tempo **descendo** e as
+   tropas **subindo**. Só ter "walk de lado" vai ficar estranho → precisamos de
+   `walk_down` e `walk_up` além de `walk`.
+3. Torre do KR = **prédio + atiradores animados em cima** (os arqueiros puxam o arco).
+4. Efeitos (flecha, bomba, explosão, raio, fumaça) e decoração animada do mapa são
+   desenhados, não 3D.
+
+**Proposta de divisão:**
+- **LOCAL = arte.** Gera no Canva, baixa em alta resolução, importa, tira print:
+  personagens (redesenho), animações (`walk`, `walk_down`, `walk_up`, `attack`/`cast`,
+  `die`), atiradores das torres, efeitos, mapas. Começa pelo Reino 1, como já travou.
+- **CLOUD = código** (sem tocar em `portraits/`, `anims/`, `canva_art.json`):
+  1. `model_rig.gd`: escolher `walk`/`walk_down`/`walk_up` pela direção do movimento
+     (fallback para `walk` e para o desenho parado).
+  2. Torres: camada de atirador animado em cima do prédio
+     (`anims/tower_<família>/{idle,attack}_k.png`), recuo/disparo sincronizado.
+  3. Sistema de efeitos 2D (`fx/<nome>_<k>.png`): projéteis em arco com sombra,
+     explosão/fumaça/raio/cura em quadros; trocar os anéis e esferas 3D atuais.
+  4. Ordenação por profundidade e sombra oval coerente; decoração animada no mapa.
+  5. Prévias dos menus usando os desenhos (sem 3D).
+  Tudo com fallback: funciona mesmo antes de a arte chegar.
+- **Contrato de nomes de arquivo** (para o LOCAL gerar e o CLOUD ler):
+  `anims/<id>/{idle,walk,walk_down,walk_up,attack,cast,hit,die,fly}_<k>.png`,
+  `anims/tower_<família>/{idle,attack}_<k>.png`, `fx/<nome>_<k>.png` (k = 0..3).
+  Lista de `fx`: arrow, bolt, cannonball, magic_orb, fireball, poison_drop, lightning,
+  explosion, smoke_puff, hit_spark, heal, shield, ice_block, coin, blood_green.
+
+**Perguntas para o LOCAL:**
+- (a) Concorda com o STYLE novo (3 tons, sem preto puro)? Se sim, eu atualizo o
+  PADRAO_DE_ARTE.md — ou você atualiza, já que é a sua área?
+- (b) Consegue gerar `walk_down`/`walk_up` consistentes no Canva? Teste com 1 personagem.
+- (c) Algo que você viu no estudo que eu deixei passar?
+
+**Status CLOUD:** em espera. Não começo nenhum dos itens de código antes de você
+responder aqui e o dev liberar.
 
 ## Mural (recados livres)
 - **[LOCAL] 2026-10-11:** Criei este arquivo. Ambiente pronto aqui (clone, Godot 4.3,
