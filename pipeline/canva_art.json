@@ -315,5 +315,230 @@
   "slots": [
    "realms/shattered_sunspire.png"
   ]
+ },
+ {
+  "n": 36,
+  "title": "Mapa de batalha: Portão Partido (vertical)",
+  "media_id": "MAHXvPjG1cg",
+  "link": "https://www.canva.com/M/MAHXvPjG1cg",
+  "slots": [
+   "battle/broken_gate.png"
+  ]
+ },
+ {
+  "n": 37,
+  "title": "Monstro: Fagulha da Fenda",
+  "media_id": "MAHXvAlw3A8",
+  "link": "https://www.canva.com/M/MAHXvAlw3A8",
+  "slots": [
+   "portraits/wisp.png"
+  ]
+ },
+ {
+  "n": 38,
+  "title": "Monstro: Casca Cinzenta",
+  "media_id": "MAHXvMf5Img",
+  "link": "https://www.canva.com/M/MAHXvMf5Img",
+  "slots": [
+   "portraits/husk.png"
+  ]
+ },
+ {
+  "n": 39,
+  "title": "Monstro: Devastador",
+  "media_id": "MAHXvKTpLPs",
+  "link": "https://www.canva.com/M/MAHXvKTpLPs",
+  "slots": [
+   "portraits/ravager.png"
+  ]
+ },
+ {
+  "n": 40,
+  "title": "Monstro: Diabrete de Brasa",
+  "media_id": "MAHXvIkJ-ZQ",
+  "link": "https://www.canva.com/M/MAHXvIkJ-ZQ",
+  "slots": [
+   "portraits/ember_imp.png"
+  ]
+ },
+ {
+  "n": 41,
+  "title": "Monstro: Muda em Chamas",
+  "media_id": "MAHXvEZ6KIo",
+  "link": "https://www.canva.com/M/MAHXvEZ6KIo",
+  "slots": [
+   "portraits/sapling.png"
+  ]
+ },
+ {
+  "n": 42,
+  "title": "Monstro: Morcego Sombrio",
+  "media_id": "MAHXvE09E5A",
+  "link": "https://www.canva.com/M/MAHXvE09E5A",
+  "slots": [
+   "portraits/gloombat.png"
+  ]
+ },
+ {
+  "n": 43,
+  "title": "Monstro: Soldado Afogado",
+  "media_id": "MAHXvDGs8yo",
+  "link": "https://www.canva.com/M/MAHXvDGs8yo",
+  "slots": [
+   "portraits/drowned.png"
+  ]
+ },
+ {
+  "n": 44,
+  "title": "Monstro: Espreitador do Pântano",
+  "media_id": "MAHXvEP9x_Y",
+  "link": "https://www.canva.com/M/MAHXvEP9x_Y",
+  "slots": [
+   "portraits/bog_lurker.png"
+  ]
+ },
+ {
+  "n": 45,
+  "title": "Monstro: Mago Maldito",
+  "media_id": "MAHXvCDpZ8A",
+  "link": "https://www.canva.com/M/MAHXvCDpZ8A",
+  "slots": [
+   "portraits/hexmage.png"
+  ]
+ },
+ {
+  "n": 46,
+  "title": "Monstro: Sentinela",
+  "media_id": "MAHXvLe42og",
+  "link": "https://www.canva.com/M/MAHXvLe42og",
+  "slots": [
+   "portraits/sentry.png"
+  ]
+ },
+ {
+  "n": 47,
+  "title": "Monstro: Cavaleiro Sombrio",
+  "media_id": "MAHXvAIxrzA",
+  "link": "https://www.canva.com/M/MAHXvAIxrzA",
+  "slots": [
+   "portraits/knight.png"
+  ]
+ },
+ {
+  "n": 48,
+  "title": "Monstro: Cria do Vazio",
+  "media_id": "MAHXvFRkbW8",
+  "link": "https://www.canva.com/M/MAHXvFRkbW8",
+  "slots": [
+   "portraits/void_spawn.png"
+  ]
+ },
+ {
+  "n": 49,
+  "title": "Monstro: Ácaro do Vazio",
+  "media_id": "MAHXvMLg6uQ",
+  "link": "https://www.canva.com/M/MAHXvMLg6uQ",
+  "slots": [
+   "portraits/void_mite.png"
+  ]
+ },
+ {
+  "n": 50,
+  "title": "Monstro: Ogro",
+  "media_id": "MAHXvIT5iEg",
+  "link": "https://www.canva.com/M/MAHXvIT5iEg",
+  "slots": [
+   "portraits/ogre.png"
+  ]
+ },
+ {
+  "n": 51,
+  "title": "Torre: Arqueiros",
+  "media_id": "MAHXvHtYJTs",
+  "link": "https://www.canva.com/M/MAHXvHtYJTs",
+  "slots": [
+   "towers/archer.png"
+  ]
+ },
+ {
+  "n": 52,
+  "title": "Torre: Quartel",
+  "media_id": "MAHXvAWU84M",
+  "link": "https://www.canva.com/M/MAHXvAWU84M",
+  "slots": [
+   "towers/barracks.png"
+  ]
+ },
+ {
+  "n": 53,
+  "title": "Torre: Magos",
+  "media_id": "MAHXvLHFiko",
+  "link": "https://www.canva.com/M/MAHXvLHFiko",
+  "slots": [
+   "towers/mage.png"
+  ]
+ },
+ {
+  "n": 54,
+  "title": "Torre: Artilharia",
+  "media_id": "MAHXvDJGGSw",
+  "link": "https://www.canva.com/M/MAHXvDJGGSw",
+  "slots": [
+   "towers/artillery.png"
+  ]
+ },
+ {
+  "n": 55,
+  "title": "Torre: Balista",
+  "media_id": "MAHXvLXMHPA",
+  "link": "https://www.canva.com/M/MAHXvLXMHPA",
+  "slots": [
+   "towers/ballista.png"
+  ]
+ },
+ {
+  "n": 56,
+  "title": "Torre: Caldeirão",
+  "media_id": "MAHXvMjUZDw",
+  "link": "https://www.canva.com/M/MAHXvMjUZDw",
+  "slots": [
+   "towers/cauldron.png"
+  ]
+ },
+ {
+  "n": 57,
+  "title": "Torre: Tesla",
+  "media_id": "MAHXvP0I91Y",
+  "link": "https://www.canva.com/M/MAHXvP0I91Y",
+  "slots": [
+   "towers/tesla.png"
+  ]
+ },
+ {
+  "n": 58,
+  "title": "Torre: Mina de Ouro",
+  "media_id": "MAHXvFH-Msk",
+  "link": "https://www.canva.com/M/MAHXvFH-Msk",
+  "slots": [
+   "towers/goldmine.png"
+  ]
+ },
+ {
+  "n": 59,
+  "title": "Animação: Casca Cinzenta andando",
+  "media_id": "MAHXvbAWdfg",
+  "link": "https://www.canva.com/M/MAHXvbAWdfg",
+  "slots": [
+   "anims/husk/walk.sheet"
+  ]
+ },
+ {
+  "n": 60,
+  "title": "Animação: Devastador atacando",
+  "media_id": "MAHXvbNaa8A",
+  "link": "https://www.canva.com/M/MAHXvbNaa8A",
+  "slots": [
+   "anims/ravager/attack.sheet"
+  ]
  }
 ]

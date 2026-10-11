@@ -19,6 +19,10 @@ var pads: Array[Vector3] = []        # stone build spots beside the roads
 var pad_nodes: Array[Node3D] = []
 var rng := RandomNumberGenerator.new()
 var scen: Node3D                    # all static props, baked into ONE mesh at the end
+var painted := false                 # drawn battle map (Kingdom-Rush style 2D ground)
+var map_h := 0.0                     # world length of the painted map
+var map_v_end := 0.9
+const MAP_PITCH := 55.0              # camera pitch for painted maps (degrees)
 
 func build(r: Dictionary, parent: Node3D) -> void:
 	realm = r
@@ -26,6 +30,10 @@ func build(r: Dictionary, parent: Node3D) -> void:
 	rng.seed = hash(r.id)
 	scen = Node3D.new()
 	root.add_child(scen)
+	var tex := load("res://scripts/ui/ui_kit.gd").art("battle/%s.png" % r.id) as Texture2D
+	if tex and GameData.PAINTED.has(r.id):
+		_build_painted(tex)
+		return
 	_environment()
 	_ground()
 	_lanes()
@@ -36,6 +44,68 @@ func build(r: Dictionary, parent: Node3D) -> void:
 	_vegetation()
 	_scatter_props()
 	_bake_scenery()
+	_weather()
+
+# ── Painted battle map (2D drawing on the ground, roads traced on it) ──
+func map_to_world(uv: Vector2) -> Vector3:
+	return Vector3((uv.x - 0.5) * HALF_W * 2.0, 0, BASTION.z + (uv.y - map_v_end) * map_h)
+
+func _build_painted(tex: Texture2D) -> void:
+	painted = true
+	var data: Dictionary = GameData.PAINTED[realm.id]
+	map_v_end = float(data.get("end", 0.9))
+	var aspect := float(tex.get_height()) / float(tex.get_width())
+	map_h = HALF_W * 2.0 * aspect / sin(deg_to_rad(MAP_PITCH))
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("1a120a")
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color.WHITE
+	env.ambient_light_energy = 1.0
+	var we := WorldEnvironment.new()
+	we.environment = env
+	root.add_child(we)
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_texture = tex
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(HALF_W * 2.0, map_h)
+	var mi := MeshInstance3D.new()
+	mi.mesh = plane
+	mi.material_override = m
+	mi.position = map_to_world(Vector2(0.5, 0.5))
+	root.add_child(mi)
+	for path in data.lanes:
+		var pts := PackedVector3Array()
+		var raw: Array = path
+		var first: Vector2 = Vector2(raw[0][0], raw[0][1])
+		pts.append(map_to_world(first + Vector2(0, -0.06)))
+		for k in raw.size() - 1:
+			var p0: Vector2 = Vector2(raw[maxi(0, k - 1)][0], raw[maxi(0, k - 1)][1])
+			var p1: Vector2 = Vector2(raw[k][0], raw[k][1])
+			var p2: Vector2 = Vector2(raw[k + 1][0], raw[k + 1][1])
+			var p3: Vector2 = Vector2(raw[mini(raw.size() - 1, k + 2)][0], raw[mini(raw.size() - 1, k + 2)][1])
+			for s_i in 8:
+				var t := s_i / 8.0
+				var uv := 0.5 * ((2.0 * p1) + (-p0 + p2) * t + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t * t + (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t * t * t)
+				pts.append(map_to_world(uv))
+		var last: Array = raw[raw.size() - 1]
+		pts.append(map_to_world(Vector2(last[0], last[1])))
+		var c := Curve3D.new()
+		for p in pts: c.add_point(p)
+		lanes.append(c)
+		lane_points.append(pts)
+	for p in data.pads:
+		pads.append(map_to_world(Vector2(p[0], p[1])))
+		var n := Node3D.new()
+		n.position = pads[pads.size() - 1]
+		root.add_child(n)
+		pad_nodes.append(n)
+	if realm.hazard == "mud_fog":
+		for c in lanes:
+			for k in 3:
+				mud_zones.append(c.sample_baked(c.get_baked_length() * (0.25 + k * 0.22)))
 	_weather()
 
 ## Hundreds of props → one vertex-coloured mesh (+ ink outline): 2 draw calls.

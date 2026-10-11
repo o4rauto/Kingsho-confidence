@@ -72,6 +72,16 @@ func tower_unlocked(fam: String) -> bool:
 	return Save.data.cleared.size() >= int(TOWERS[fam].get("unlock_after", 0))
 const SPEC_MUL := 2.1
 
+## Painted battle maps (assets/art/battle/<realm>.png, portrait 9:16): roads traced
+## as polylines and build spots placed on the painted circles, in image
+## coordinates (0..1). "end" = where the roads reach the castle.
+const PAINTED := {
+	"broken_gate": {"end": 0.9,
+		"lanes": [[[0.36, 0.0], [0.36, 0.12], [0.355, 0.4], [0.36, 0.7], [0.37, 0.82], [0.45, 0.88], [0.5, 0.9]],
+			[[0.655, 0.0], [0.655, 0.12], [0.65, 0.4], [0.66, 0.7], [0.645, 0.82], [0.55, 0.88], [0.5, 0.9]]],
+		"pads": [[0.5, 0.175], [0.23, 0.24], [0.77, 0.24], [0.5, 0.33], [0.5, 0.52], [0.23, 0.6], [0.77, 0.6], [0.5, 0.68], [0.23, 0.78], [0.77, 0.78]]},
+}
+
 ## Troops you send up the roads, paid with COURAGE (refills over time).
 const COURAGE_MAX := 10.0
 const COURAGE_START := 5.0

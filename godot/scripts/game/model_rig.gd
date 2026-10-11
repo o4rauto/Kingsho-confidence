@@ -14,6 +14,15 @@ extends Node3D
 
 var anim_player: AnimationPlayer
 var is_placeholder := true
+var is_sprite := false
+var sprite: Sprite3D
+var _flip := false
+var _frames := {}          # anim -> Array[Texture2D] (hand-drawn frames)
+var _still: Texture2D
+var _fanim := ""
+var _ft := 0.0
+const FRAME_BODY := 256.0
+const FPS := {"idle": 6.0, "walk": 10.0, "fly": 12.0, "attack": 12.0, "cast": 10.0, "hit": 14.0, "die": 9.0}
 var current := "idle"
 var _t := 0.0
 var _phase := 0.0
@@ -39,6 +48,36 @@ func setup_glb(scene_root: Node3D, target_height: float) -> void:
 	_normalize(scene_root, target_height)
 	anim_player = _find_anim(scene_root)
 	play("idle")
+
+## 2D drawn character (Kingdom-Rush look): a billboard standing on the ground,
+## animated with squash & stretch, hops, lunges and tints.
+func setup_sprite(tex: Texture2D, height: float, shadow: Material, frames := {}) -> void:
+	is_placeholder = false
+	is_sprite = true
+	_height = height
+	_frames = frames
+	_still = tex
+	sprite = Sprite3D.new()
+	sprite.texture = tex
+	sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
+	sprite.shaded = false
+	sprite.double_sided = true
+	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	var th := float(tex.get_height())
+	sprite.pixel_size = height / th
+	sprite.centered = true
+	sprite.offset = Vector2(0, th / 2.0)
+	add_child(sprite)
+	var blob := MeshInstance3D.new()
+	var c := CylinderMesh.new(); c.top_radius = 0.45; c.bottom_radius = 0.45; c.height = 0.01; c.radial_segments = 16
+	blob.mesh = c
+	blob.material_override = shadow
+	blob.position.y = 0.03
+	var w := clampf(height * 0.38, 0.4, 2.2)
+	blob.scale = Vector3(w, 1, w * 0.6)
+	add_child(blob)
+	_t = randf() * 10.0
 
 func setup_placeholder(body: Node3D, wings: Array[Node3D] = [], limbs := {}) -> void:
 	is_placeholder = true
@@ -70,6 +109,9 @@ func play(name: String) -> void:
 		current = name
 
 func _process(delta: float) -> void:
+	if is_sprite:
+		_animate_sprite(delta)
+		return
 	if not is_placeholder or _body == null:
 		return
 	_t += delta
@@ -108,6 +150,72 @@ func _process(delta: float) -> void:
 		_die_t += delta
 		rotation.z = lerpf(rotation.z, PI / 2.2, minf(1.0, delta * 8.0))
 		position.y = lerpf(position.y, -0.2 * h, minf(1.0, delta * 3.0))
+
+func _animate_sprite(delta: float) -> void:
+	_t += delta
+	_attack_t = maxf(0.0, _attack_t - delta)
+	_cast_t = maxf(0.0, _cast_t - delta)
+	_hit_t = maxf(0.0, _hit_t - delta)
+	var running := current == "run" or current == "fly"
+	_run_w = move_toward(_run_w, 1.0 if running else 0.0, delta * 6.0)
+	_phase += delta * lerpf(2.4, 11.0, _run_w)
+	# Facing: game code turns the rig; the art faces right, so flip when going left.
+	var fx := sin(rotation.y)
+	if absf(fx) > 0.2: _flip = fx < 0.0
+	sprite.flip_h = _flip
+	var dir := -1.0 if _flip else 1.0
+	var atk := _attack_curve()
+	var cast_k := sin(clampf(1.0 - _cast_t / CAST_TIME, 0.0, 1.0) * PI) if _cast_t > 0.0 else 0.0
+	var hit_k := _hit_t / HIT_TIME
+	var hop := absf(sin(_phase)) * 0.09 * _height * _run_w
+	var breathe := sin(_t * 2.4) * 0.025
+	var sy := 1.0 + breathe - hit_k * 0.18 + cast_k * 0.12 + absf(cos(_phase)) * 0.06 * _run_w
+	var sx := 1.0 - breathe * 0.6 + hit_k * 0.15 + atk * 0.08 + sin(_phase) * 0.05 * _run_w
+	sprite.scale = sprite.scale.lerp(Vector3(sx, sy, 1.0), minf(1.0, delta * 22.0))
+	sprite.position = Vector3(atk * 0.25 * _height * dir - hit_k * 0.1 * dir, hop, 0)
+	if not _frames.is_empty():
+		_step_frames(delta)
+	var tint := Color.WHITE
+	if _hit_t > 0.0: tint = Color(1.0, 0.55, 0.55)
+	elif _cast_t > 0.0: tint = Color(1.0, 1.0, 0.75)
+	if current == "die":
+		_die_t += delta
+		if _frames.has("die"):
+			tint.a = clampf(1.6 - _die_t * 1.5, 0.0, 1.0)
+		else:
+			tint.a = clampf(1.0 - _die_t * 3.0, 0.0, 1.0)
+			sprite.scale = Vector3(1.3, maxf(0.05, 1.0 - _die_t * 4.0), 1.0)
+	sprite.modulate = tint
+
+## Which drawn animation is showing right now (one-shots win over loops).
+func _want_anim() -> String:
+	if current == "die": return "die"
+	if _attack_t > 0.0 and _frames.has("attack"): return "attack"
+	if _cast_t > 0.0: return "cast" if _frames.has("cast") else ("attack" if _frames.has("attack") else "")
+	if _hit_t > 0.0 and _frames.has("hit"): return "hit"
+	if current == "fly" and _frames.has("fly"): return "fly"
+	if current == "run" or current == "fly": return "walk" if _frames.has("walk") else ("fly" if _frames.has("fly") else "")
+	return "idle"
+
+func _step_frames(delta: float) -> void:
+	var a := _want_anim()
+	if a != _fanim:
+		_fanim = a
+		_ft = 0.0
+	else:
+		_ft += delta
+	var list: Array = _frames.get(a, [])
+	var tex: Texture2D = _still
+	if not list.is_empty():
+		var i := int(_ft * FPS.get(a, 10.0))
+		i = mini(i, list.size() - 1) if a in ["die", "attack", "cast", "hit"] else i % list.size()
+		tex = list[i]
+	if sprite.texture != tex:
+		sprite.texture = tex
+		var th := float(tex.get_height())
+		# Frames are normalised so the body is FRAME_BODY px tall (split_sheet.py).
+		sprite.pixel_size = _height / (th if tex == _still else FRAME_BODY)
+		sprite.offset = Vector2(0, th / 2.0)
 
 var _scale_base := Vector3.ZERO
 func _body_scale_base() -> Vector3:

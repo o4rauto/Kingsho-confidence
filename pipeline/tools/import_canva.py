@@ -17,6 +17,7 @@ While waiting: s+Enter skips the current image, q+Enter quits.
 Needs Pillow:  sudo apt install python3-pil   (or pip install pillow)
 """
 import argparse
+import os
 import json
 import select
 import sys
@@ -25,6 +26,7 @@ from collections import deque
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 ART = ROOT / "godot" / "assets" / "art"
 LIST = ROOT / "pipeline" / "canva_art.json"
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp"}
@@ -66,12 +68,21 @@ def place(src, slots):
     im = Image.open(src)
     im.load()
     first = slots[0]
-    transparent = first.startswith("portraits/") or first == "ui/logo.png"
+    if first.endswith(".sheet"):     # anims/<id>/<anim>.sheet  -> 4 animation frames
+        from split_sheet import split
+        cid, anim = first[len("anims/"):-len(".sheet")].split("/")
+        n = split(im, cid, anim, 4)
+        print("   OK -> %d quadros em anims/%s/%s_*.png" % (n, cid, anim))
+        return
+    transparent = first.startswith(("portraits/", "towers/", "anims/", "fx/")) or first == "ui/logo.png"
     if transparent:
         im = strip_white(im)
+        box = im.getbbox()           # trim empty margins: feet sit on the image bottom
+        if box:
+            im = im.crop(box)
     else:
         im = im.convert("RGB")
-    im.thumbnail((1024, 1024))
+    im.thumbnail((1536, 1536) if first.startswith("realms/") else (1024, 1024))
     for s in slots:
         out = ART / s
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -82,6 +93,8 @@ def place(src, slots):
 def _ok(path):
     """A slot counts as done only with a full-size image (the 200px Canva
     previews placed by Claude are provisional and get replaced)."""
+    if path.suffix == ".sheet":
+        return path.with_name(path.stem + "_0.png").exists() and not path.with_suffix(".preview").exists()
     if not path.exists():
         return False
     try:

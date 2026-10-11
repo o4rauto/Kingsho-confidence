@@ -100,9 +100,10 @@ func _ready() -> void:
 	world.build(realm, self)
 	for i in world.pads.size(): pad_owner.append(null)
 	_camera()
-	var bastion := AssetLib.make("bastion", "bastion", Color.WHITE, 3.2)
-	bastion.position = BASTION_POS + Vector3(0, 0, 0.8)
-	add_child(bastion)
+	if not world.painted:
+		var bastion := AssetLib.make("bastion", "bastion", Color.WHITE, 3.2)
+		bastion.position = BASTION_POS + Vector3(0, 0, 0.8)
+		add_child(bastion)
 	warden = WardenScript.new()
 	warden.position = BASTION_POS + Vector3(0, 0, -3.5)
 	add_child(warden)
@@ -144,6 +145,20 @@ func _bar_mat(c: Color) -> StandardMaterial3D:
 
 func _camera() -> void:
 	cam = Camera3D.new()
+	if world.painted:
+		# Fixed 2D-style view over the painted map (orthographic, like Kingdom Rush).
+		cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+		cam.keep_aspect = Camera3D.KEEP_WIDTH
+		cam.size = WorldBuilder.HALF_W * 2.0
+		var pitch := deg_to_rad(WorldBuilder.MAP_PITCH)
+		var center := world.map_to_world(Vector2(0.5, 0.5))
+		cam.position = center + Vector3(0, sin(pitch), cos(pitch)) * 40.0
+		cam.rotation = Vector3(-pitch, 0, 0)
+		cam.far = 200.0
+		add_child(cam)
+		cam.current = true
+		_cam_base = cam.position
+		return
 	cam.keep_aspect = Camera3D.KEEP_WIDTH
 	cam.fov = 44.0
 	var tilt: float = {"spiral": 1.0, "converge": -1.0, "serpent": 0.5}.get(realm.layout, 0.0)

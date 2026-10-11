@@ -81,9 +81,49 @@ func baked_mat() -> StandardMaterial3D:
 
 ## kind: warden | melee | ranged | tower | support | golem | wolf | queen
 ##       runner | brute | flyer | caster | boss | bastion
+## Drawn (2D) art for a character id, or null.
+func sprite_art(id: String) -> Texture2D:
+	var alias := {"footman": "troop_militia", "bowman": "troop_bowmen"}
+	return UIKit.art("portraits/%s.png" % alias.get(id, id))
+
+var _shadow_mat: StandardMaterial3D
+## Hand-drawn frame-by-frame animations: assets/art/anims/<id>/<anim>_<k>.png
+## (anim = idle | walk | attack | cast | hit | die | fly). Missing ones fall
+## back to the single drawing + procedural squash & stretch.
+const ANIMS := ["idle", "walk", "attack", "cast", "hit", "die", "fly"]
+var _frames_cache := {}
+func anim_frames(id: String) -> Dictionary:
+	if _frames_cache.has(id):
+		return _frames_cache[id]
+	var out := {}
+	var alias := {"footman": "troop_militia", "bowman": "troop_bowmen"}
+	var key: String = alias.get(id, id)
+	for a in ANIMS:
+		var list: Array[Texture2D] = []
+		for k in 16:
+			var t := UIKit.art("anims/%s/%s_%d.png" % [key, a, k])
+			if t == null: break
+			list.append(t)
+		if not list.is_empty():
+			out[a] = list
+	_frames_cache[id] = out
+	return out
+
+func shadow_mat() -> StandardMaterial3D:
+	if _shadow_mat == null:
+		_shadow_mat = StandardMaterial3D.new()
+		_shadow_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_shadow_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_shadow_mat.albedo_color = Color(0.05, 0.03, 0.0, 0.32)
+	return _shadow_mat
+
 func make(id: String, kind: String, color: Color, height: float, evolved := false) -> ModelRig:
 	var rig: ModelRig = ModelRigScript.new()
 	rig.name = id
+	var drawn := sprite_art(id)
+	if drawn and not has_model(id):
+		rig.setup_sprite(drawn, height * (1.35 if evolved else 1.2), shadow_mat(), anim_frames(id))
+		return rig
 	if has_model(id):
 		var inst := _load_glb(MODEL_DIR + id + ".glb")
 		if inst:
@@ -667,6 +707,21 @@ func _bastion(b: Node3D, h: float) -> void:
 ## family: archer | barracks | mage | artillery · tier 0..2 · spec: champion id or ""
 func make_tower(family: String, tier: int, spec := "") -> Node3D:
 	var root := Node3D.new()
+	var art := UIKit.art("towers/%s.png" % family)
+	if art:
+		var spr := Sprite3D.new()
+		spr.texture = art
+		spr.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+		spr.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
+		spr.shaded = false
+		spr.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		var h: float = [3.1, 3.5, 3.9][tier]
+		spr.pixel_size = h / float(art.get_height())
+		spr.offset = Vector2(0, art.get_height() / 2.0)
+		if tier == 2: spr.modulate = Color(1.08, 1.04, 0.92)
+		root.add_child(spr)
+		root.set_meta("drawn", true)
+		return root
 	var body := Node3D.new()
 	root.add_child(body)
 	var key := "tower|%s|%d|%s" % [family, tier, spec]

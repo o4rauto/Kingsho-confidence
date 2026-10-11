@@ -65,8 +65,21 @@ func _rebuild() -> void:
 	if shooter: shooter.queue_free()
 	shooter = null
 	model = AssetLib.make_tower(family, tier, spec.get("id", ""))
-	model.position.y = 0.26
+	model.position.y = 0.0 if model.has_meta("drawn") else 0.26
 	add_child(model)
+	if model.has_meta("drawn"):
+		# The drawing already includes its defenders; master = golden glow + star.
+		if master:
+			var star := Label3D.new()
+			star.text = "★"
+			star.font_size = 96
+			star.outline_size = 16
+			star.modulate = Color("ffcf3d")
+			star.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			star.position.y = 3.6
+			star.pixel_size = 0.01
+			model.add_child(star)
+		return
 	if master:
 		var crown := MeshInstance3D.new()
 		var t := TorusMesh.new(); t.inner_radius = 1.0; t.outer_radius = 1.18; t.rings = 24; t.ring_segments = 4
