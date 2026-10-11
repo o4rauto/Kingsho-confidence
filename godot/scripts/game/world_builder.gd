@@ -33,6 +33,7 @@ func build(r: Dictionary, parent: Node3D) -> void:
 	_set_pieces()
 	_mountains()
 	_dressing()
+	_vegetation()
 	_scatter_props()
 	_bake_scenery()
 	_weather()
@@ -73,9 +74,12 @@ func _ground() -> void:
 	noise.seed = rng.randi()
 	noise.frequency = {"desert": 0.02, "ice": 0.03, "volcano": 0.08}.get(realm.biome, 0.05)
 	var ramp := Gradient.new()
-	ramp.set_color(0, realm.ground2)
-	ramp.set_color(1, realm.ground.lightened(0.08))
-	ramp.add_point(0.55, realm.ground)
+	# Painted-cartoon ground: dark clumps, mid tone, a few sunny patches.
+	ramp.set_color(0, realm.ground2.darkened(0.12))
+	ramp.set_color(1, realm.ground.lightened(0.1))
+	ramp.add_point(0.35, realm.ground2)
+	ramp.add_point(0.6, realm.ground)
+	ramp.interpolation_mode = Gradient.GRADIENT_INTERPOLATE_CONSTANT
 	var tex := NoiseTexture2D.new()
 	tex.width = 256; tex.height = 256
 	tex.noise = noise
@@ -83,7 +87,7 @@ func _ground() -> void:
 	tex.seamless = true
 	var m := StandardMaterial3D.new()
 	m.albedo_texture = tex
-	m.uv1_scale = Vector3(7, 12, 1)
+	m.uv1_scale = Vector3(3.5, 5, 1)
 	m.roughness = 1.0
 	m.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
 	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
@@ -392,6 +396,80 @@ func _mountains() -> void:
 		_cone(p + Vector3(r * 0.4, 0, r * 0.3), r * 0.6, h * 0.6, col.lightened(0.08), 7)
 		var capm := AssetLib._cyl(scen, 0.0, r * 0.32, h * 0.3, p + Vector3(0, h * 0.85, 0), cap, 1.5 if realm.biome == "volcano" else 0.0, 7)
 		capm.rotation.y = rng.randf() * TAU
+
+# ── Lush vegetation: a dense border + tufts, bushes and flowers everywhere ──
+func _vegetation() -> void:
+	var b: String = realm.biome
+	var lush := b in ["ruins", "forest", "swamp", "keep", "mire", "sunspire"]
+	# Border: the field is framed by a thick wall of trees / pines / cacti / crystals.
+	for side in [-1.0, 1.0]:
+		var z := -27.0
+		while z < 6.0:
+			for row in 2:
+				var p := Vector3(side * (HALF_W + 1.4 + row * 1.6 + rng.randf_range(-0.4, 0.6)), 0, z + rng.randf_range(-0.6, 0.6) + row * 0.8)
+				if dist_to_lanes(p) < 1.5 or near_pad(p, 1.6) or p.distance_to(BASTION) < 3.6: continue
+				_border_plant(p)
+			z += 1.7
+	for k in 14:
+		var p := Vector3(rng.randf_range(-HALF_W - 2.0, HALF_W + 2.0), 0, rng.randf_range(-30.0, -26.0))
+		if dist_to_lanes(p) > 1.6: _border_plant(p)
+	# Field filler: lots of small stuff so nothing looks bare.
+	var tufts := 140 if lush else 70
+	for k in tufts:
+		var p := _spot(1.0)
+		if p == Vector3.INF: continue
+		match b:
+			"desert": _dry_tuft(p)
+			"volcano": _rock(p, Color("3a2e2c")) if k % 3 == 0 else _dry_tuft(p)
+			"ice": _snow_tuft(p)
+			"rift": _crystal_tuft(p)
+			_: _grass(p)
+	if lush:
+		for k in 26:
+			var p := _spot(1.4)
+			if p != Vector3.INF: _bush(p, realm.ground.darkened(0.15).lerp(Color("2f7a2a"), 0.4))
+		for k in 22:
+			var p := _spot(1.2)
+			if p != Vector3.INF: _flowers(p)
+
+func _border_plant(p: Vector3) -> void:
+	match realm.biome:
+		"ice": _pine(p, true)
+		"desert":
+			if rng.randf() < 0.5: _cactus(p)
+			else: _rock(p, Color("c88a48"))
+		"volcano":
+			if rng.randf() < 0.6: _rock(p, Color("4a3a36"))
+			else: _stump(p)
+		"rift": _prop_crystal(p + Vector3(0, 0.4, 0), Color("b07aff"), rng.randf_range(0.8, 1.4))
+		"forest": _tree(p, rng.randf() < 0.12, [Color("d8742a"), Color("c8a030"), Color("6a9a2a"), Color("b8452a")][rng.randi() % 4])
+		"mire":
+			if rng.randf() < 0.5: _mushroom(p)
+			else: _tree(p, false, Color("3f7a2a"))
+		"sunspire": _tree(p, false, Color("9ac04a"))
+		"swamp": _tree(p, false, Color("3f7a4a"))
+		_:
+			if rng.randf() < 0.75: _tree(p, false, Color("3f9a34").lerp(Color("2a7a2a"), rng.randf()))
+			else: _pine(p, false)
+
+func _dry_tuft(p: Vector3) -> void:
+	for k in 3:
+		var c := _cone(p + Vector3(rng.randf_range(-0.2, 0.2), 0, rng.randf_range(-0.2, 0.2)), 0.05, rng.randf_range(0.25, 0.4), Color("b89a48"), 4)
+		c.rotation.z = rng.randf_range(-0.5, 0.5)
+
+func _snow_tuft(p: Vector3) -> void:
+	if rng.randf() < 0.5:
+		_sphere(p + Vector3(0, 0.08, 0), rng.randf_range(0.18, 0.32), Color("ffffff")).scale = Vector3(1.3, 0.5, 1.0)
+	else:
+		_cone(p, 0.22, 0.5, Color("2f6a4a"), 6)
+
+func _crystal_tuft(p: Vector3) -> void:
+	var c := _cone(p, 0.1, rng.randf_range(0.3, 0.6), Color("c8a0ff"), 4)
+	c.rotation.z = rng.randf_range(-0.4, 0.4)
+
+func _stump(p: Vector3) -> void:
+	_prop_cyl(p, 0.22, 0.45, Color("2a2220"))
+	_sphere(p + Vector3(0, 0.5, 0), 0.08, Color("ff6a1a"), 2.0)
 
 # ── Set dressing: carts, boats, fences, barrels, wells, flowers… ──
 func _free_spot(want: Vector3) -> Vector3:

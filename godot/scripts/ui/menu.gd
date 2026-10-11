@@ -19,7 +19,7 @@ func _ready() -> void:
 		var art := TitleArt.new()
 		UIKit.full_rect(art)
 		add_child(art)
-	_build_heroes()
+		_build_heroes()   # painted art already has its own scene
 
 	var top := UIKit.sound_toggles()
 	top.position = Vector2(20, 24)

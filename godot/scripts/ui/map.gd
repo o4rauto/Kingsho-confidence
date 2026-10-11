@@ -37,7 +37,7 @@ func _ready() -> void:
 	_bottom_bar()
 	area.resized.connect(_place_nodes)
 	call_deferred("_place_nodes")
-	if not Save.data.intro_seen:
+	if not Save.data.intro_seen and not OS.get_cmdline_user_args().has("--nointro"):
 		call_deferred("_story")
 
 func _top_bar() -> void:
