@@ -22,3 +22,12 @@ ios/
 # Playwright (dev-only smoke testing)
 test-results/
 playwright-report/
+
+# Godot (import cache; also where export credentials/keystore passwords live)
+godot/.godot/
+godot/*.translation
+*.keystore
+*.jks
+
+# Python
+__pycache__/

@@ -5,8 +5,8 @@
 > loop, built to ship on Android.
 
 Portrait, mobile-first, 60 FPS, **zero external assets** — every sprite, sound,
-and level is generated from code. Built with **Phaser 3 + TypeScript + Vite** and
-packaged for the Play Store with **Capacitor**.
+and level is generated from code. Built with **Godot 4.3** and an AI asset pipeline
+(ChatGPT → Tripo → Blender → Mixamo), shipped to Android.
 
 ---
 
@@ -54,13 +54,14 @@ Pick a Realm ─▶ Assemble deck (4 champions) ─▶ Descend
 
 ## 4. Content
 
-- **5 unlockable Realms** — The Broken Gate, Emberfall Wood, The Sunken March,
-  Hollow Keep, The Rift Throne — each with its own palette, lane count, wave
-  tables, and boss. Clearing one unlocks the next.
+- **10 unlockable Realms**, each a different game (see §8): lane count and
+  shape, biome, sky, weather, hazard, enemy roster, boss and music. Clearing
+  one unlocks the next.
 - **10 champions** across 4 roles (melee / ranged / tower / support) and 4
   rarities, each with a distinct silhouette, ability, and **evolution** form.
-- **9 enemy archetypes** including 3 escalating bosses.
-- **18 Boons** — damage, multishot, pierce, crit, lifesteal, chain lightning,
+- **34 enemies** across 10 biome rosters with traits (armor, shields, regen,
+  splitting, healing) and **10 unique bosses** with signature abilities.
+- **17 Boons** — damage, multishot, pierce, crit, lifesteal, chain lightning,
   burn, frost, Aether regen, Bastion repair, and more.
 
 ## 5. Progression & Economy (the money model)
@@ -78,86 +79,49 @@ bundles, a "double first-clear rewards" rewarded ad, cosmetic Warden skins,
 and a battle-pass over the Realm campaign. Nothing is pay-to-win by design —
 skill (positioning + boon drafting) carries every run.
 
-## 6. Running it
+## 6. Running it (Godot 4.3)
 
-```bash
-npm install
-npm run dev        # play in the browser at http://localhost:5173
-npm run build      # typecheck + production bundle into dist/
-npm run preview    # serve the production build
-```
+The game is the Godot project in [`godot/`](./godot). Open `godot/project.godot`
+in **Godot 4.3** and press Play. Portrait, GL Compatibility renderer (runs on
+weak GPUs and nearly every Android phone).
 
-Everything is generated at runtime, so there are no asset downloads.
+The original Phaser prototype lives in `web-prototype/` for reference.
 
-## 7. Shipping to Android (Google Play)
+## 7. Building the art — the AI asset pipeline
 
-The web build is wrapped natively with Capacitor. On a machine with **Android
-Studio + JDK 17** installed:
+Built with the same method as the reference video: **ChatGPT images → Tripo 3D
+parts → assembled in Blender → AccuRIG rig → Mixamo animations → custom
+animations by Claude via the Blender MCP → engine.** Step-by-step (Portuguese):
+[`pipeline/README.md`](./pipeline/README.md).
 
-```bash
-npm run build                 # 1. build the web game
-npx cap add android           # 2. scaffold the native project (first time only)
-npm run cap:sync              # 3. copy dist/ into the native shell
-npm run android:open          # 4. open Android Studio
-# In Android Studio: Build ▸ Generate Signed Bundle / APK ▸ Android App Bundle (.aab)
-```
+Every character, boss, prop, image and sound has an **asset slot**: drop the
+file in place and the game swaps the procedural placeholder for it — no code
+changes. The game is fully playable before any art exists.
 
-`npm run android:build` chains build → sync → `gradlew bundleRelease` once a
-signing config is in place.
+## 8. Ten realms, ten different games
 
-### Launch checklist
+| # | Realm | Lanes | Hazard | Boss |
+|---|---|---|---|---|
+| 1 | The Broken Gate | 2 straight | tutorial | The Maw (charge) |
+| 2 | Emberfall Wood | 2 zigzag | falling embers | Cinder Treant (summons) |
+| 3 | The Sunken March | 3 serpent | mud + fog | The Drowned King (shield) |
+| 4 | Hollow Keep | 2 crossing | ballista targets you | Siege Titan (slam) |
+| 5 | The Rift Throne | 3 forking | rift portals | Rift Sovereign (summons) |
+| 6 | Frostpeak Pass | 1 serpent | ice + blizzards | Frost Wyrm (charge) |
+| 7 | Sunscar Dunes | 4 converging | sandstorms + oasis | Sand Colossus (splits) |
+| 8 | Ashen Caldera | 3 zigzag | eruptions hit everyone | Magma Tyrant (slam) |
+| 9 | Gloomroot Mire | 3 braided | root snares | Bog Mother (summons) |
+| 10 | The Shattered Sunspire | 3 spiral | rotating sunbeam | The Eclipse (shield) |
 
-- [ ] Set a permanent `appId` in `capacitor.config.ts` (currently
-      `com.aethelgard.bastionrush`).
-- [ ] Create an upload **keystore** and wire a `release` signing config in
-      `android/app/build.gradle`. **Never commit the keystore or its passwords.**
-- [ ] Provide app icons & the splash screen (`npx @capacitor/assets generate`).
-- [ ] Set `versionCode` / `versionName` per release.
-- [ ] Confirm `targetSdk` meets the current Play requirement.
-- [ ] Create the app in **Google Play Console** (requires a paid developer
-      account) and complete the store listing, content rating, data-safety form,
-      and privacy policy.
-- [ ] Upload the signed `.aab` to a testing track, then promote to production.
-- [ ] *(Optional, for monetization)* integrate a billing/ads SDK and wire the
-      IAP/rewarded-ad slots described in §5.
+Each also has its own palette, sky, fog, light, weather, set pieces, enemy
+roster with traits (armor, shields, regen, splitting, healing) and music.
 
-> These steps require **your** developer account, signing keys, and store assets,
-> so they must be done on your side — the game itself is build-ready.
+## 9. Shipping to Android
 
-## 8. Architecture
-
-```
-src/
-  main.ts             Phaser bootstrap & scene list
-  config.ts           Global tuning (Aether, Warden, Bastion, depths)
-  types.ts            Shared data contracts + run modifiers
-  core/
-    Palette.ts        The art direction, in one file
-    Art.ts            Procedural texture forge (every sprite, generated)
-    Audio.ts          Procedural WebAudio SFX + ambient music
-    Save.ts           localStorage persistence
-    Meta.ts           Leveling, evolution, unlocks, run settlement
-    UI.ts / Backdrop.ts / RNG.ts
-  data/
-    champions.ts enemies.ts boons.ts realms.ts   (data-driven content)
-  game/
-    Arena.ts          Interface entities use to talk to the battlefield
-    Enemy.ts Champion.ts Warden.ts Projectile.ts
-  scenes/
-    Boot / Menu / RealmSelect / Loadout / Collection / Game / Result / Settings
-```
-
-Content is **data-driven** — new champions, enemies, boons, and realms are added
-by editing the tables in `src/data/`, no engine changes required.
-
-## 9. Design notes & roadmap
-
-Shipped: full core loop, meta-progression, 5 realms, 10 champions, procedural
-art & audio, save system, Android packaging config, verified boot + combat +
-deploy pipelines via automated headless smoke tests.
-
-Next candidates: more realms & champions, daily challenges, champion skins,
-haptics tuning, a tutorial overlay for first-time players, and cloud save.
+Godot: *Manage Export Templates* (4.3) → *Project ▸ Export ▸ Android*, configure
+the Android SDK and a release keystore (**never commit it**), export an `.aab`,
+upload to Google Play Console. Monetization slots (IAP, rewarded ads) remain
+designed-in but not wired.
 
 ---
 
