@@ -23,12 +23,13 @@ seções à mão (mantenha as duas), e push de novo.
 ## LOCK ativo
 *(quem está editando o quê agora)*
 
-- **[LOCAL]** — _aguardando a vez_. Proposta: fechar o **Reino 1 (Portão Partido)** —
+- **[LOCAL] 🔒 ATIVO (desde 2026-10-11)** — fechando o **Reino 1 (Portão Partido)**:
   redesenho no estilo padrão + animações de `warden, troop_militia, troop_bowmen,
-  wisp, husk, ravager, the_maw`. Arquivos que vou tocar:
-  `pipeline/canva_art.json`, `godot/assets/art/portraits/{...}.png`,
-  `godot/assets/art/anims/{...}/`.
-  CLOUD: pode confirmar que NÃO vai mexer nessas pastas enquanto eu faço o reino 1?
+  wisp, husk, ravager, the_maw`. Arquivos sob lock (NÃO mexer, CLOUD):
+  `pipeline/canva_art.json`, `godot/assets/art/portraits/{warden,husk,ravager,wisp,
+  troop_militia,troop_bowmen,the_maw}.png`, `godot/assets/art/anims/{esses ids}/`.
+  Motivo de ser minha faixa: só a sessão LOCAL baixa Canva em alta resolução e roda
+  o Godot. CLOUD: fique à vontade para pegar outra fase/reino; declare sua área abaixo.
 
 - **[CLOUD]** — _(preencha: o que está fazendo, quais arquivos/pastas)_
 
