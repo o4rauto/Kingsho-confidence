@@ -39,13 +39,14 @@ seções à mão (mantenha as duas), e push de novo.
 ## LOCK ativo
 *(quem está editando o quê agora)*
 
-- **[LOCAL] 🔒 ATIVO (desde 2026-10-11)** — fechando o **Reino 1 (Portão Partido)**:
-  redesenho no estilo padrão + animações de `warden, troop_militia, troop_bowmen,
-  wisp, husk, ravager, the_maw`. Arquivos sob lock (NÃO mexer, CLOUD):
-  `pipeline/canva_art.json`, `godot/assets/art/portraits/{warden,husk,ravager,wisp,
-  troop_militia,troop_bowmen,the_maw}.png`, `godot/assets/art/anims/{esses ids}/`.
-  Motivo de ser minha faixa: só a sessão LOCAL baixa Canva em alta resolução e roda
-  o Godot. CLOUD: fique à vontade para pegar outra fase/reino; declare sua área abaixo.
+- **[LOCAL] 🔒 ATIVO (desde 2026-10-11)** — fechando o **Reino 1 (Portão Partido)** +
+  **NOVA ARQUITETURA DE ANIMAÇÃO** (ver diário). Arquivos sob lock (NÃO mexer, CLOUD):
+  `pipeline/canva_art.json`, `godot/assets/art/portraits/{...}.png`,
+  `godot/assets/art/anims/`, `godot/assets/art/rigs/` (novo),
+  e os scripts de personagem/animação: `scripts/game/model_rig.gd`,
+  `scripts/autoload/asset_lib.gd`, e o uso de ModelRig em
+  `scripts/game/{warden,enemy,soldier,troop,champion}.gd`.
+  Motivo: só a sessão LOCAL baixa Canva em alta resolução e roda o Godot.
 
 - **[CLOUD]** — em espera, **sem lock**. Não vou mexer em nada do Reino 1. Antes de
   pegar qualquer coisa, aviso no Diário de intenções.
@@ -58,6 +59,20 @@ seções à mão (mantenha as duas), e push de novo.
   Arquivos: ver LOCK acima. → liberado pelo desenvolvedor, pode começar.
 - [CLOUD] 2026-10-11 — VOU FAZER: só editar este COORDENACAO.md (regra de avisar antes).
   → FEITO.
+- [LOCAL] 2026-10-11 — MUDANÇA IMPORTANTE aprovada pelo desenvolvedor: o pipeline de
+  personagens deixa de ser "1 PNG chapado + folha de 4 quadros" (que ele considerou
+  arte-conceito dura e mal recortada) e passa a ser **animação de recorte / esqueleto
+  2D estilo Kingdom Rush**: 1 desenho limpo → cortado em peças → montado num fantoche
+  (peças = Sprite3D) animado por ossos de forma procedural (andar/atacar/morrer),
+  reaproveitável entre personagens. VOU FAZER agora: (1) novo `setup_puppet` +
+  `_animate_puppet` em `scripts/game/model_rig.gd`; (2) carregador de rig em
+  `scripts/autoload/asset_lib.gd` (lê `assets/art/rigs/<id>/rig.json`); (3) prova no
+  **warden** (peças em `assets/art/rigs/warden/`), print da batalha pro dev aprovar
+  antes de escalar. Depois atualizo o `pipeline/PADRAO_DE_ARTE.md` pra essa estrutura.
+  → EM ANDAMENTO.
+  ⚠️ CLOUD: a Fase C (projéteis 2D em `projectile.gd`/`battle.gd`→ring_fx/_bolt/_puddle)
+  é independente e pode ir — MAS evite por ora `model_rig.gd`, `asset_lib.gd` e o trecho
+  de ModelRig de `enemy/warden/soldier/troop/champion.gd`, que estou reescrevendo.
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
