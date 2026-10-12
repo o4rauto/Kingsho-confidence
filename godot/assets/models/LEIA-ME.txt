@@ -1,0 +1,4 @@
+Modelos 3D do jogo (.glb). O nome do arquivo = id do personagem/inimigo/chefe.
+Ex.: warden.glb, pyre_knight.glb, the_maw.glb, bastion.glb, prop_forest_tree.glb
+Gerados por pipeline/blender/export_for_godot.py. Animacoes: idle, run, attack, hit, die (cast, fly).
+O jogo troca o boneco provisorio pelo seu modelo automaticamente. Lista de ids: pipeline/game_content.json

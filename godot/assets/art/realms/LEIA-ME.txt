@@ -1,0 +1,1 @@
+Arte 2D gerada por pipeline/tools/generate_art.py (ChatGPT). Pode tambem colocar suas proprias imagens PNG aqui com os mesmos nomes.

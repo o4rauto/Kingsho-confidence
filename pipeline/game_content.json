@@ -1,0 +1,576 @@
+{
+	"boons": [
+		{
+			"desc": "+22% Warden damage",
+			"id": "ember_rounds",
+			"name": "Ember Rounds",
+			"rarity": "common"
+		},
+		{
+			"desc": "+18% attack speed",
+			"id": "quickdraw",
+			"name": "Quickdraw",
+			"rarity": "common"
+		},
+		{
+			"desc": "+15% move speed",
+			"id": "swift_boots",
+			"name": "Swift Boots",
+			"rarity": "common"
+		},
+		{
+			"desc": "+40 max health",
+			"id": "ironheart",
+			"name": "Ironheart",
+			"rarity": "common"
+		},
+		{
+			"desc": "+20% range",
+			"id": "long_sight",
+			"name": "Long Sight",
+			"rarity": "common"
+		},
+		{
+			"desc": "Arrows pierce +1 enemy",
+			"id": "piercing_shot",
+			"name": "Piercing Shot",
+			"rarity": "rare"
+		},
+		{
+			"desc": "Fire +1 extra arrow",
+			"id": "twin_shot",
+			"name": "Twin Shot",
+			"rarity": "rare"
+		},
+		{
+			"desc": "+12% crit chance",
+			"id": "keen_eye",
+			"name": "Keen Eye",
+			"rarity": "rare"
+		},
+		{
+			"desc": "Heal 6% of damage dealt",
+			"id": "bloodpact",
+			"name": "Bloodpact",
+			"rarity": "epic"
+		},
+		{
+			"desc": "+30% Aether regen",
+			"id": "aether_well",
+			"name": "Aether Well",
+			"rarity": "rare"
+		},
+		{
+			"desc": "Champions +25% damage",
+			"id": "warhorn",
+			"name": "Warhorn",
+			"rarity": "rare"
+		},
+		{
+			"desc": "Champions +30% health",
+			"id": "oaken_ward",
+			"name": "Oaken Ward",
+			"rarity": "rare"
+		},
+		{
+			"desc": "Repair Bastion +8 per wave",
+			"id": "masons_guild",
+			"name": "Mason's Guild",
+			"rarity": "epic"
+		},
+		{
+			"desc": "Hits arc to 2 enemies",
+			"id": "chain_lightning",
+			"name": "Chain Lightning",
+			"rarity": "epic"
+		},
+		{
+			"desc": "Hits set enemies alight",
+			"id": "wildfire",
+			"name": "Wildfire",
+			"rarity": "epic"
+		},
+		{
+			"desc": "Hits slow enemies",
+			"id": "hoarfrost",
+			"name": "Hoarfrost",
+			"rarity": "rare"
+		},
+		{
+			"desc": "+35% gold this run",
+			"id": "gilded_touch",
+			"name": "Gilded Touch",
+			"rarity": "common"
+		}
+	],
+	"champions": [
+		{
+			"ability": "Frontliner: blocks and slows the lane.",
+			"color": "ff8a3d",
+			"id": "pyre_knight",
+			"lore": "Sworn to burn twice as bright so the Bastion never goes dark.",
+			"name": "Pyre Knight",
+			"rarity": "common",
+			"role": "melee",
+			"title": "Ember Vanguard"
+		},
+		{
+			"ability": "Cheap, fast ranged damage.",
+			"color": "54e08a",
+			"id": "thistle_archer",
+			"lore": "Loosed her first arrow at the rift the night the Sunspire fell.",
+			"name": "Thistle Archer",
+			"rarity": "common",
+			"role": "ranged",
+			"title": "Wildwood Marksman"
+		},
+		{
+			"ability": "Immobile turret with long range.",
+			"color": "37b6ff",
+			"id": "runestone",
+			"lore": "An old ward-glyph, woken to fire lances of light.",
+			"name": "Runestone",
+			"rarity": "common",
+			"role": "tower",
+			"title": "Arcane Sentinel"
+		},
+		{
+			"ability": "Heals the most wounded ally nearby.",
+			"color": "ffe6a6",
+			"id": "sister_vale",
+			"lore": "Her hymns knit torn flesh.",
+			"name": "Sister Vale",
+			"rarity": "rare",
+			"role": "support",
+			"title": "Keeper of the Flame"
+		},
+		{
+			"ability": "Deploys three fast wolves.",
+			"color": "94a3c8",
+			"id": "wolf_pack",
+			"lore": "Three shadows with teeth.",
+			"name": "Wolf Pack",
+			"rarity": "rare",
+			"role": "melee",
+			"title": "Hollow Hunters"
+		},
+		{
+			"ability": "Hits slow enemies.",
+			"color": "8fe9ff",
+			"id": "frost_warden",
+			"lore": "Where she breathes, the Rush slows.",
+			"name": "Frost Warden",
+			"rarity": "rare",
+			"role": "tower",
+			"title": "The Long Winter"
+		},
+		{
+			"ability": "Huge health. The anchor of any line.",
+			"color": "8a94a8",
+			"id": "boulder_golem",
+			"lore": "Carved from the Bastion wall itself.",
+			"name": "Boulder Golem",
+			"rarity": "epic",
+			"role": "melee",
+			"title": "The Unmoved"
+		},
+		{
+			"ability": "Bolts chain to 2 more enemies.",
+			"color": "4d6bff",
+			"id": "stormcaller",
+			"lore": "Calls down the storm.",
+			"name": "Stormcaller",
+			"rarity": "epic",
+			"role": "tower",
+			"title": "Voice of Thunder"
+		},
+		{
+			"ability": "Heavy striker.",
+			"color": "ffbf5e",
+			"id": "sunspear_lancer",
+			"lore": "Rides down the lane trailing dawn.",
+			"name": "Sunspear Lancer",
+			"rarity": "epic",
+			"role": "melee",
+			"title": "First Light"
+		},
+		{
+			"ability": "Fire nova scorches every nearby enemy.",
+			"color": "f25a2a",
+			"id": "ashen_queen",
+			"lore": "She wore the crown when it burned.",
+			"name": "The Ashen Queen",
+			"rarity": "legendary",
+			"role": "support",
+			"title": "Last of the Sunspire"
+		}
+	],
+	"enemies": [
+		{
+			"color": "ff4d7d",
+			"id": "wisp",
+			"kind": "runner",
+			"name": "Rift Wisp"
+		},
+		{
+			"color": "c0286a",
+			"id": "husk",
+			"kind": "runner",
+			"name": "Ashen Husk"
+		},
+		{
+			"color": "8a1f4a",
+			"id": "ravager",
+			"kind": "brute",
+			"name": "Ravager"
+		},
+		{
+			"color": "8a1f4a",
+			"id": "the_maw",
+			"kind": "boss",
+			"name": "The Maw"
+		},
+		{
+			"color": "ff7a2a",
+			"id": "ember_imp",
+			"kind": "runner",
+			"name": "Ember Imp"
+		},
+		{
+			"color": "6b4a22",
+			"id": "sapling",
+			"kind": "brute",
+			"name": "Burning Sapling"
+		},
+		{
+			"color": "a267d6",
+			"id": "gloombat",
+			"kind": "flyer",
+			"name": "Gloombat"
+		},
+		{
+			"color": "4a2e14",
+			"id": "cinder_treant",
+			"kind": "boss",
+			"name": "Cinder Treant"
+		},
+		{
+			"color": "4f7a7a",
+			"id": "drowned",
+			"kind": "runner",
+			"name": "Drowned Soldier"
+		},
+		{
+			"color": "2f4a3a",
+			"id": "bog_lurker",
+			"kind": "brute",
+			"name": "Bog Lurker"
+		},
+		{
+			"color": "d14bff",
+			"id": "hexmage",
+			"kind": "caster",
+			"name": "Hexmage"
+		},
+		{
+			"color": "2a5a6a",
+			"id": "drowned_king",
+			"kind": "boss",
+			"name": "The Drowned King"
+		},
+		{
+			"color": "7a7f9a",
+			"id": "sentry",
+			"kind": "caster",
+			"name": "Hollow Sentry"
+		},
+		{
+			"color": "3a3f5a",
+			"id": "knight",
+			"kind": "brute",
+			"name": "Hollow Knight"
+		},
+		{
+			"color": "5a1730",
+			"id": "siege_titan",
+			"kind": "boss",
+			"name": "Siege Titan"
+		},
+		{
+			"color": "6a2aa8",
+			"id": "void_spawn",
+			"kind": "runner",
+			"name": "Void Spawn"
+		},
+		{
+			"color": "a46aff",
+			"id": "void_mite",
+			"kind": "runner",
+			"name": "Void Mite"
+		},
+		{
+			"color": "7a2140",
+			"id": "ogre",
+			"kind": "brute",
+			"name": "Rift Ogre"
+		},
+		{
+			"color": "2a0f3a",
+			"id": "rift_sovereign",
+			"kind": "boss",
+			"name": "Rift Sovereign"
+		},
+		{
+			"color": "bdf2ff",
+			"id": "ice_wisp",
+			"kind": "flyer",
+			"name": "Ice Wisp"
+		},
+		{
+			"color": "e8f2ff",
+			"id": "yeti",
+			"kind": "brute",
+			"name": "Yeti"
+		},
+		{
+			"color": "5ab0d8",
+			"id": "frost_wyrm",
+			"kind": "boss",
+			"name": "Frost Wyrm"
+		},
+		{
+			"color": "c98a3a",
+			"id": "scorpion",
+			"kind": "runner",
+			"name": "Dune Scorpion"
+		},
+		{
+			"color": "e8c88a",
+			"id": "sand_wraith",
+			"kind": "flyer",
+			"name": "Sand Wraith"
+		},
+		{
+			"color": "a8803a",
+			"id": "sand_colossus",
+			"kind": "boss",
+			"name": "Sand Colossus"
+		},
+		{
+			"color": "ff5a1a",
+			"id": "magma_slime",
+			"kind": "brute",
+			"name": "Magma Slime"
+		},
+		{
+			"color": "ffb03a",
+			"id": "fire_imp",
+			"kind": "runner",
+			"name": "Fire Imp"
+		},
+		{
+			"color": "b8300f",
+			"id": "magma_tyrant",
+			"kind": "boss",
+			"name": "Magma Tyrant"
+		},
+		{
+			"color": "9be24d",
+			"id": "spore_toad",
+			"kind": "caster",
+			"name": "Spore Toad"
+		},
+		{
+			"color": "3a5a1a",
+			"id": "root_horror",
+			"kind": "brute",
+			"name": "Root Horror"
+		},
+		{
+			"color": "4a6a2a",
+			"id": "bog_mother",
+			"kind": "boss",
+			"name": "Bog Mother"
+		},
+		{
+			"color": "2a2440",
+			"id": "eclipse_knight",
+			"kind": "brute",
+			"name": "Eclipse Knight"
+		},
+		{
+			"color": "fff0b0",
+			"id": "radiant_shade",
+			"kind": "flyer",
+			"name": "Radiant Shade"
+		},
+		{
+			"color": "1a1428",
+			"id": "the_eclipse",
+			"kind": "boss",
+			"name": "The Eclipse"
+		}
+	],
+	"realms": [
+		{
+			"accent": "ff8a3d",
+			"biome": "ruins",
+			"boss": "the_maw",
+			"hazard": "none",
+			"id": "broken_gate",
+			"name": "The Broken Gate",
+			"roster": [
+				"wisp",
+				"husk",
+				"ravager"
+			],
+			"subtitle": "Where the first rift tore open",
+			"tod": "dusk",
+			"weather": "dust"
+		},
+		{
+			"accent": "ff7a2a",
+			"biome": "forest",
+			"boss": "cinder_treant",
+			"hazard": "embers",
+			"id": "emberfall_wood",
+			"name": "Emberfall Wood",
+			"roster": [
+				"ember_imp",
+				"sapling",
+				"gloombat"
+			],
+			"subtitle": "The canopy is still burning",
+			"tod": "sunset",
+			"weather": "embers"
+		},
+		{
+			"accent": "37b6ff",
+			"biome": "swamp",
+			"boss": "drowned_king",
+			"hazard": "mud_fog",
+			"id": "sunken_march",
+			"name": "The Sunken March",
+			"roster": [
+				"drowned",
+				"bog_lurker",
+				"hexmage"
+			],
+			"subtitle": "Drowned banners, drowned kings",
+			"tod": "night",
+			"weather": "fireflies"
+		},
+		{
+			"accent": "ff4d7d",
+			"biome": "keep",
+			"boss": "siege_titan",
+			"hazard": "ballista",
+			"id": "hollow_keep",
+			"name": "Hollow Keep",
+			"roster": [
+				"sentry",
+				"knight",
+				"husk"
+			],
+			"subtitle": "A fortress the Rush made its own",
+			"tod": "storm",
+			"weather": "rain"
+		},
+		{
+			"accent": "a46aff",
+			"biome": "rift",
+			"boss": "rift_sovereign",
+			"hazard": "portals",
+			"id": "rift_throne",
+			"name": "The Rift Throne",
+			"roster": [
+				"void_spawn",
+				"ogre",
+				"gloombat"
+			],
+			"subtitle": "The Rush's throne, but not its source",
+			"tod": "void",
+			"weather": "void"
+		},
+		{
+			"accent": "8fe9ff",
+			"biome": "ice",
+			"boss": "frost_wyrm",
+			"hazard": "blizzard",
+			"id": "frostpeak_pass",
+			"name": "Frostpeak Pass",
+			"roster": [
+				"ice_wisp",
+				"yeti",
+				"husk"
+			],
+			"subtitle": "Where the wind itself turned",
+			"tod": "day",
+			"weather": "snow"
+		},
+		{
+			"accent": "ffcf4d",
+			"biome": "desert",
+			"boss": "sand_colossus",
+			"hazard": "sandstorm",
+			"id": "sunscar_dunes",
+			"name": "Sunscar Dunes",
+			"roster": [
+				"scorpion",
+				"sand_wraith",
+				"ravager"
+			],
+			"subtitle": "Sand that remembers every footstep",
+			"tod": "noon",
+			"weather": "sand"
+		},
+		{
+			"accent": "ff5a2a",
+			"biome": "volcano",
+			"boss": "magma_tyrant",
+			"hazard": "eruptions",
+			"id": "ashen_caldera",
+			"name": "Ashen Caldera",
+			"roster": [
+				"magma_slime",
+				"fire_imp",
+				"ogre"
+			],
+			"subtitle": "The Sunspire's fall still smoulders",
+			"tod": "lava",
+			"weather": "ash"
+		},
+		{
+			"accent": "9be24d",
+			"biome": "mire",
+			"boss": "bog_mother",
+			"hazard": "snares",
+			"id": "gloomroot_mire",
+			"name": "Gloomroot Mire",
+			"roster": [
+				"spore_toad",
+				"root_horror",
+				"gloombat"
+			],
+			"subtitle": "Roots that drink the light",
+			"tod": "toxic",
+			"weather": "spores"
+		},
+		{
+			"accent": "ffe6a6",
+			"biome": "sunspire",
+			"boss": "the_eclipse",
+			"hazard": "sunbeam",
+			"id": "shattered_sunspire",
+			"name": "The Shattered Sunspire",
+			"roster": [
+				"eclipse_knight",
+				"radiant_shade",
+				"void_spawn"
+			],
+			"subtitle": "Where the light first broke — mend it",
+			"tod": "dawn",
+			"weather": "motes"
+		}
+	]
+}
