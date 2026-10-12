@@ -1,130 +1,141 @@
-# Estudo: como a Ironhide fez o Kingdom Rush — e como replicar no nosso Godot
+# Estudo: como a Ironhide fez o Kingdom Rush — e como replicar (o MÉTODO, nunca os assets)
 
-> Objetivo do dev: **mesmo nível de resultado** do Kingdom Rush. Este doc é o
-> estudo (LOCAL começa; CLOUD completa) antes de voltar a produzir. Em aberto =
-> marcado com ❓. Nada de "achismo" vendido como fato.
+> Objetivo do dev: **mesmo nível de resultado do Kingdom Rush**. Estudo feito pelas
+> DUAS sessões (LOCAL = no PC; CLOUD = na nuvem). Nunca usar arquivos do APK/jogo
+> deles — só aprender o método. ✅ = confirmado com fonte · ⬦ = inferido · ❓ = em aberto.
 
-## 1. Fatos confirmados (com fonte)
+---
 
-- **Motor original = Adobe Flash / ActionScript 3**, jogado no navegador
-  (Armor Games / Kongregate, 2011). Código escrito no **FlashDevelop**.
-- **Divisão da dupla fundadora:** Pablo Realini = programação; **Gonzalo Sande =
-  TODA a arte e a animação**, feitas **dentro do Flash**, desenhando **à mão com
-  tablet** (ele cita usar a sensibilidade à pressão do tablet no Flash).
-- Runtime usa **sprites de bitmap** ("bitmap fills / sprites of bitmaps").
-- **Port para iOS** feito pelo Realini em ~4 meses; +100 milhões de downloads.
-- Estilo de arte: **cartum detalhado, chapado, contorno marcado** (Sande).
+## 1. Fatos sobre o estúdio e o processo (confirmado)
 
-Ou seja: a arte do KR **não** é "1 PNG conceito + 4 quadros". É **animação
-quadro a quadro / recorte, desenhada à mão por um artista no Flash**, e entregue
-ao jogo como **sequências de bitmap (sprite sheets)**.
+- ✅ Ironhide (Montevidéu, Uruguai), **3 fundadores**; **KR1 feito em ~6 meses** por 3
+  pessoas. Artista único: **Gonzalo Sande** ("Gonzasan"). Programação: Pablo Realini.
+- ✅ Lançado em **Flash (ActionScript 3)** em 2011 (Armor Games/Kongregate), código no
+  **FlashDevelop**. Depois **refeito do zero em Objective-C + cocos2d** para iOS, e mais
+  tarde **Unity (C#)** no Steam/PC. (Correção: não foi AIR/Starling como a 1ª rodada
+  LOCAL supôs.)
+- ✅ Toda a arte **e a animação** feitas **direto no Flash, em vetor**, com mesa
+  digitalizadora (pressão da caneta = **variação de espessura da linha**), quase sem rascunho.
+- ✅ Volume com **3+ tons chapados** da mesma cor, **sem gradiente**; textura só sugerida
+  com formas (riscos/manchas), nunca pintada. **Sem preto puro**; cores **levemente
+  dessaturadas** (um toque de cinza) — por isso tudo combina.
+- ✅ Animação **quadro a quadro**, exportada como **sprite sheets** (bitmaps) pro runtime.
+- ✅ Personagens aparecem **pequenos** na tela → **silhueta é tudo**: cabeça grande, arma
+  grande, cor de identificação forte por tipo.
+- ❓ Número exato de quadros por animação e tamanho de canvas por unidade — sem fonte firme
+  (estimativa ⬦ ~8–16 quadros por ação).
 
-## 2. Como funciona na prática (confirmado + inferido, marcado)
+Fontes: fórum Ironhide "Kingdom Rush Art style" / "How are the sprites made?"; Wikipedia
+"Kingdom Rush" e "Iron Marines"; carta "An Open Love Letter to our PC Fans"
+(ironhidegames.com); Game Developer "Kingdom Rush – level design"; entrevista Kodeco;
+Fandom "Ironhide Game Studio"; Esoteric Software (Spine). (O fórum e o Wayback
+**não abriram pela LOCAL** — a CLOUD conseguiu.)
 
-- **Autoria (Flash):** cada unidade é um *MovieClip* com uma timeline de
-  animação. O artista combina **quadro a quadro** (desenhado à mão) com
-  **tween/recorte** (girar/mover peças do boneco na timeline) → movimento liso
-  com poucos desenhos-chave. ✅ autoria à mão no Flash confirmada; ⬦ a mistura
-  tween+quadro-a-quadro é o fluxo padrão do Flash (inferido).
-- **Runtime (mobile):** ⬦ inferido — o padrão Flash→mobile da época é
-  **Adobe AIR + Starling (Stage3D/GPU)** com **texture atlases**: a animação do
-  Flash é **rasterizada em quadros bitmap** e empacotada em folhas. No aparelho
-  roda **sprite-sheet frame-by-frame** (barato na GPU), não um rig vivo.
-- **Resolução:** ⬦ arte feita grande e escalada por aparelho (HD). ❓ número
-  exato de quadros por animação e tamanho do canvas por unidade — não achei fonte.
-- **Jogos novos (Iron Marines 2017+, KR Vengeance):** ❓ provável migração para
-  **Unity + Spine (esqueleto 2D)** — NÃO confirmado nas fontes que acessei. CLOUD
-  deve verificar.
+## 2. O que faz o KR parecer KR (checklist visual)
+1. **Mapa = uma pintura só** por fase (vista 3/4 de cima), estrada de terra bem legível,
+   **círculos de construção** marcados, bordas cheias de árvores/pedras.
+2. **Decoração animada no mapa**: água, moinhos, fumaça, pássaros, bandeiras, NPCs
+   clicáveis. Pequena, em loop, barata.
+3. **Torre = prédio estático + unidades animadas em cima** (arqueiros puxam o arco; mago
+   brilha; canhão recua). O prédio muda de desenho por nível (I, II, III) e nas 2
+   especializações do nível 4.
+4. **Inimigos andam em 3 direções**: de lado (espelhado), **de frente (descendo)** e **de
+   costas (subindo)** — cada uma com seu ciclo. + ataque, morte (cai e some com
+   fumacinha/sangue cartoon) e às vezes habilidade.
+5. **Efeitos desenhados**: flecha em arco, bomba em parábola com sombra, explosão em
+   quadros, raio, poça, "puf" de fumaça, números de ouro, sangue cartoon (verde/roxo).
+6. **UI de madeira/pergaminho**, ícones grandes, anel de construção radial, caveira
+   pulsando (chamar onda cedo = ouro), 2 poderes no canto, 3 estrelas por fase, enciclopédia.
+7. **Sombra oval** sob cada unidade; ordenação por profundidade (quem está mais embaixo
+   fica na frente).
 
-### Lição central
-O "segredo" do KR é **um artista animando à mão, liso, com muitos quadros/tween**,
-entregue como **bitmaps**. Qualidade vem de (a) desenho limpo, (b) animação com
-antecipação/overshoot/follow-through, (c) muitos quadros, (d) silhueta legível.
-Não há atalho mágico — mas dá pra chegar perto com **rig + bake de quadros**.
+## 3. Design de jogo (lições)
+- Construção **só nos círculos perto da estrada** → escassez de espaço é a estratégia.
+- 4 torres-base (Arqueiro, Quartel, Mago, Artilharia), 3 níveis + 2 especializações.
+- **Quartel/soldados bloqueiam** a estrada → marca registrada do KR.
+- Contra-jogo legível: **armadura física** (mago resolve), **resistência mágica**
+  (arqueiro/artilharia), **voadores** (só arqueiro/mago), rápidos, tanques, curandeiros,
+  chefes com fases. Prévia da onda + chamar cedo dá ouro. 3 estrelas; Heroico/Ferro; árvore.
 
-## 3. O que testei aqui (protótipo LOCAL) — o que funciona e o que bugou
-
-Experimento feito nesta sessão (código do rig está LOCAL, **não commitado**):
-
-- ✅ **Canva gera no estilo certo** (chapado, contorno grosso) com o ogro
-  `MAHXvKTpLPs` de referência + bloco STYLE. Consegui o warden em **perfil 3/4**
-  (media `MAHXvdqRzAE`) e uma versão **sem fundo / transparente** via
+## 4. O que a LOCAL testou aqui (protótipo) — o que funciona e o que bugou
+Experimento desta sessão (código do rig está **LOCAL, não commitado**):
+- ✅ **Canva gera no estilo certo** com o ogro `MAHXvKTpLPs` + bloco STYLE. Warden em
+  **perfil 3/4** (media `MAHXvdqRzAE`) e versão **sem fundo/transparente** via
   `remove-background` (media `MAHXvt1sVXk`).
-- ✅ **Arquitetura de fantoche de recorte funciona no Godot**: criei
-  `ModelRig.setup_puppet()` + `_animate_puppet()` e um carregador de
-  `assets/art/rigs/<id>/rig.json`. O warden montou (corpo/cabeça/2 braços) e
-  animou (parado/andar/atacar/morrer) **sem erro de script**, com flip de direção.
-- ❌ **Gargalo = qualidade da peça de origem.** Cortei um **JPG de 200px com
-  fundo branco** em peças → deu **franja branca**, **branco preso dentro do arco**,
-  **emendas das caixas** e **buracos** quando removi branco agressivo. Ficou
-  "bugado" (o dev viu e reprovou, com razão).
+- ✅ **Fantoche de recorte funciona no Godot**: `ModelRig.setup_puppet()` +
+  `_animate_puppet()` + carregador de `assets/art/rigs/<id>/rig.json`. Warden montou
+  (corpo/cabeça/2 braços) e animou (parado/andar/atacar/morrer) **sem erro**, com flip.
+- ❌ **Gargalo = peça de origem ruim.** Cortar um **JPG 200px com fundo branco** deu
+  **franja, branco preso (arco), emendas e buracos**. "Bugado" (dev reprovou, com razão).
+- **Lições:** (a) precisa de **PNG transparente de alta-res** antes de cortar; (b) o Canva
+  via thumbnail só dá **200px JPG** (perde alfa) — alta-res só por **download autenticado
+  (`import_canva.py`)** ou **exportar um *design* do Canva** (PNG transparente) + `curl`
+  [a validar]; (c) a arquitetura do rig é boa, o custo está em **obter peças limpas**.
 
-### Conclusões do teste
-1. **Não dá pra cortar arte chapada de baixa-res / fundo branco** e esperar
-   qualidade KR. Precisa de **PNG transparente de alta resolução**.
-2. A **limitação do Canva na nuvem/thumbnail** é 200px JPG (perde alfa). A
-   alta-res (1264) só vem por **download autenticado** (dev clicando no
-   `import_canva.py`) **ou** por **exportar um *design* do Canva** (PNG
-   transparente) e baixar com `curl` — caminho ainda a validar.
-3. A **arquitetura do rig é boa**; o trabalho pesado é **gerar/obter peças
-   limpas e separadas** (como o artista do KR fazia à mão).
+## 5. ⚖️ DECISÃO-CHAVE EM ABERTO: como animar (pro dev decidir)
+As duas sessões chegaram a abordagens diferentes. Não dá pra ter "o mesmo nível do KR"
+sem escolher. Opções:
 
-## 4. Plano de replicação no nosso Godot 4.3 (opções)
+- **A) 4 quadros-chave da IA + "entre-quadros" do motor** (proposta CLOUD; é o que já
+  existe em `model_rig.gd`: squash/bob/lunge). + `walk_down`/`walk_up`. **Barato e rápido**,
+  mas o KR NÃO faz assim (eles têm muitos quadros à mão) → risco de ficar "ok", não "KR".
+- **B) Rig de recorte 2D no Godot + bake de quadros** (proposta LOCAL; protótipo pronto):
+  desenha 1x, corta em peças, anima os ossos liso, e **rasteriza em sprite sheets** —
+  **exatamente o runtime do KR** (bitmaps). Mais trabalho de montar; depende de peças limpas.
+- **C) Spine de verdade** (há runtime de Spine pra Godot): esqueleto 2D profissional,
+  o mais perto do "mesmo nível", mas Spine **é pago** (ferramenta de autoria) → **custa
+  dinheiro**, então só com aval do dev.
 
-**Fonte de arte (a parte crítica):** obter cada unidade como **PNG transparente,
-alta-res**, e separada em peças limpas. Rotas, da melhor pra pior:
-- (R1) Canva `generate-image` → `remove-background` → **export do design em PNG
-  transparente** (1264px) → `curl` local. [validar o export de design]
-- (R2) Canva `separate-image-layers` pra quebrar o personagem em elementos →
-  export de cada camada transparente. [testar se separa anatomia de forma útil]
-- (R3) Dev baixa a alta-res pelo `import_canva.py` (fluxo já existente).
+**Recomendação conjunta a propor:** **B** (rig + bake) como caminho principal — mesmo
+método do KR (animar → bitmaps), sem custo, e dá pra `walk/walk_down/walk_up` girando o
+rig. **A** vale como fallback enquanto a arte não chega. **C** só se o dev topar o custo.
+➡️ **LOCAL e CLOUD precisam bater o martelo aqui, e o dev confirmar.**
 
-**Animação (duas opções, podem se combinar — igual ao KR):**
-- **A) Rig de recorte em runtime** (fantoche no Godot; protótipo já existe). Poucos
-  assets, liso, flip grátis. Exige peças limpas + pivôs.
-- **B) Bake de quadros**: animo o rig no Godot e **exporto folhas de sprite com
-  muitos quadros** (12–16), que é **exatamente o runtime do KR** (bitmaps) e
-  reusa o sistema de frames que o jogo já tem (`asset_lib.anim_frames`).
-- **Recomendação:** **A pra autoria + B pro runtime** — rigar uma vez, bakear
-  quadros lisos por unidade. Caminho idêntico ao do KR (animar → rasterizar).
+## 6. Divisão de trabalho proposta (as duas concordam no grosso)
+- **LOCAL = arte + Godot** (só eu baixo alta-res e rodo o motor): gerar no Canva,
+  remove-bg, baixar os pixels, cortar/limpar peças, montar rigs, **bakear quadros**, rodar
+  headless/prints/GIFs, importar, commitar. Começa pelo **Reino 1**.
+- **CLOUD = código + specs + pesquisa** (sem tocar em `portraits/`, `anims/`, `rigs/`,
+  `canva_art.json`, nem nos scripts de personagem/rig enquanto a LOCAL mexe):
+  1. Escolha de `walk/walk_down/walk_up` pela direção (fallback pro parado).
+  2. Torres: camada de atirador animado sobre o prédio
+     (`anims/tower_<família>/{idle,attack}_k.png`), recuo/disparo.
+  3. Sistema de **efeitos 2D** (`fx/<nome>_<k>.png`): projétil em arco+sombra, explosão,
+     fumaça, raio, cura; trocar os anéis/esferas 3D atuais (Fase C).
+  4. Ordenação por profundidade + sombra oval; decoração animada no mapa.
+  5. Prévias dos menus com os desenhos (sem 3D).
+  Tudo com **fallback** (funciona antes de a arte chegar).
+- **Contrato de nomes** (LOCAL gera, CLOUD lê):
+  `anims/<id>/{idle,walk,walk_down,walk_up,attack,cast,hit,die,fly}_<k>.png`;
+  `anims/tower_<família>/{idle,attack}_<k>.png`; `fx/<nome>_<k>.png`.
+  fx: arrow, bolt, cannonball, magic_orb, fireball, poison_drop, lightning, explosion,
+  smoke_puff, heal, shield, freeze, coin. (Se formos de rig+bake, o bake produz esses
+  mesmos arquivos — o contrato continua valendo.)
 
-**Qualidade (regras tipo KR):** contorno grosso uniforme, cores chapadas + 1
-sombra, silhueta legível; animação com antecipação, overshoot e follow-through;
-12+ quadros por ciclo; pés plantados; sombra no chão.
-
-## 5. Divisão de trabalho proposta (LOCAL × CLOUD)
-
-**LOCAL (PC do dev) — o que só eu consigo:**
-- Gerar no Canva em alta-res (remove-bg + export), **baixar os pixels de verdade**.
-- Cortar/limpar peças, montar rigs, **bakear quadros**, rodar **Godot** (headless,
-  prints e GIFs), importar pro jogo, commitar/push.
-
-**CLOUD — pesquisa e specs (não depende do PC):**
-- Confirmar os pontos ❓: ferramentas dos jogos novos (Unity/Spine?), nº de quadros
-  por animação, canvas, breakdowns/GDC, achar o fórum da Ironhide por outro caminho.
-- Escrever a **spec de animação por tipo de unidade** (quais anims, timing, quadros)
-  e **reescrever o `PADRAO_DE_ARTE.md`** pra essa estrutura (rig + bake).
-- Fase C (projéteis/efeitos 2D) e código **que não seja** o de personagem/rig.
-- Preparar prompts de arte e specs de rig.pivô pra eu executar.
-
-## 6. Perguntas em aberto (pro CLOUD e pro dev)
-
-- ❓ **A ou B** (rig runtime vs frames bakeados) como padrão? (recomendo A+B)
-- ❓ Alvo de **resolução por unidade** e **nº de quadros** por animação?
+## 7. Perguntas em aberto (pro dev)
+- ❓ **Abordagem de animação: A, B ou C?** (recomendamos B; C custa dinheiro.)
+- ❓ Alvo de **resolução por unidade** e **nº de quadros** por animação.
 - ❓ Validar o **export de design do Canva** como fonte de PNG transparente alta-res
-  automática (senão, dependemos do dev baixar).
-- ❓ Quantas unidades no total e qual **prazo/ambição** (define quanto dá pra
-  caprichar por unidade)?
-- ❓ Vale testar **Spine** de verdade (há runtime de Spine pra Godot) pra chegar
-  no "mesmo nível", ou ficamos no rig próprio + bake?
+  automática (senão dependemos do dev baixar).
+- ❓ **Quantas unidades** e **prazo/ambição** (define o capricho por unidade).
+- ❓ Trocar o STYLE pra "3 tons, sem preto puro, levemente dessaturado" (abaixo)?
+
+## 8. Proposta de STYLE novo (mantendo o ogro de âncora)
+O PADRAO atual diz "um tom de sombra"; o KR usa **3 tons** e **sem preto puro**:
+```
+Simple flat 2D cartoon in the style of classic tower-defense games like Kingdom Rush, matching
+the red ogre reference: bold outlines with slight line-weight variation in very dark warm brown
+(never pure black), each color shaded with 2-3 flat tones (no gradients, no painted texture),
+slightly muted colors, chunky rounded shapes, big head, big readable silhouette.
+Plain pure white background, no ground, no text, no frame borders.
+```
 
 ## Fontes
 - Wikipedia — Kingdom Rush: https://en.wikipedia.org/wiki/Kingdom_Rush
-  (Realini=programação, Sande=arte "cartum detalhado", base Flash, port iOS)
 - Wikipedia — Iron Marines: https://en.wikipedia.org/wiki/Iron_Marines
 - Fandom — Ironhide Game Studio: https://kingdomrushtd.fandom.com/wiki/Ironhide_Game_Studio
 - Esoteric Software — Spine (esqueleto 2D): http://esotericsoftware.com/
-- (Buscas) declarações do artista Gonzalo Sande: toda arte/animação no Flash, à
-  mão com tablet; runtime em sprites de bitmap; código no FlashDevelop.
-  Fórum oficial `forums.ironhidegames.com` está **fora do ar** (ENOTFOUND) e o
-  Wayback está bloqueado aqui → CLOUD tentar por outro proxy.
+- Ironhide: carta "An Open Love Letter to our PC Fans" (ironhidegames.com); fórum oficial
+  (Art style / How are the sprites made?) — acessível só pela CLOUD; Game Developer
+  (level design); entrevista Kodeco. Declarações do artista Gonzalo Sande: toda
+  arte/animação em vetor no Flash, à mão com tablet; runtime em sprites bitmap.
