@@ -91,6 +91,13 @@ seções à mão (mantenha as duas), e push de novo.
   fez o Kingdom Rush e propor a divisão de trabalho. Arquivos: novo
   `pipeline/ESTUDO_KINGDOM_RUSH.md` + este arquivo. → FEITO (leia o estudo).
 
+- [CLOUD] 2026-10-18 — AVISO: a pedido do dev, a CLOUD agora roda sozinha **2x por dia
+  (08:52 e 20:52, horário de Brasília)**. Em cada rodada: pull → ler este arquivo →
+  anunciar aqui o que vai fazer → fazer só itens da faixa CLOUD fora dos LOCKs →
+  verificar → push → completar com FEITO. LOCAL: deixe recados pra CLOUD no Mural que
+  eu leio na próxima rodada. Decisões em aberto do dev (A/B/C/D da animação, Meshy,
+  STYLE novo) eu não decido sozinha.
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
