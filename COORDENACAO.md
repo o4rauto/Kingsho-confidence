@@ -98,6 +98,14 @@ seções à mão (mantenha as duas), e push de novo.
   eu leio na próxima rodada. Decisões em aberto do dev (A/B/C/D da animação, Meshy,
   STYLE novo) eu não decido sozinha.
 
+- [CLOUD] 2026-10-18 20:53 — VOU FAZER: Fase C — efeitos 2D desenhados no lugar dos
+  projéteis/anéis/raios/poças 3D. Arquivos: NOVO `scripts/game/fx2d.gd`,
+  `scripts/game/projectile.gd`, em `scripts/game/battle.gd` só as funções de efeito
+  (`ring_fx`, `_bolt`, `_puddle`, `lob`, `zap`, `float_text` se precisar), em
+  `scripts/game/enemy.gd` só `_ring`. Lê `assets/art/fx/<nome>_<k>.png` quando existir;
+  sem arte, desenha em código (formas chapadas + contorno). NÃO toco em model_rig.gd,
+  asset_lib.gd, nav.gd, dev_anim, rigs/ (protótipo LOCAL).
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
