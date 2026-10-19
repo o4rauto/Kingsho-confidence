@@ -306,9 +306,12 @@ func _resolve(tg: Dictionary) -> void:
 			var power := 1.0 if tg.kind == "ember" else 1.8
 			for e in enemies_near(p, r):
 				hit_enemy(e, 60.0 * power, {"source": "hazard", "burn": 8.0})
+			# meteors only graze allies: soldiers can't dodge, and losing the blockers
+			# to a random meteor lost whole runs
+			var ally_dmg := 30.0 if tg.kind == "ember" else 14.0
 			for c in soldiers + troops:
 				if c.alive and c.position.distance_to(p) < r:
-					c.take_damage(30.0 * power)
+					c.take_damage(ally_dmg)
 			if w_in: warden.take_damage(25.0 * power)
 		"bolt":
 			ring_fx(p, r, Color("ff3a4a"))

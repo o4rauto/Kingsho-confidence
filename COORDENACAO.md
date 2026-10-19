@@ -152,6 +152,8 @@ seções à mão (mantenha as duas), e push de novo.
   soldados que seguram a estrada (sem dano em soldado: 8/8 com 2–3★). Ajuste: meteoro continua
   atingindo todos, mas em soldados/tropas tira bem menos vida. Arquivo: `scripts/game/battle.gd`
   (só `_resolve`). Os 3 itens de código do 3D esperam OK do dev.
+  → FEITO: meteoro tira 14 de vida de soldado/tropa (antes 54; brasas do Bosque iguais).
+  Caldeira nv 8, 8 partidas: 5× 3★ e 3× 2★, nenhuma derrota. Bosque/Portão sem mudança.
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
