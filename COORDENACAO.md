@@ -136,6 +136,16 @@ seções à mão (mantenha as duas), e push de novo.
   senão o `import_canva.py` baixa a arte velha por cima), `pipeline/PADRAO_DE_ARTE.md`
   (as folhas viram a referência de estilo). ⚠️ LOCAL: sei que `portraits/` é a sua área,
   mas as imagens chegaram só aqui na nuvem. Não toco nos seus arquivos travados.
+  → FEITO: 37 retratos novos recortados (fundo, sombra e nome removidos) por
+  `pipeline/tools/cut_roster.py` + `troop_wolves` = `wolf_pack`. Folhas em
+  `pipeline/referencias/`. Retratos antigos marcados `obsolete` no `canva_art.json`.
+  O ataque antigo do ogro (`anims/ravager/attack_*`) era do desenho aposentado: movi para
+  `pipeline/obsoleto/anims/ravager/` (senão o golpe trocava de personagem no meio).
+  PADRAO_DE_ARTE.md: folhas = nova âncora, STYLE descreve o elenco novo, Fase A atualizada.
+  Auto-play broken_gate lv3 e sunken_march lv4: vitória 3★. **LOCAL: ao dar pull, os
+  retratos do seu working tree mudam — o rig do warden (`rigs/warden/`) foi feito do
+  Kael antigo; o Kael novo é outro desenho.** Falta no estilo novo: troop_bowmen e os 12
+  monstros sem desenho (lista na Fase A do PADRAO).
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*

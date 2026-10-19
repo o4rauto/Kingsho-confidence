@@ -8,58 +8,67 @@ Responda o desenvolvedor sempre em **português**.
 
 ---
 
-## 1. Âncoras de estilo (use SEMPRE como referência no Canva)
+## 1. Âncoras de estilo (use SEMPRE como referência)
 
-| Papel | Canva media id | O que é |
-|---|---|---|
-| **ÂNCORA PRINCIPAL** | `MAHXvKTpLPs` | Ogro vermelho com clava (Devastador). É ESTE o estilo. |
-| Aprovado | `MAHXvY4CaRE` | Casca Cinzenta redesenhada (goblin) |
-| Aprovado | `MAHXvUPX584` | Kael redesenhado (herói) |
+**Desde 2026-10-19 a referência é o elenco que o desenvolvedor definiu** ("Esses serão
+os novos personagens"). As 3 folhas originais ficam em `pipeline/referencias/`:
 
-O desenvolvedor **rejeitou** o estilo detalhado/realista ("parece jogo da
-Nintendo", ferrugem, sujeira, anatomia realista). Se uma imagem gerada tiver
-textura, sujeira, brilho realista ou contorno fino → **descarte e gere de novo**.
+| Folha | Personagens |
+|---|---|
+| `personagens_1_monstros.jpg` | bog_lurker, bog_mother, drowned, drowned_king, ember_imp, gloombat, husk, ogre, ravager, the_maw, void_mite, wolf_pack |
+| `personagens_2_golens_titas.jpg` | boulder_golem, cinder_treant, frost_wyrm, magma_tyrant, rift_sovereign, runestone, sand_colossus, sapling, sentry, siege_titan, void_spawn, wisp |
+| `personagens_3_herois_tropas.jpg` | ashen_queen, frost_warden, hexmage, knight, pyre_knight, sister_vale, stormcaller, sunspear_lancer, the_eclipse, thistle_archer, troop_knight, troop_militia, warden |
 
-### Regras visuais
-- Contorno **grosso e uniforme**, marrom-escuro / quase preto.
-- Cores **chapadas** com no máximo **um** tom de sombra suave. Sem textura, sem gradiente realista.
-- Formas **arredondadas, robustas, cabeça grande**, silhueta legível de longe.
-- Personagens **olhando para a DIREITA** (o jogo espelha sozinho).
-- **Fundo branco puro**, sem chão, sem texto, sem moldura (o importador remove o branco).
-- Paleta viva e saturada, mas não neon. Heróis/aliados: quentes e azuis. Monstros: cada reino com a sua cor.
+Cada um já recortado em `godot/assets/art/portraits/<id>.png`. Para gerar arte NOVA no
+mesmo estilo: no Canva, suba a folha certa (ou o retrato do personagem) e passe como
+`imageReferences`. As âncoras antigas (ogro `MAHXvKTpLPs`, `MAHXvY4CaRE`, `MAHXvUPX584`)
+estão **aposentadas**.
+
+O desenvolvedor **rejeitou** o estilo realista ("parece jogo da Nintendo", ferrugem,
+sujeira, anatomia realista). Se sair assim → **descarte e gere de novo**.
+
+### Regras visuais (as das folhas)
+- **Chibi**: cabeça grande, corpo atarracado, silhueta legível de longe.
+- Contorno **escuro e grosso** em volta de tudo.
+- Cores **vivas**, sombreado em **2–3 tons** com brilho suave (como Clash Royale /
+  Kingdom Rush). Sem sujeira, sem textura realista.
+- Personagens de **corpo inteiro**, de frente ou 3/4, de preferência **olhando para a DIREITA**.
+- **Fundo liso** (branco ou pergaminho claro), sem chão; sombra leve sob os pés é tolerada —
+  o `cut_roster.py` tira fundo, sombra e nome escrito.
+- Heróis/aliados: dourados, vermelhos e azuis. Monstros: cada reino com a sua cor.
 
 ### STYLE (cole no fim de TODO prompt)
 ```
-Simple flat 2D TV cartoon style like Cartoon Network, matching the red ogre reference exactly:
-thick uniform dark brown outlines, flat colors with only one soft shadow tone, no texture,
-no grime, no realistic detail, rounded chunky shapes, big head, big readable silhouette.
-Plain pure white background, no ground, no text, no frame borders.
+Chibi 2D cartoon mobile game character art like Clash Royale and Kingdom Rush, matching the
+reference sheet exactly: big head, chunky body, thick dark outlines, vivid colors with 2-3 tone
+cel shading and soft highlights, no grime, no realistic texture, big readable silhouette.
+Full body, plain light background, no ground, no text, no frame borders.
 ```
 
 ---
 
 ## 2. Modelos de prompt (Canva `generate-image`)
 
-Sempre passe a âncora em `imageReferences`. Quando for redesenhar/animar um
+Sempre passe a referência em `imageReferences` (FOLHA = a folha de `pipeline/referencias/` do grupo certo, subida no Canva). Quando for redesenhar/animar um
 personagem que já existe, passe **primeiro o personagem, depois a âncora**.
 
 ### 2a. Redesenhar personagem existente (SQUARE_1_1)
-refs: `[personagem, MAHXvKTpLPs]`
+refs: `[personagem, FOLHA]`
 ```
-Redraw the character from the FIRST image in the EXACT art style of the SECOND image (the red ogre).
+Redraw the character from the FIRST image in the EXACT art style of the SECOND image (the reference sheet).
 Keep the same character identity: <descrição curta: cores, roupa, arma, pose>. Full body, single
 character, facing right. <STYLE>
 ```
 
 ### 2b. Personagem novo (SQUARE_1_1)
-refs: `[MAHXvKTpLPs]`
+refs: `[FOLHA]`
 ```
 Character sprite for a mobile tower-defense game: <descrição>. Full body, single character,
 facing right, in the EXACT art style of the reference image. <STYLE>
 ```
 
 ### 2c. Animação quadro a quadro (LANDSCAPE_2_1) — sempre 4 quadros
-refs: `[personagem JÁ no estilo padrão, MAHXvKTpLPs]`
+refs: `[portraits/<id>.png do personagem, FOLHA]`
 ```
 2D game sprite sheet of THIS EXACT character from the FIRST image (same design, same colors),
 drawn in the art style of the SECOND image. <ANIMAÇÃO>. 4 frames in a single horizontal row,
@@ -75,21 +84,21 @@ evenly spaced with clear white gaps between frames, same size and facing right i
 - **die**: `A DEFEAT: 1 hit recoil with pained face, 2 stumbling back, 3 falling, 4 lying knocked out with little stars` (monstros: o 4º quadro vira `dissolving into a puff of cartoon smoke`)
 
 ### 2d. Torre (SQUARE_1_1)
-refs: `[MAHXvKTpLPs]` (e a torre antiga, se for redesenho)
+refs: `[FOLHA]` (e a torre antiga, se for redesenho)
 ```
 Tower sprite for a mobile tower-defense game, Kingdom Rush layout, seen from a slightly high 3/4
 front view: <descrição>. Single object, centered, full building visible. <STYLE>
 ```
 
 ### 2e. Efeito / projétil (SQUARE_1_1 para efeito único; LANDSCAPE_2_1 para 4 quadros)
-refs: `[MAHXvKTpLPs]`
+refs: `[FOLHA]`
 ```
 2D cartoon game effect: <flecha / bola de fogo / explosão / raio / poça de veneno / estrela de cura …>.
 <para animação: 4 frames in a single horizontal row showing it growing, peaking and fading>. <STYLE>
 ```
 
 ### 2f. Mapa de batalha (PORTRAIT_9_16)
-refs: `[MAHXvKTpLPs]` + o mapa do Portão Partido `MAHXvPjG1cg` (para manter o layout de câmera)
+refs: `[FOLHA]` + o mapa do Portão Partido `MAHXvPjG1cg` (para manter o layout de câmera)
 ```
 Top-down 3/4 painted battle map for a mobile tower-defense game in Kingdom Rush style, vertical
 portrait: <tema do reino>, <N> dirt roads coming from the top edge and joining at a castle gate
@@ -137,25 +146,25 @@ Toda imagem aprovada entra em `pipeline/canva_art.json`:
   ou manda as imagens numa **mensagem só de imagens** (aí ficam salvas em
   `.../images/N.webp`; imagens coladas no meio de um turno NÃO ficam salvas).
 - Corte manual de folha: `python3 pipeline/tools/split_sheet.py FOLHA.png <id> <anim> --frames 4`
+- **Folha de elenco** (vários personagens com o nome embaixo, como as de `pipeline/referencias/`):
+  `python3 pipeline/tools/cut_roster.py FOLHA.jpg id1 id2 ... --out /tmp/teste` (ids na
+  ordem de leitura; confira e rode sem `--out` para gravar em `portraits/`). Depois marque
+  como `obsolete` no `canva_art.json` as entradas antigas desses retratos — senão o
+  `import_canva.py` baixa a arte velha por cima.
 
 ---
 
 ## 4. Lista de trabalho (na ordem)
 
-### Fase A — redesenhar tudo no estilo padrão (modelo 2a)
-Já no padrão: `ravager` (âncora), `husk`, `warden`.
-- Heróis: pyre_knight, thistle_archer, sister_vale, runestone, wolf_pack, frost_warden,
-  boulder_golem, stormcaller, sunspear_lancer, ashen_queen
-- Tropas: troop_militia, troop_bowmen (troop_wolves = wolf_pack, troop_knight = pyre_knight — mesmos slots)
-- Monstros já desenhados (redesenhar): wisp, ember_imp, sapling, gloombat, drowned,
-  bog_lurker, hexmage, sentry, knight, void_spawn, void_mite, ogre
-- Monstros ainda sem desenho (modelo 2b): ice_wisp, yeti, scorpion, sand_wraith,
-  magma_slime, fire_imp, spore_toad, root_horror, war_drummer, rage_shaman,
-  eclipse_knight, radiant_shade (nomes/cores em `game_data.gd`)
-- Chefes (redesenhar): the_maw, cinder_treant, drowned_king, siege_titan,
-  rift_sovereign, frost_wyrm, sand_colossus, magma_tyrant, bog_mother, the_eclipse
-- Torres: comparar as 8 de `towers/` com a âncora; redesenhar (2d) as que estiverem
-  detalhadas demais.
+### Fase A — elenco no estilo padrão
+✅ **Feito (2026-10-19)**: os 37 personagens das folhas do dev estão em `portraits/`
+(troop_wolves = wolf_pack).
+Falta, no MESMO estilo das folhas (modelo 2b, com a folha como referência):
+- Tropa: **troop_bowmen** (ainda no desenho antigo).
+- Monstros ainda sem desenho: ice_wisp, yeti, scorpion, sand_wraith, magma_slime,
+  fire_imp, spore_toad, root_horror, war_drummer, rage_shaman, eclipse_knight,
+  radiant_shade (nomes/cores em `game_data.gd`). Sem desenho, o jogo mostra o 3D antigo.
+- Torres: comparar as 8 de `towers/` com as folhas; redesenhar (2d) as que destoarem.
 
 Os media ids originais de cada personagem estão em `pipeline/canva_art.json`
 (procure pelo slot `portraits/<id>.png`).
@@ -170,7 +179,8 @@ Os media ids originais de cada personagem estão em `pipeline/canva_art.json`
 | Monstros flyer (gloombat, ice_wisp, sand_wraith, radiant_shade) | fly, attack, die |
 | Chefes | walk, attack, cast, die |
 
-Já pronto e no estilo: `ravager/attack`. Comece pelo reino 1 (Portão Partido:
+Nenhuma pronta: o antigo `ravager/attack` era do ogro aposentado e foi para
+`pipeline/obsoleto/`. Comece pelo reino 1 (Portão Partido:
 warden, troop_militia, troop_bowmen, wisp, husk, ravager, the_maw) para fechar uma
 fase inteira e mostrar ao desenvolvedor antes de seguir.
 
