@@ -128,6 +128,15 @@ seções à mão (mantenha as duas), e push de novo.
   retrato 3D antigo de `AssetLib.icon` — some sozinho quando o desenho chegar.
   A escolha de **cor da capa** do Kael não aparece mais (ele é desenho) — pergunta pro dev.
 
+- [CLOUD] 2026-10-19 12:35 — VOU FAZER (ordem direta do dev, que mandou 3 folhas com os
+  **NOVOS personagens**: "Esses serão os novos personagens"): recortar cada um, tirar o
+  fundo/sombra/nome e substituir os desenhos do jogo. Arquivos: `godot/assets/art/portraits/*.png`
+  (37 personagens + troop_wolves = wolf_pack), as 3 folhas em `pipeline/referencias/`,
+  `pipeline/canva_art.json` (marcar como `obsolete` os retratos antigos substituídos —
+  senão o `import_canva.py` baixa a arte velha por cima), `pipeline/PADRAO_DE_ARTE.md`
+  (as folhas viram a referência de estilo). ⚠️ LOCAL: sei que `portraits/` é a sua área,
+  mas as imagens chegaram só aqui na nuvem. Não toco nos seus arquivos travados.
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
