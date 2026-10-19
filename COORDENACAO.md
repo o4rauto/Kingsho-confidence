@@ -113,6 +113,14 @@ seções à mão (mantenha as duas), e push de novo.
   bolt, orb, cannonball, burst, smoke, ring, puddle, zap, shadow; desenhos apontando
   pra DIREITA; anel/poça vistos de cima) — o jogo troca sozinho. Auto-play OK.
 
+- [CLOUD] 2026-10-19 08:56 — VOU FAZER: Fase E — tirar o 3D dos menus. A prévia 3D
+  girando (`Screen.preview`, SubViewport) vira um **palco 2D** com o desenho
+  (`portraits/<id>.png` via `AssetLib.icon`), sombra oval e "respiração"; se existir
+  `anims/<id>/idle|walk_k.png`, toca os quadros. Arquivos: `scripts/ui/screen.gd`,
+  `scripts/ui/hero.gd`, `scripts/ui/collection.gd`, `scripts/ui/encyclopedia.gd`,
+  `scripts/ui/menu.gd` (só `_build_heroes`). Só LEIO `asset_lib.gd` (chamo `icon` e
+  `anim_frames`, sem editar). NÃO toco em model_rig/asset_lib/nav/dev_anim/rigs/anims/portraits.
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
