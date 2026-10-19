@@ -1,5 +1,6 @@
 extends Node3D
 const ModelRig := preload("res://scripts/game/model_rig.gd")
+const FX := preload("res://scripts/game/fx2d.gd")
 ## A member of the Rush. Follows its lane (flyers cut straight to the Bastion).
 ##
 ## Monsters are built to fight back against towers, troops AND the hero:
@@ -76,15 +77,12 @@ func setup(b, enemy_id: String, lane: Curve3D, scale_hp: float, start_dist := 0.
 	if def.has("aura"):
 		_ring(Color(GameData.AURA_COLOR[def.aura]), 3.5 * 0.5, 0.05)
 
-func _ring(col: Color, r: float, y: float) -> MeshInstance3D:
-	var mi := MeshInstance3D.new()
-	var t := TorusMesh.new(); t.inner_radius = r * 0.88; t.outer_radius = r; t.rings = 20; t.ring_segments = 4
-	mi.mesh = t
-	mi.material_override = AssetLib.mat(col, 1.2)
-	mi.position.y = y
-	mi.scale = Vector3(1, 0.3, 1)
-	add_child(mi)
-	return mi
+## Drawn aura / fury ring lying on the ground under the monster.
+func _ring(col: Color, r: float, y: float) -> Sprite3D:
+	var s := FX.sprite("ring", r * 2.0, "ground", Color(col, 0.85))
+	s.position.y = y
+	add_child(s)
+	return s
 
 func _make_bar(h: float) -> void:
 	_bar_bg = MeshInstance3D.new()

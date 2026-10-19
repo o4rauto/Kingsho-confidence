@@ -1,5 +1,6 @@
 extends Node3D
-## Bolts, arrows and hexes. Light homing toward a locked target; player and
+const FX := preload("res://scripts/game/fx2d.gd")
+## Bolts, arrows and hexes (drawn 2D sprites, see fx2d.gd). Light homing toward a locked target; player and
 ## champion shots hit enemies (with pierce), enemy shots hit the Warden.
 
 var battle
@@ -17,6 +18,8 @@ var true_dmg := false
 var life := 2.5
 var alive := true
 var _hit: Array = []
+var kind := "arrow"          # arrow | bolt | orb  (pointed ones turn with the flight)
+var _spr: Sprite3D
 
 func setup(b, from: Vector3, tgt, dmg: float, src: String, opts: Dictionary = {}) -> void:
 	battle = b
@@ -35,12 +38,31 @@ func setup(b, from: Vector3, tgt, dmg: float, src: String, opts: Dictionary = {}
 	if dir == Vector3.ZERO and tgt != null:
 		dir = _aim(tgt) - from
 	vel = dir.normalized() * speed
-	var mi := MeshInstance3D.new()
-	mi.mesh = battle.proj_mesh
 	var col: Color = opts.get("color", Color("ffbf5e"))
-	mi.material_override = AssetLib.mat(col, 3.0)
-	mi.scale = Vector3.ONE * (1.6 if crit else 1.0)
-	add_child(mi)
+	kind = opts.get("kind", _guess_kind(src, opts))
+	var big := 1.5 if crit else 1.0
+	match kind:
+		"orb":
+			_spr = FX.sprite("orb", 0.55 * big, "billboard", col)
+		"bolt":
+			_spr = FX.sprite("bolt", 1.5 * big, "free")
+		_:
+			_spr = FX.sprite("arrow", 0.95 * big, "free")
+	add_child(_spr)
+	_face()
+
+## Which drawing fits the shooter: magic and monster spit are orbs, the
+## ballista throws a big bolt, everyone else shoots arrows.
+func _guess_kind(src: String, opts: Dictionary) -> String:
+	if src == "enemy" or opts.get("true_dmg", false) or opts.get("chain", 0) > 0:
+		return "orb"
+	if speed >= 24.0 and opts.get("pierce", 0) >= 2:
+		return "bolt"
+	return "arrow"
+
+func _face() -> void:
+	if kind == "orb" or _spr == null or not is_inside_tree(): return
+	FX.orient(_spr, vel, battle.cam)
 
 func _aim(t) -> Vector3:
 	return t.hit_point() if t.has_method("hit_point") else t.position + Vector3(0, 1.0, 0)
@@ -54,6 +76,7 @@ func step(dt: float) -> void:
 		var want: Vector3 = (_aim(target) - position).normalized() * speed
 		vel = vel.lerp(want, minf(1.0, 6.0 * dt))
 	position += vel * dt
+	_face()
 	if source == "enemy":
 		var t = target
 		if t == null or not is_instance_valid(t) or not t.alive:

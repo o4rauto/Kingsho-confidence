@@ -15,6 +15,7 @@ const EnemyScript := preload("res://scripts/game/enemy.gd")
 const ChampionScript := preload("res://scripts/game/champion.gd")
 const WardenScript := preload("res://scripts/game/warden.gd")
 const ProjectileScript := preload("res://scripts/game/projectile.gd")
+const FX := preload("res://scripts/game/fx2d.gd")
 const TroopScript := preload("res://scripts/game/troop.gd")
 
 var realm: Dictionary
@@ -503,26 +504,39 @@ func nearest_ground_enemy(p: Vector3, r: float):
 			bd = d; best = e
 	return best
 
-## Artillery shell: arcs to `to`, then explodes (ground enemies only).
+## Artillery shell: arcs to `to` (with its shadow sliding on the ground),
+## then explodes (ground enemies only). Poison lobs leave a puddle.
 func lob(from: Vector3, to: Vector3, dmg: float, r: float, opts: Dictionary) -> void:
-	var mi := MeshInstance3D.new()
-	mi.mesh = proj_mesh
-	mi.scale = Vector3.ONE * 1.8
-	mi.material_override = AssetLib.mat(opts.get("color", Color("2a2e38")))
-	mi.position = from
-	add_child(mi)
+	var poison: float = opts.get("poison", 0.0)
+	var shell: Sprite3D
+	if poison > 0.0:
+		shell = FX.sprite("orb", 0.6, "billboard", opts.get("color", Color("7ed957")))
+	else:
+		var tint: Color = opts.get("color", Color("2a2e38"))
+		shell = FX.sprite("cannonball", 0.55, "billboard", Color.WHITE if tint == Color("2a2e38") else tint.lightened(0.35))
+	shell.position = from
+	add_child(shell)
 	var dest := Vector3(to.x, 0.2, to.z)
+	var shadow := FX.sprite("shadow", 0.7, "ground")
+	shadow.position = Vector3(from.x, 0.03, from.z)
+	add_child(shadow)
 	var flight := 0.65
-	var tw := mi.create_tween()
+	var tw := shell.create_tween()
 	tw.tween_method(func(t: float):
-		mi.position = from.lerp(dest, t) + Vector3(0, sin(t * PI) * 3.0, 0), 0.0, 1.0, flight)
+		shell.position = from.lerp(dest, t) + Vector3(0, sin(t * PI) * 3.0, 0)
+		shell.rotation.z = -t * TAU
+		shadow.position = Vector3(lerpf(from.x, dest.x, t), 0.03, lerpf(from.z, dest.z, t))
+		shadow.scale = Vector3.ONE * lerpf(0.6, 1.0, absf(t - 0.5) * 2.0), 0.0, 1.0, flight)
 	tw.tween_callback(func():
-		mi.queue_free()
+		shell.queue_free()
+		shadow.queue_free()
 		if state == "over": return
-		ring_fx(dest, r, Color("ffb03a"))
-		var poison: float = opts.get("poison", 0.0)
 		if poison > 0.0:
 			_puddle(dest, r)
+		else:
+			FX.play(self, "burst", dest + Vector3(0, 0.5, 0), r * 1.1, "billboard", Color.WHITE, 0.3)
+			FX.play(self, "smoke", dest + Vector3(0, 0.8, 0), r * 1.3, "billboard", Color.WHITE, 0.6)
+		ring_fx(dest, r, Color("ffb03a") if poison <= 0.0 else Color("9be24d"))
 		for e in enemies_near(dest, r):
 			if e.def.kind == "flyer": continue
 			if poison > 0.0:
@@ -533,16 +547,16 @@ func lob(from: Vector3, to: Vector3, dmg: float, r: float, opts: Dictionary) -> 
 	Sfx.play("hit", 0.7)
 
 func _puddle(p: Vector3, r: float) -> void:
-	var mi := MeshInstance3D.new()
-	var c := CylinderMesh.new(); c.top_radius = r; c.bottom_radius = r; c.height = 0.03; c.radial_segments = 18
-	mi.mesh = c
-	mi.material_override = AssetLib.mat(Color("7ed957"), 0.8)
-	mi.position = Vector3(p.x, 0.04, p.z)
-	add_child(mi)
-	var tw := mi.create_tween()
-	tw.tween_interval(1.2)
-	tw.tween_property(mi, "scale", Vector3(0.1, 1, 0.1), 0.4)
-	tw.tween_callback(mi.queue_free)
+	var s := FX.sprite("puddle", r * 2.0, "ground")
+	s.position = Vector3(p.x, 0.04, p.z)
+	add_child(s)
+	var base := s.scale
+	s.scale = base * 0.3
+	var tw := s.create_tween()
+	tw.tween_property(s, "scale", base, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(1.1)
+	tw.tween_property(s, "scale", base * 0.1, 0.4)
+	tw.tween_callback(s.queue_free)
 
 ## Lightning: hits the target, then leaps to `jumps` more enemies nearby.
 func zap(from: Vector3, first, dmg: float, jumps: int) -> void:
@@ -569,17 +583,19 @@ func zap(from: Vector3, first, dmg: float, jumps: int) -> void:
 	Sfx.play("shoot", 1.6)
 
 func _bolt(a: Vector3, b: Vector3) -> void:
-	var mi := MeshInstance3D.new()
-	var bm := BoxMesh.new(); bm.size = Vector3(0.09, 0.09, a.distance_to(b))
-	mi.mesh = bm
-	mi.material_override = AssetLib.mat(Color("bfeaff"), 3.0)
-	add_child(mi)
-	mi.position = (a + b) / 2.0
-	if a.distance_to(b) > 0.01:
-		mi.look_at(b, Vector3.UP if absf((b - a).normalized().y) < 0.99 else Vector3.RIGHT)
-	var tw := mi.create_tween()
-	tw.tween_interval(0.12)
-	tw.tween_callback(mi.queue_free)
+	var len := a.distance_to(b)
+	if len < 0.01: return
+	var s := FX.sprite("zap", 1.0, "free")
+	s.scale = Vector3(len, 1.0, 1.0)
+	s.position = (a + b) / 2.0
+	add_child(s)
+	FX.orient(s, b - a, cam)
+	FX.play(self, "burst", b, 0.7, "billboard", Color("bfeaff"), 0.18)
+	var tw := s.create_tween()
+	tw.tween_interval(0.08)
+	tw.tween_callback(func(): s.flip_v = true)
+	tw.tween_interval(0.08)
+	tw.tween_callback(s.queue_free)
 
 func enemies_near(p: Vector3, r: float) -> Array:
 	var out: Array = []
@@ -650,16 +666,16 @@ func most_wounded_ally(p: Vector3, r: float):
 
 # ── FX (kept deliberately light) ────────────────────────────
 func ring_fx(p: Vector3, r: float, col: Color) -> void:
-	var mi := MeshInstance3D.new()
-	var t := TorusMesh.new(); t.inner_radius = 0.9; t.outer_radius = 1.0; t.rings = 24; t.ring_segments = 4
-	mi.mesh = t
-	mi.material_override = AssetLib.mat(col, 2.0)
-	mi.position = Vector3(p.x, 0.15, p.z)
-	mi.scale = Vector3(0.2, 0.2, 0.2)
-	add_child(mi)
-	var tw := mi.create_tween()
-	tw.tween_property(mi, "scale", Vector3(r, 0.3, r), 0.3)
-	tw.tween_callback(mi.queue_free)
+	# Drawn shockwave ring lying on the ground: pops out to radius r and fades.
+	var s := FX.sprite("ring", 2.0, "ground", col)
+	s.position = Vector3(p.x, 0.06, p.z)
+	add_child(s)
+	var base := s.scale
+	s.scale = base * 0.15
+	var tw := s.create_tween()
+	tw.tween_property(s, "scale", base * r, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(s, "modulate:a", 0.0, 0.3).set_delay(0.12)
+	tw.tween_callback(s.queue_free)
 
 func float_text(p: Vector3, text: String, col: Color) -> void:
 	var l := Label3D.new()

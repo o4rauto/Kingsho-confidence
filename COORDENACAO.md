@@ -105,6 +105,13 @@ seções à mão (mantenha as duas), e push de novo.
   `scripts/game/enemy.gd` só `_ring`. Lê `assets/art/fx/<nome>_<k>.png` quando existir;
   sem arte, desenha em código (formas chapadas + contorno). NÃO toco em model_rig.gd,
   asset_lib.gd, nav.gd, dev_anim, rigs/ (protótipo LOCAL).
+  → FEITO: `fx2d.gd` (sprites 2D: flecha/virote orientados no voo, orbe, bala com
+  sombra deslizando no chão, explosão + fumaça, poça, raio, anel de choque e auras no
+  chão). Desenhos provisórios em `assets/art/fx_fallback/` gerados por
+  `pipeline/tools/make_fx_fallback.py` (3 tons + contorno marrom). **LOCAL: quando
+  gerar a arte de verdade, é só salvar `assets/art/fx/<nome>_<k>.png`** (nomes: arrow,
+  bolt, orb, cannonball, burst, smoke, ring, puddle, zap, shadow; desenhos apontando
+  pra DIREITA; anel/poça vistos de cima) — o jogo troca sozinho. Auto-play OK.
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
