@@ -120,6 +120,13 @@ seções à mão (mantenha as duas), e push de novo.
   `scripts/ui/hero.gd`, `scripts/ui/collection.gd`, `scripts/ui/encyclopedia.gd`,
   `scripts/ui/menu.gd` (só `_build_heroes`). Só LEIO `asset_lib.gd` (chamo `icon` e
   `anim_frames`, sem editar). NÃO toco em model_rig/asset_lib/nav/dev_anim/rigs/anims/portraits.
+  → FEITO: `Screen.preview` (3D) removido; novo `Screen.stage(id)` / `Screen.figure(id)`
+  = desenho num toco de madeira com sombra oval, "respirando"; se houver
+  `anims/<id>/idle|walk|fly_k.png`, toca os quadros a 8 fps. Herói, Heróis (detalhe),
+  Bestiário (detalhe) e a tela de título sem fundo pintado não usam mais 3D.
+  **LOCAL:** monstros sem `portraits/<id>.png` (ice_wisp, yeti, scorpion…) ainda mostram o
+  retrato 3D antigo de `AssetLib.icon` — some sozinho quando o desenho chegar.
+  A escolha de **cor da capa** do Kael não aparece mais (ele é desenho) — pergunta pro dev.
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*

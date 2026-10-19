@@ -10,8 +10,7 @@ func _build() -> void:
 	for c in get_children(): c.queue_free()
 	var v := Screen.make(self, "KAEL", "collection")
 	var list := Screen.scroll(v)
-	var model := AssetLib.make("warden", "warden", Save.hero_cape(), 1.9)
-	list.add_child(Screen.preview(model, 360, 1.2, 6.2))
+	list.add_child(Screen.stage("warden", 360))
 
 	var name_row := HBoxContainer.new()
 	name_row.add_theme_constant_override("separation", 10)

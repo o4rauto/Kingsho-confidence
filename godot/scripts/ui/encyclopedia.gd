@@ -64,10 +64,7 @@ func _detail(id: String) -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	p.add_child(v)
-	var model := AssetLib.make(id, e.kind, e.color, e.radius * 2.4)
-	model.play("run")
-	var big: bool = e.kind == "boss"
-	v.add_child(Screen.preview(model, 300, e.radius * (2.6 if big else 1.6), e.radius * (7.0 if big else 5.5) + 1.5))
+	v.add_child(Screen.stage(id, 300))
 	v.add_child(UIKit.ink(e.name, 44, Color("8a2a10")))
 	v.add_child(UIKit.ink(GameData.enemy_traits(id), 24))
 	v.add_child(UIKit.ink("Vida %d · Velocidade %.1f · Dano no Bastião %d" % [e.hp, e.speed, e.breach], 24))

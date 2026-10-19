@@ -4,6 +4,7 @@ extends Control
 
 const UIKit := preload("res://scripts/ui/ui_kit.gd")
 const TitleArt := preload("res://scripts/ui/title_art.gd")
+const Screen := preload("res://scripts/ui/screen.gd")
 
 var _slots: Control
 var _logo: Control
@@ -83,43 +84,17 @@ func _make_logo() -> Control:
 		v.add_child(t)
 	return holder
 
-## Hero (left) and a Rush brute (right) standing in the landscape — your real
-## 3D models once assets/models/warden.glb etc. exist.
+## Hero (left) facing a Rush brute (right), drawn, standing in the landscape.
 func _build_heroes() -> void:
-	var svc := SubViewportContainer.new()
-	svc.stretch = true
-	svc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	svc.anchor_left = 0.0; svc.anchor_right = 1.0
-	svc.anchor_top = 0.5; svc.anchor_bottom = 0.86
-	add_child(svc)
-	var vp := SubViewport.new()
-	vp.transparent_bg = true
-	vp.own_world_3d = true
-	svc.add_child(vp)
-	var cam := Camera3D.new()
-	cam.position = Vector3(0, 1.6, 7.5)
-	cam.fov = 40
-	vp.add_child(cam)
-	cam.look_at(Vector3(0, 1.0, 0))
-	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-40, 30, 0)
-	sun.light_energy = 1.1
-	vp.add_child(sun)
-	var env := WorldEnvironment.new()
-	env.environment = Environment.new()
-	env.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.environment.ambient_light_color = Color("c8d4f0")
-	env.environment.ambient_light_energy = 0.9
-	vp.add_child(env)
-	var hero := AssetLib.make("warden", "warden", Save.hero_cape(), 2.3)
-	hero.position = Vector3(-2.3, 0, 0)
-	hero.rotation.y = 0.6
-	vp.add_child(hero)
-	var foe := AssetLib.make("ravager", "brute", GameData.enemies.ravager.color, 2.6)
-	foe.position = Vector3(2.5, 0, -0.5)
-	foe.rotation.y = -0.7
-	vp.add_child(foe)
-	foe.play("run")
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.anchor_left = 0.0; row.anchor_right = 1.0
+	row.anchor_top = 0.5; row.anchor_bottom = 0.86
+	add_child(row)
+	for spec in [["warden", false], ["ravager", true]]:
+		var f := Screen.figure(spec[0], false, false, spec[1])
+		f.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(f)
 
 func _open_slots() -> void:
 	if _slots: _slots.queue_free()

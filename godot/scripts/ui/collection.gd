@@ -89,13 +89,7 @@ func _detail(id: String) -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
 	p.add_child(v)
-	var model: Node3D
-	if id == "warden":
-		model = AssetLib.make("warden", "warden", Save.hero_cape(), 1.8)
-	else:
-		var kind := AssetLib.kind_for(def)
-		model = AssetLib.make(id, kind, def.color, 1.2 if kind == "wolf" else 1.8, Save.evo(id) > 0)
-	v.add_child(Screen.preview(model, 280, 1.1, 5.6))
+	v.add_child(Screen.stage(id, 280, id != "warden" and Save.evo(id) > 0))
 	v.add_child(UIKit.ink(def.name, 40, Color("8a2a10")))
 	v.add_child(UIKit.ink(String(def.title), 22, Color("7a5a3a")))
 	v.add_child(UIKit.ink(def.ability, 23))

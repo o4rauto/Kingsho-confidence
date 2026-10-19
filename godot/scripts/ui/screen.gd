@@ -39,45 +39,101 @@ static func scroll(parent: Control) -> VBoxContainer:
 	sc.add_child(list)
 	return list
 
-## A turntable 3D preview (hero / champion) inside a framed box.
-static func preview(model: Node3D, height := 380.0, cam_h := 1.2, dist := 4.4) -> Control:
+## A drawn character standing on a wooden stump inside a framed box.
+static func stage(id: String, height := 380.0, evolved := false) -> Control:
 	var frame := PanelContainer.new()
 	frame.add_theme_stylebox_override("panel", UIKit.box(Color("bfe0f0"), UIKit.WOOD, 20, 8))
 	frame.custom_minimum_size = Vector2(0, height)
-	var svc := SubViewportContainer.new()
-	svc.stretch = true
-	svc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(svc)
-	var vp := SubViewport.new()
-	vp.transparent_bg = true
-	vp.own_world_3d = true
-	svc.add_child(vp)
-	var cam := Camera3D.new()
-	cam.fov = 34
-	vp.add_child(cam)
-	cam.position = Vector3(0, cam_h + 0.3, dist)
-	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-40, 30, 0)
-	sun.light_energy = 1.1
-	vp.add_child(sun)
-	var env := WorldEnvironment.new()
-	env.environment = Environment.new()
-	env.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.environment.ambient_light_color = Color("d0dcf0")
-	env.environment.ambient_light_energy = 0.9
-	vp.add_child(env)
-	var pedestal := MeshInstance3D.new()
-	var cyl := CylinderMesh.new(); cyl.top_radius = 0.9; cyl.bottom_radius = 1.0; cyl.height = 0.2
-	pedestal.mesh = cyl
-	pedestal.material_override = AssetLib.mat(Color("8a5a2e"))
-	pedestal.position.y = -0.1
-	vp.add_child(pedestal)
-	var spin := Spinner.new()
-	vp.add_child(spin)
-	spin.add_child(model)
-	cam.transform = cam.transform.looking_at(Vector3(0, cam_h * 0.75, 0))
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(figure(id, evolved))
 	return frame
 
-class Spinner extends Node3D:
-	func _process(d: float) -> void:
-		rotation.y += d * 0.7
+## The bare drawing (portraits/<id>.png, or its drawn idle/walk/fly frames) with an
+## oval shadow; the still drawing breathes with a gentle squash.
+static func figure(id: String, evolved := false, pedestal := true, flip := false) -> Control:
+	var f := Figure.new()
+	f.still = AssetLib.icon(id, evolved)
+	var anims: Dictionary = AssetLib.anim_frames(id)
+	for a in ["idle", "walk", "fly"]:
+		if anims.has(a):
+			f.frames = anims[a]
+			break
+	f.pedestal = pedestal
+	f.flip = flip
+	return f
+
+class Figure extends Control:
+	const FRAME_BODY := 256.0   # body height of every frame in anims/ (split_sheet.py)
+	const INK := Color("2b1a10")
+	var still: Texture2D
+	var frames: Array = []
+	var pedestal := true
+	var flip := false
+	var _art := TextureRect.new()
+	var _k := 0
+	var _feet := Vector2.ZERO
+	var _rx := 0.0
+	var _r := 0.0
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_art.texture = frames[0] if not frames.is_empty() else still
+		_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_art.stretch_mode = TextureRect.STRETCH_SCALE
+		_art.flip_h = flip
+		_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_art)
+		resized.connect(_layout)
+		_layout()
+		if frames.size() > 1:
+			var t := Timer.new()
+			t.wait_time = 0.125
+			t.autostart = true
+			t.timeout.connect(_next)
+			add_child(t)
+		else:
+			var tw := _art.create_tween().set_loops()
+			tw.tween_property(_art, "scale", Vector2(0.985, 1.035), 0.9).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(_art, "scale", Vector2.ONE, 0.9).set_trans(Tween.TRANS_SINE)
+
+	func _next() -> void:
+		_k = (_k + 1) % frames.size()
+		_art.texture = frames[_k]
+
+	func _layout() -> void:
+		var tex := _art.texture
+		if tex == null or size.x < 2.0 or size.y < 2.0: return
+		var tw := float(tex.get_width())
+		var th := float(tex.get_height())
+		var body := FRAME_BODY if not frames.is_empty() else th
+		var top := 0.82 if pedestal else 0.94
+		var k := minf(size.y * (top - 0.1) / body, size.x * 0.8 / tw)
+		k = minf(k, size.y * (top - 0.04) / th)
+		_feet = Vector2(size.x * 0.5, size.y * top)
+		_art.size = Vector2(tw, th) * k
+		_art.position = _feet - Vector2(_art.size.x * 0.5, _art.size.y)
+		_art.pivot_offset = Vector2(_art.size.x * 0.5, _art.size.y)
+		_rx = minf(_art.size.x * 0.42, size.x * 0.3)
+		_r = minf(_rx * 1.35, (size.y * (1.0 - top) - 6.0) / (1.9 * 0.22))
+		queue_redraw()
+
+	func _draw() -> void:
+		if _rx <= 0.0: return
+		if pedestal:
+			var ry := _r * 0.22
+			var drop := ry * 0.9
+			var low := _feet + Vector2(0, drop)
+			_oval(low, _r + 4, ry + 4, INK)
+			draw_rect(Rect2(_feet.x - _r - 4, _feet.y, (_r + 4) * 2, drop), INK)
+			_oval(low, _r, ry, Color("6a3e1c"))
+			draw_rect(Rect2(_feet.x - _r, _feet.y, _r * 2, drop), Color("6a3e1c"))
+			_oval(_feet, _r + 4, ry + 4, INK)
+			_oval(_feet, _r, ry, Color("a8743e"))
+			_oval(_feet, _r * 0.62, ry * 0.62, Color("8a5a2e"))
+			_oval(_feet, _r * 0.56, ry * 0.56, Color("a8743e"))
+		_oval(_feet, _rx, _rx * 0.26, Color(0.08, 0.04, 0.0, 0.35))
+
+	func _oval(c: Vector2, rx: float, ry: float, col: Color) -> void:
+		draw_set_transform(c, 0.0, Vector2(1.0, ry / rx))
+		draw_circle(Vector2.ZERO, rx, col)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
