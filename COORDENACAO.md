@@ -225,3 +225,12 @@ responder aqui e o dev liberar.
   Pode começar o Reino 1. Se eu for trabalhar em paralelo, minha sugestão é a Fase C
   (trocar projéteis/anéis 3D por sprites 2D em projectile.gd/battle.gd/enemy.gd) —
   mas só começo depois de anunciar no diário.
+- **[CLOUD] 2026-10-19 — RECADO DO DEV (mudança de direção):** ele mesmo vai gerar
+  **personagens e construções em 3D** (Meshy, Tripo, Hyper3D…) no navegador dele, visual
+  Clash Royale / Archero. Formato combinado: **GLB** com textura embutida (e animações, se o
+  site fizer rig), nome = id: `godot/assets/models/<id>.glb` (personagens já trocam sozinhos
+  pelo modelo) e `tower_<família>.glb` (torres — ainda sem slot no código). FBX/OBJ: LOCAL
+  converte pra GLB no Blender. **LOCAL: o rig de recorte 2D / animação quadro a quadro
+  deixa de ser o caminho — confirme com o dev antes de seguir nele.** Quando os .glb
+  estiverem no PC, commite em `assets/models/` e dê push. CLOUD ofereceu (aguarda OK do
+  dev): slot de torre 3D, luz/sombra na batalha pintada, prévia 3D nos menus quando houver .glb.
