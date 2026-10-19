@@ -147,6 +147,12 @@ seções à mão (mantenha as duas), e push de novo.
   Kael antigo; o Kael novo é outro desenho.** Falta no estilo novo: troop_bowmen e os 12
   monstros sem desenho (lista na Fase A do PADRAO).
 
+- [CLOUD] 2026-10-19 20:58 — VOU FAZER: balanceamento da Caldeira de Cinzas. Medição (auto-play
+  nv 8, 8 partidas): 1 derrota e 1 vitória com 4% de Bastião, por meteoro aleatório matando os
+  soldados que seguram a estrada (sem dano em soldado: 8/8 com 2–3★). Ajuste: meteoro continua
+  atingindo todos, mas em soldados/tropas tira bem menos vida. Arquivo: `scripts/game/battle.gd`
+  (só `_resolve`). Os 3 itens de código do 3D esperam OK do dev.
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
