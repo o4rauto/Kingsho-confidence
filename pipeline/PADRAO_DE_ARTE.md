@@ -1,8 +1,13 @@
 # Bastion Rush — PADRÃO DE ARTE (fonte única da verdade)
 
-Tudo no jogo é **desenho 2D**, estilo desenho animado de TV (Cartoon Network /
-Nickelodeon) com visual de Kingdom Rush. **Nada de 3D** para personagens, torres,
-efeitos ou mapas. Toda arte nova segue ESTE arquivo, sem exceção.
+> ⚠️ **DIRETRIZ DO DEV (2026-10-20): o jogo agora é 100% 3D**, estilo cartoon tipo
+> Clash Royale. Este arquivo passa a valer só para a **IDENTIDADE do elenco** (§1: as
+> folhas e os retratos — são a entrada do imagem→3D e o visual de ícones/cartas/bestiário).
+> As partes de produção 2D (folhas de animação, efeitos desenhados, mapas pintados,
+> Fases B–D) estão **obsoletas**. Pipeline 3D e lições: `CLAUDE.md` (ART STANDARD) e
+> `COORDENACAO.md`.
+
+~~Tudo no jogo é desenho 2D … Nada de 3D~~ (substituído pela diretriz acima).
 
 Responda o desenvolvedor sempre em **português**.
 

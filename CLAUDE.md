@@ -5,8 +5,24 @@ cards/Aether × Archero hero. **The game is the Godot 4.3 project in `godot/`**
 (GL Compatibility renderer, GDScript). `web-prototype/` is the old Phaser version, kept for reference only.
 
 ## ART STANDARD — read first
-Everything is 2D drawn cartoon (no 3D). **All art follows `pipeline/PADRAO_DE_ARTE.md`**
-(style anchor, prompt templates, slots, work list). Never deviate from it.
+**The game is 100% 3D** (developer directive, 2026-10-20 — this replaces the earlier
+"everything 2D drawn" plan). Look: stylized cartoon like Clash Royale (original art, no
+copied IP) — simple volumes, readable silhouette, controlled colour, ink outline
+(`AssetLib.aplicar_toon`, thickness 0.03; 0.075 was rejected as sketchy).
+- **Hard surface** (towers, buildings, scenery): built by script in Blender —
+  `pipeline/blender/construir_torre.py` → `godot/assets/models/tower_<family>_<1..3>.glb`
+  (takes priority over the 2D drawing).
+- **Organic** (heroes, troops, monsters, bosses): the developer makes them on image→3D sites
+  (Meshy / Tripo / Hyper3D) from `godot/assets/art/portraits/<id>.png` (the approved cast,
+  sheets in `pipeline/referencias/`), then `pipeline/blender/preparar_personagem.py`
+  (normalize, rig, idle/run/attack/die) → `godot/assets/models/<id>.glb`.
+- Battle camera is **orthographic, 55° pitch**: top faces read most — a strong flat colour
+  on top beats a profile silhouette; tower footprint ~1.3–1.6 units. Always check scale
+  with an in-game screenshot, not only a Blender render.
+- The 2D drawings and 2D effects still in the game are fallbacks until their 3D
+  replacement lands. `pipeline/PADRAO_DE_ARTE.md` now only defines the cast identity.
+- Lessons and who-does-what between the LOCAL (developer's PC) and CLOUD sessions:
+  `COORDENACAO.md` — announce in its diary before doing anything.
 
 ## How the project is built (the asset pipeline)
 Same method as the reference video: AI images → 3D parts → assemble in Blender →

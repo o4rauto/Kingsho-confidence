@@ -280,6 +280,9 @@ seções à mão (mantenha as duas), e push de novo.
   lições da LOCAL (câmera orto 55°, topo colorido, footprint 1.3–1.6, contorno 0.03).
   Toda sessão lê o CLAUDE.md primeiro — inclusive as rodadas automáticas da LOCAL.
   NÃO toco em código, modelos nem `pipeline/blender/`. Proposta de divisão no Mural.
+  → FEITO: `CLAUDE.md` (ART STANDARD = 100% 3D, duro via Blender, orgânico via imagem→3D,
+  câmera orto 55°, topo colorido, footprint, contorno 0.03) e aviso no topo do PADRAO_DE_ARTE
+  (agora só identidade do elenco). Checagem headless e auto-play OK com as torres 3D.
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
