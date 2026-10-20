@@ -82,7 +82,7 @@ func baked_mat() -> StandardMaterial3D:
 ## Dá a um modelo 3D importado (GLB) a mesma linguagem visual dos personagens
 ## assados: luz toon + contorno de tinta por casco invertido. Sem isso o modelo
 ## fica sem contorno e some no meio da arte desenhada.
-func aplicar_toon(n: Node, grossura := 0.075) -> void:
+func aplicar_toon(n: Node, grossura := 0.03) -> void:
 	if n is MeshInstance3D:
 		var mi := n as MeshInstance3D
 		if mi.mesh:

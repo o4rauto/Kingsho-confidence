@@ -232,9 +232,13 @@ def torre_archer(tier, cor):
             pecas.append(caixa("sup%d" % sx, 0.075, 0.075, H * 0.16,
                                (sx * (r - 0.02), 0, h_base + 0.14 + H * 0.08),
                                0.0, mmad))
-        # cone, nao laje: a 55 graus o topo e a face mais visivel, e uma chapa
-        # plana vira so um retangulo de cor. O cone mantem leitura de telhado.
-        pecas += telhado(h_base + 0.14 + H * 0.16, r + 0.26)
+        # Chapa de telhado vermelha. A 55 graus o topo e a face mais visivel,
+        # entao uma superficie grande de cor forte le melhor de cima do que um
+        # cone (que mostra so o deck de madeira). Decisao do dev, confirmada
+        # comparando as duas versoes no jogo.
+        pecas.append(caixa("cobertura", (r + 0.26) * 2.0, (r + 0.18) * 1.5, 0.10,
+                           (0, 0, h_base + 0.14 + H * 0.16), 0.0,
+                           mat("telha", TELHA)))
 
     elif tier == 2:
         r = 0.62
