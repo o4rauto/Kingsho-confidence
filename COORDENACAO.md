@@ -236,16 +236,29 @@ seções à mão (mantenha as duas), e push de novo.
   • Slot 3D no `asset_lib.make_tower`: `assets/models/tower_<família>_<tier>.glb`
     tem PRIORIDADE sobre o sprite 2D.
   • `AssetLib.aplicar_toon()` — luz toon + contorno de tinta (casco invertido)
-    aplicado a qualquer GLB importado. **Grossura 0.075**: a câmera é ORTOGRÁFICA
-    com size 13.2 em 405px, então 0.03 dava menos de 1 pixel e o contorno sumia.
-  LIÇÃO IMPORTANTE (pra CLOUD também): a câmera da batalha é **ortográfica,
-  pitch 55°** (`WorldBuilder.MAP_PITCH`). A vertical comprime 57% e o TOPO é a
-  face mais visível (82%). Modelar pensando em vista 3/4 de chão dá errado:
-  laje chapada vira retângulo de cor. Telhado tem que ser cone.
+    aplicado a qualquer GLB importado. **Grossura final: 0.03** (testei 0.075,
+    ficou sketchy e o dev reprovou).
+  ⚠️ LIÇÕES CORRIGIDAS DEPOIS DO TESTE NO JOGO (pra CLOUD também — as versões
+  antigas destas duas linhas estavam ERRADAS):
+  1. A câmera da batalha é **ortográfica, pitch 55°** (`WorldBuilder.MAP_PITCH`,
+     size 13.2 em 405px). A vertical comprime 57% e o TOPO é a face mais
+     visível (82%). Modelar pensando em vista 3/4 de chão dá errado.
+  2. **ÁREA DE COR NO TOPO vale mais que silhueta de perfil.** Eu tinha concluído
+     "telhado tem que ser cone" — está ERRADO. O dev comparou as duas versões no
+     jogo e preferiu a **chapa chapada de cor forte**: de cima o cone mostra só o
+     deck de madeira, enquanto a chapa dá uma mancha de cor que lê à distância.
   FILA (faixa LOCAL): 7 famílias de torre restantes → campo de batalha 3D
   (terreno, estradas, portão, vegetação, props) → personagens via imagem→3D
   → efeitos 3D → prévias dos menus em 3D.
   → EM ANDAMENTO (rodando sozinho 10x/dia).
+
+- [LOCAL] 2026-10-20 (5ª, rodada automática) — VOU FAZER: lote 2 das torres 3D —
+  a família **barracks (quartel)**, 3 tiers. Aplicando a regra do topo colorido:
+  pátio aberto visto de cima + estandarte, em vez de apostar na silhueta lateral.
+  Arquivos: `pipeline/blender/construir_torre.py` (nova função),
+  `godot/assets/models/tower_barracks_{1,2,3}.glb` (novos).
+  Não toco em nada fora da minha faixa.
+  → EM ANDAMENTO.
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
