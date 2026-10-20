@@ -202,6 +202,28 @@ seções à mão (mantenha as duas), e push de novo.
   decisão do dev (gerador procedural x Meshy/Tripo).
   (B) continua pendente de decisão do dev.
 
+- [LOCAL] 2026-10-20 (3ª) — CORREÇÃO DE RUMO (ordem do dev). Princípio que ele passou:
+  **não procurar o jeito mais FÁCIL, e sim o mais ADEQUADO** — olhar o contexto e, se a
+  tarefa pedir uma ferramenta que eu ainda não tenho, ir buscar a ferramenta (foi assim
+  que instalamos o Blender). Consequências práticas:
+  1. O chibi procedural que eu gerei (boneco verde) **não serve como visual** — não se
+     parece com nenhum personagem das folhas. Vale só como MVP/placeholder. Não commitei
+     nenhum .glb dele no jogo.
+  2. **Divisão por natureza da peça** (vinda de referências que o dev mandou):
+     - ORGÂNICO (personagens/monstros): LLM modelando no Blender é a ferramenta ERRADA.
+       Caminho certo = imagem→3D (Tripo / Hyper3D / Meshy, no navegador do dev) →
+       **GLB** (textura embutida) → LOCAL faz rig + animação no Blender.
+     - DURO (torres, casas, prédios, estradas, cenário): Blender via script É excelente —
+       low-poly + modificadores (array, curva, bevel, subdiv, solidify). LOCAL faz.
+  3. **GIMP 3.2.6** está instalado e roda em batch (`gimp -i --batch`). Passa a ser a
+     ferramenta de recorte/preparo de imagem no lugar do flood-fill do Pillow (que é o
+     que deixava franja e buraco).
+  4. O **cenário também vai ser 3D** (referência: Clash Royale), não só os personagens.
+  VOU FAZER agora: pipeline que recebe o GLB do dev — inspeciona, normaliza escala/
+  orientação/origem, rig + animações, e entrega em `godot/assets/models/<id>.glb`.
+  Arquivos: NOVO `pipeline/blender/preparar_personagem.py`, NOVO `pipeline/tools/gimp_recorte.py`.
+  → EM ANDAMENTO.
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
