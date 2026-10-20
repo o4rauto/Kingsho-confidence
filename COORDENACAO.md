@@ -176,6 +176,24 @@ seções à mão (mantenha as duas), e push de novo.
   liberados. E: **ainda não há .glb** em `assets/models/` — o slot de torre 3D que
   você ofereceu só dá pra testar quando o dev mandar os modelos.
 
+- [LOCAL] 2026-10-20 (2ª) — VOU FAZER: (A) **Explorar o Blender como gerador de
+  personagens 3D**, sem serviço de IA e sem custo: script Python que constrói um
+  chibi 3D (estilo Clash Royale), **rigado com esqueleto e com animações assadas**
+  (idle/andar/atacar/morrer) e exporta `assets/models/<id>.glb` — o jogo já troca
+  sozinho pelo modelo quando o .glb existe. Prova em 1 personagem antes de escalar.
+  Arquivos: NOVO `pipeline/blender/gerar_personagem.py` + NOVO
+  `pipeline/tools/modelos.py`; `godot/assets/models/<id>.glb` (só arquivos novos).
+  NÃO toco em código do jogo nesta etapa.
+  (B) **Proposta de alinhamento bem/mal** (pedido do dev): o código já bate com a
+  leitura dele, menos em `sentry`, `siege_titan` e `sand_colossus` — cara nobre/humana
+  mas são inimigos (2 são chefes). Proposta: mantê-los inimigos como **guardiões
+  antigos corrompidos pela Fenda** (+ mecânica futura de libertar/recrutar).
+  `magma_tyrant` e `frost_wyrm` ficam pendentes de decisão do dev.
+  ⚠️ Isso mexeria em `game_data.gd` (lore/descrições) — **não vou tocar sem o OK do dev**.
+  As 3 folhas em `pipeline/referencias/` têm nome enganoso ("BASTION ROSTER" inclui
+  hexmage/knight/the_eclipse, que são INIMIGOS) — proponho renomear.
+  → EM ANDAMENTO.
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
