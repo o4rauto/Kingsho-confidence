@@ -79,6 +79,31 @@ func baked_mat() -> StandardMaterial3D:
 		_vc_mat.next_pass = ol
 	return _vc_mat
 
+## Dá a um modelo 3D importado (GLB) a mesma linguagem visual dos personagens
+## assados: luz toon + contorno de tinta por casco invertido. Sem isso o modelo
+## fica sem contorno e some no meio da arte desenhada.
+func aplicar_toon(n: Node, grossura := 0.075) -> void:
+	if n is MeshInstance3D:
+		var mi := n as MeshInstance3D
+		if mi.mesh:
+			for i in mi.mesh.get_surface_count():
+				var base: Material = mi.mesh.surface_get_material(i)
+				if base is StandardMaterial3D:
+					var sm := (base as StandardMaterial3D).duplicate() as StandardMaterial3D
+					sm.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+					sm.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+					sm.roughness = 1.0
+					var ol := StandardMaterial3D.new()
+					ol.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+					ol.cull_mode = BaseMaterial3D.CULL_FRONT
+					ol.grow = true
+					ol.grow_amount = grossura
+					ol.albedo_color = INK
+					sm.next_pass = ol
+					mi.set_surface_override_material(i, sm)
+	for c in n.get_children():
+		aplicar_toon(c, grossura)
+
 ## kind: warden | melee | ranged | tower | support | golem | wolf | queen
 ##       runner | brute | flyer | caster | boss | bastion
 ## Drawn (2D) art for a character id, or null.
@@ -707,6 +732,17 @@ func _bastion(b: Node3D, h: float) -> void:
 ## family: archer | barracks | mage | artillery · tier 0..2 · spec: champion id or ""
 func make_tower(family: String, tier: int, spec := "") -> Node3D:
 	var root := Node3D.new()
+	# Modelo 3D tem prioridade sobre o desenho 2D:
+	# assets/models/tower_<família>_<tier>.glb (tier chega 0..2, os arquivos são 1..3).
+	# Já saem do Blender na altura certa e com a origem no chão: é só instanciar.
+	var mpath := MODEL_DIR + "tower_%s_%d.glb" % [family, tier + 1]
+	if FileAccess.file_exists(mpath):
+		var inst := _load_glb(mpath)
+		if inst:
+			aplicar_toon(inst)
+			root.add_child(inst)
+			root.set_meta("modelo3d", true)
+			return root
 	var art := UIKit.art("towers/%s.png" % family)
 	if art:
 		var spr := Sprite3D.new()

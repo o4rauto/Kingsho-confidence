@@ -221,8 +221,31 @@ seções à mão (mantenha as duas), e push de novo.
   4. O **cenário também vai ser 3D** (referência: Clash Royale), não só os personagens.
   VOU FAZER agora: pipeline que recebe o GLB do dev — inspeciona, normaliza escala/
   orientação/origem, rig + animações, e entrega em `godot/assets/models/<id>.glb`.
-  Arquivos: NOVO `pipeline/blender/preparar_personagem.py`, NOVO `pipeline/tools/gimp_recorte.py`.
-  → EM ANDAMENTO.
+  Arquivos: NOVO `pipeline/blender/preparar_personagem.py`.
+  → FEITO: `preparar_personagem.py` testado ponta a ponta (inspeciona, normaliza
+  escala/orientação/origem-no-pé, decimate, rig humanoide, 4 animações, export).
+
+- [LOCAL] 2026-10-20 (4ª) — **DIRETRIZ NOVA DO DEV: o jogo passa a ser 100% 3D.
+  Nada mais em 2D.** Linguagem visual: cartoon estilizado tipo Clash Royale
+  (princípios: volume simples, silhueta legível, cor controlada, contorno grosso) —
+  sem copiar IP de ninguém, arte original.
+  FEITO nesta rodada:
+  • `pipeline/blender/construir_torre.py` — construtor de torres 3D por script.
+    Torre de arqueiros nos 3 tiers (1124 / 1452 / 1548 tris), com progressão
+    visual real (t1 posto aberto → t2 ameias+seteiras+estandarte → t3 telhado cônico).
+  • Slot 3D no `asset_lib.make_tower`: `assets/models/tower_<família>_<tier>.glb`
+    tem PRIORIDADE sobre o sprite 2D.
+  • `AssetLib.aplicar_toon()` — luz toon + contorno de tinta (casco invertido)
+    aplicado a qualquer GLB importado. **Grossura 0.075**: a câmera é ORTOGRÁFICA
+    com size 13.2 em 405px, então 0.03 dava menos de 1 pixel e o contorno sumia.
+  LIÇÃO IMPORTANTE (pra CLOUD também): a câmera da batalha é **ortográfica,
+  pitch 55°** (`WorldBuilder.MAP_PITCH`). A vertical comprime 57% e o TOPO é a
+  face mais visível (82%). Modelar pensando em vista 3/4 de chão dá errado:
+  laje chapada vira retângulo de cor. Telhado tem que ser cone.
+  FILA (faixa LOCAL): 7 famílias de torre restantes → campo de batalha 3D
+  (terreno, estradas, portão, vegetação, props) → personagens via imagem→3D
+  → efeitos 3D → prévias dos menus em 3D.
+  → EM ANDAMENTO (rodando sozinho 10x/dia).
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
