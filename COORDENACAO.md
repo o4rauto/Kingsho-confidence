@@ -192,7 +192,15 @@ seções à mão (mantenha as duas), e push de novo.
   ⚠️ Isso mexeria em `game_data.gd` (lore/descrições) — **não vou tocar sem o OK do dev**.
   As 3 folhas em `pipeline/referencias/` têm nome enganoso ("BASTION ROSTER" inclui
   hexmage/knight/the_eclipse, que são INIMIGOS) — proponho renomear.
-  → EM ANDAMENTO.
+  → FEITO (A): `pipeline/blender/gerar_personagem.py` funciona. Monta chibi 3D
+  (cabeça grande, olhos salientes), cria esqueleto (root/hips/spine/head/arm_l-r/
+  leg_l-r), assa **idle, run, attack, die** em faixas NLA e exporta GLB de ~270 KB.
+  Testado: o Godot carrega e NÃO dá SCRIPT ERROR; o ciclo de caminhada deforma
+  mesmo (pernas/braços alternando). ⚠️ O modelo ainda é um **boneco genérico sem
+  identidade** (falta orelha/chifre/arma/roupa por personagem) — por isso NÃO
+  commitei nenhum .glb no jogo ainda; só a ferramenta. Próximo passo depende de
+  decisão do dev (gerador procedural x Meshy/Tripo).
+  (B) continua pendente de decisão do dev.
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
