@@ -39,14 +39,12 @@ seções à mão (mantenha as duas), e push de novo.
 ## LOCK ativo
 *(quem está editando o quê agora)*
 
-- **[LOCAL] ⏸️ MODO ESTUDO / STANDBY (2026-10-11)** — execução **pausada** a pedido
-  do dev. Estamos estudando como a Ironhide fez o Kingdom Rush antes de produzir.
-  Ver **`pipeline/ESTUDO_KINGDOM_RUSH.md`** (LOCAL começou; CLOUD completa).
-  ⚠️ Há um **protótipo de rig NÃO commitado** no meu working tree, nestes arquivos
-  — CLOUD, evite-os por ora pra não conflitar: `scripts/game/model_rig.gd`,
-  `scripts/autoload/asset_lib.gd`, `scripts/autoload/nav.gd`,
-  `scripts/dev_anim.gd` (novo), `scenes/dev_anim.tscn` (novo),
-  `godot/assets/art/rigs/warden/` (novo).
+- **[LOCAL] 🟢 SEM LOCK — aguardando o dev (2026-10-20)**. Não estou editando nada.
+  ✅ O protótipo de rig 2D que travava `model_rig.gd`, `asset_lib.gd`, `nav.gd`,
+  `dev_anim.*` e `rigs/warden/` **saiu do working tree**: foi parar no branch git
+  **local** `local/backup-2026-10-20` (só no PC, sem push) + numa pasta de reserva.
+  **Esses arquivos estão LIVRES para a CLOUD** — o caminho do rig/quadro-a-quadro
+  foi abandonado pela decisão do dev de ir para 3D/GLB.
 
 - **[CLOUD]** — em espera, **sem lock**. Não vou mexer em nada do Reino 1. Antes de
   pegar qualquer coisa, aviso no Diário de intenções.
@@ -154,6 +152,29 @@ seções à mão (mantenha as duas), e push de novo.
   (só `_resolve`). Os 3 itens de código do 3D esperam OK do dev.
   → FEITO: meteoro tira 14 de vida de soldado/tropa (antes 54; brasas do Bosque iguais).
   Caldeira nv 8, 8 partidas: 5× 3★ e 3× 2★, nenhuma derrota. Bosque/Portão sem mudança.
+
+- [LOCAL] 2026-10-20 — RETOMADA (a sessão LOCAL estava parada desde 11/out). FIZ:
+  (1) **Inventário** do PC: só existem 2 clones do repo — `~/Kingsho-confidence`
+  (ativo) e `~/bastion-rush` (parado em `cacb6a6`, 11/out, desatualizado, **não
+  apagado**). **NÃO existe nenhum `.glb/.gltf/.fbx/.obj` nem `.blend` no PC** —
+  os modelos 3D do Meshy/Tripo/Hyper3D ainda não chegaram aqui. Não há APK nem
+  keystore do Bastion Rush. Nenhuma arte do jogo solta fora do git.
+  (2) **Reserva** em `~/BastionRush_RESERVA_2026-10-20/` (os dois clones com `.git`
+  + `INVENTARIO.txt`). Nada original foi movido ou apagado.
+  (3) O **protótipo do rig 2D** (não commitado) foi salvo no branch local
+  `local/backup-2026-10-20` (sem push) — libera os arquivos que eu travava.
+  (4) `git pull --ff-only` OK (10 commits da CLOUD). Nenhum commit meu ficou
+  sem enviar. Li COORDENACAO, PADRAO_DE_ARTE e o log.
+  (5) **Verificação**: `--headless --quit-after 120` sem SCRIPT ERROR; jogo abre
+  com tela; auto-play do Portão Partido rodando com o elenco novo (print pro dev).
+  (6) Instalei o **Blender** no PC (o dev pediu): a GPU é **Intel HD Graphics 4000**,
+  que só vai até OpenGL 4.2, então o Blender 4.5 recusou ("Unsupported hardware").
+  Instalei o **3.6.23 LTS** (OpenGL 3.3) em `~/blender-3.6.23-linux-x64`, atalho
+  `~/.local/bin/blender` — abre e renderiza normal. Serve para converter FBX/OBJ → GLB.
+  → FEITO. LOCAL agora **sem lock, aguardando o dev**.
+  📌 CLOUD: `model_rig.gd`, `asset_lib.gd`, `nav.gd`, `dev_anim.*` e `rigs/` estão
+  liberados. E: **ainda não há .glb** em `assets/models/` — o slot de torre 3D que
+  você ofereceu só dá pra testar quando o dev mandar os modelos.
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
