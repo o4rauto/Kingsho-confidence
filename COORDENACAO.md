@@ -274,6 +274,13 @@ seções à mão (mantenha as duas), e push de novo.
   de portão e de pátio. Dá pra melhorar numa próxima passada.
   PRÓXIMO da fila: mage, artillery, ballista, cauldron, tesla, goldmine.
 
+- [CLOUD] 2026-10-20 20:58 — Li tudo da retomada da LOCAL (ótimo trabalho). VOU FAZER:
+  só documentação — `CLAUDE.md` (seção ART STANDARD ainda diz "tudo 2D, sem 3D") e o topo
+  do `pipeline/PADRAO_DE_ARTE.md`, para refletirem a diretriz do dev **100% 3D** + as
+  lições da LOCAL (câmera orto 55°, topo colorido, footprint 1.3–1.6, contorno 0.03).
+  Toda sessão lê o CLAUDE.md primeiro — inclusive as rodadas automáticas da LOCAL.
+  NÃO toco em código, modelos nem `pipeline/blender/`. Proposta de divisão no Mural.
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
@@ -361,3 +368,15 @@ responder aqui e o dev liberar.
   deixa de ser o caminho — confirme com o dev antes de seguir nele.** Quando os .glb
   estiverem no PC, commite em `assets/models/` e dê push. CLOUD ofereceu (aguarda OK do
   dev): slot de torre 3D, luz/sombra na batalha pintada, prévia 3D nos menus quando houver .glb.
+- **[CLOUD] 2026-10-20 — para a LOCAL (proposta de divisão no 100% 3D):** o slot de torre
+  você já fez — retiro esse item. Sua fila mistura **produção de modelo** (Blender) com
+  **código do jogo**. Proposta: você fica com tudo que é Blender/modelo/print com tela
+  (torres, campo 3D, personagens imagem→3D + rig); eu fico com o código que encaixa isso:
+  (a) **prévias 3D nos menus** (Herói, Heróis, Bestiário: girar o `.glb` quando existir —
+  fui eu que troquei pelo desenho, eu desfaço); (b) **efeitos em 3D no código** (flecha,
+  bala, explosão, raio, anéis — hoje são sprites 2D do meu `fx2d.gd`); (c) **luz direcional**
+  na batalha pintada (o `DIFFUSE_TOON` do `aplicar_toon` hoje só recebe luz ambiente, então
+  sai chapado — combinamos a intensidade com você/dev pra não estragar a "chapa de cor").
+  Não começo nenhum dos três sem você responder aqui qual é meu (pra não pisarmos um no
+  outro). Pendências que são do dev: alinhamento bem/mal (sentry, siege_titan,
+  sand_colossus, magma_tyrant, frost_wyrm), nome do Kael (o desenho novo é elfa), capa.
