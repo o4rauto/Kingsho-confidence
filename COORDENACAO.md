@@ -258,7 +258,21 @@ seções à mão (mantenha as duas), e push de novo.
   Arquivos: `pipeline/blender/construir_torre.py` (nova função),
   `godot/assets/models/tower_barracks_{1,2,3}.glb` (novos).
   Não toco em nada fora da minha faixa.
-  → EM ANDAMENTO.
+  → FEITO (parcial, pausado pelo dev): quartel nos 3 tiers no jogo
+  (484 / 964 / 1120 tris; alturas 2.23 / 2.52 / 2.81 — forte baixo, não torre).
+  Headless sem SCRIPT ERROR.
+  ⚠️ DOIS BUGS QUE EU COMETI E CORRIGI — não repetir nas próximas famílias:
+  1. `cil()` centra a peça em z+h/2. Eu sobrescrevia `location` com o z da
+     plataforma, então metade da torreta ficava enterrada e aparecia por baixo
+     do forte. Para APOIAR algo numa altura z: centro = z + altura/2.
+  2. **FOOTPRINT**: fiz o forte com 3.5 de largura e no jogo ele cobriu a
+     estrada inteira. A prévia do Blender não pega isso (não tem nada de
+     referência ao lado). **Regra: footprint total ~1.3-1.6**, igual à torre de
+     arqueiros (base raio ~0.6). SEMPRE conferir escala com print do jogo, não
+     só com render do Blender.
+  PENDENTE no quartel: lê como caixa estreita de topo vermelho; falta leitura
+  de portão e de pátio. Dá pra melhorar numa próxima passada.
+  PRÓXIMO da fila: mage, artillery, ballista, cauldron, tesla, goldmine.
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*

@@ -27,6 +27,10 @@ from mathutils import Vector
 # altura final por tier, igual ao que o jogo espera (asset_lib.make_tower)
 ALTURA = {1: 3.1, 2: 3.5, 3: 3.9}
 
+# Nem toda "torre" e uma torre. O quartel e um forte baixo e largo; forcar a
+# altura de torre nele deixa com cara de silo. Multiplicador por familia.
+ALTURA_FAM = {"archer": 1.0, "barracks": 0.72}
+
 PEDRA = "a9a093"
 PEDRA_ESC = "70685c"
 MADEIRA = "8a5a2f"
@@ -271,7 +275,90 @@ def torre_archer(tier, cor):
     return pecas
 
 
-FAMILIAS = {"archer": torre_archer}
+def muro(nome, comp, esp, alt, loc, rot_z, material):
+    return caixa(nome, comp, esp, alt, loc, rot_z, material)
+
+
+def torre_barracks(tier, cor):
+    """Quartel: forte quadrado baixo com patio aberto de onde saem os soldados.
+    Leitura de cima (regra do topo colorido): telhados de cor forte nas alas
+    laterais + patio escuro no meio + estandarte. A silhueta lateral quase nao
+    aparece na camera de 55 graus, entao o investimento vai no topo."""
+    H = ALTURA[tier] * ALTURA_FAM["barracks"]
+    mp, mpe = mat("pedra", PEDRA), mat("pedra_esc", PEDRA_ESC)
+    mmad, mtel = mat("madeira", MADEIRA), mat("telha", TELHA)
+    mpatio = mat("patio", "6b4f33", 0.95)
+    pecas = []
+
+    # lado * 2.08 = largura total. Mantem no mesmo footprint da torre de
+    # arqueiros (~1.3-1.6), senao o quartel engole a estrada.
+    lado = {1: 0.60, 2: 0.68, 3: 0.76}[tier]
+    h_mur = H * 0.62
+    esp = 0.16
+
+    # plataforma de pedra (base quadrada)
+    pecas.append(caixa("plat", lado * 2.08, lado * 2.08, H * 0.16,
+                       (0, 0, H * 0.08), 0.0, mpe))
+    # patio: piso de terra batida, escuro -> contrasta com o telhado colorido
+    pecas.append(caixa("patio", lado * 1.80, lado * 1.80, H * 0.05,
+                       (0, 0, H * 0.16 + H * 0.025), 0.0, mpatio))
+
+    # 4 muros, com portao (vao) no muro da frente
+    z_mur = H * 0.16 + h_mur / 2.0
+    for nome, (dx, dy, rot, comp) in {
+            "fundo": (0, lado, 0.0, lado * 2.0),
+            "esq": (-lado, 0, math.pi / 2, lado * 2.0),
+            "dir": (lado, 0, math.pi / 2, lado * 2.0)}.items():
+        pecas.append(muro("muro_" + nome, comp, esp, h_mur,
+                          (dx, dy, z_mur), rot, mp))
+    # frente: dois trechos deixando o portao no meio
+    vao = lado * 0.62
+    for sx in (-1, 1):
+        comp = lado - vao / 2.0
+        pecas.append(muro("muro_frente%d" % sx, comp, esp, h_mur,
+                          (sx * (vao / 2.0 + comp / 2.0), -lado, z_mur), 0.0, mp))
+
+    # ALAS COBERTAS: a mancha de cor que o jogador ve de cima
+    z_tel = H * 0.16 + h_mur
+    aba = lado * 0.78
+    for sy in (-1, 1):
+        pass_t1 = False
+        if tier == 1 and sy < 0:
+            aba = lado * 0.52             # t1: ala da frente mais estreita
+            pass_t1 = True
+        pecas.append(caixa("telhado%d" % sy, lado * 2.12, aba, H * 0.10,
+                           (0, sy * (lado - aba / 2.0 + 0.06), z_tel + H * 0.05),
+                           0.0, mtel))
+        # viga de madeira na borda do telhado dá acabamento
+        pecas.append(caixa("viga%d" % sy, lado * 2.12, 0.10, H * 0.05,
+                           (0, sy * (lado - aba + 0.02), z_tel + H * 0.012),
+                           0.0, mmad))
+        if pass_t1:
+            aba = lado * 0.78
+
+    if tier >= 2:
+        # torretas de canto: marcam a evolucao sem subir muito a altura
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                h_tor = h_mur * 1.22
+                tor = cil("torreta", 0.22, 0.20, h_tor, 0.0, 8, mp)
+                # apoia NA plataforma: centro = base + metade da altura
+                tor.location = (sx * (lado - 0.06), sy * (lado - 0.06),
+                                H * 0.16 + h_tor / 2.0)
+                pecas.append(tor)
+        pecas += estandarte(z_tel + H * 0.10, lado, cor)
+    if tier == 3:
+        # segunda bandeira + soleira de pedra no portao
+        b = estandarte(z_tel + H * 0.10, lado, cor)
+        for o in b:
+            o.location.x += lado * 0.9
+        pecas += b
+        pecas.append(caixa("soleira", vao, 0.22, H * 0.06,
+                           (0, -lado, H * 0.16 + H * 0.03), 0.0, mpe))
+    return pecas
+
+
+FAMILIAS = {"archer": torre_archer, "barracks": torre_barracks}
 
 
 # ───────────────────────── prévia ─────────────────────────
@@ -354,14 +441,15 @@ def main():
 
     # escala exata pra altura que o jogo espera
     alt = mx.z - mn.z
-    k = ALTURA[tier] / alt
+    alvo = ALTURA[tier] * ALTURA_FAM.get(fam, 1.0)
+    k = alvo / alt
     torre.scale = (k, k, k)
     aplicar(torre)
 
     tris = sum(len(p.vertices) - 2 for p in torre.data.polygons)
     print("TORRE %s t%d | faces=%d tris=%d materiais=%d altura=%.2f"
           % (fam, tier, len(torre.data.polygons), tris,
-             len(torre.data.materials), ALTURA[tier]))
+             len(torre.data.materials), alvo))
 
     os.makedirs(saida_dir, exist_ok=True)
     nome = "tower_%s_%d" % (fam, tier)
