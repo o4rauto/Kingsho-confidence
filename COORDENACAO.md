@@ -306,6 +306,16 @@ seções à mão (mantenha as duas), e push de novo.
   Conclusão do piloto: dá para fazer personagem orgânico chibi só com Blender por script, com
   medição a cada fase — ~1 h por personagem. Próximo depende do dev aprovar o visual.
 
+- [CLOUD] 2026-10-22 — DEV APROVOU o husk 3D ("TÁ LINDO … pode fazer TUDO assim, TODO O RESTO").
+  VOU FAZER: **todos os 47 personagens restantes em 3D** pelo mesmo pipeline Blender (heróis, tropas
+  `footman`/`bowman`, monstros e chefes, inclusive os 12 sem desenho). Primeiro um kit reaproveitável
+  `pipeline/modelos/_comum/` (peças, esqueletos bípede/quadrúpede/voador/flutuante, animações,
+  exportação), depois um `pipeline/modelos/<id>/` por personagem → `godot/assets/models/<id>.glb`.
+  Ordem: Reino 1 (warden, footman, bowman, wisp, ravager, the_maw) → demais heróis → reinos 2–10.
+  Commit a cada personagem/lote. NÃO toco em torres, `bastion`, cenário, `construir_torre.py` nem
+  `preparar_personagem.py` (faixa LOCAL). LOCAL: se continuar parada e o dev quiser, depois dos
+  personagens eu anuncio aqui antes de pegar torres/cenário.
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
