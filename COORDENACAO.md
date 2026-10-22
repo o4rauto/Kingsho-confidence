@@ -342,6 +342,8 @@ seções à mão (mantenha as duas), e push de novo.
   madeira (SubViewport próprio, luz simples) quando existe modelo, e a cada ~3,5 s exibe o golpe de perto e o
   de longe (`attack`/`cast`); sem modelo continua o desenho. Só esse arquivo. Itens (b) efeitos 3D e (c) luz
   da batalha continuam esperando a LOCAL/dev.
+  → FEITO: câmera ortográfica que se ajusta ao modelo e ao formato do quadro (Serpe e Escorpião cabem inteiros);
+  todas as telas sem SCRIPT ERROR; prints da tela Herói e de uma grade de prévias conferidos.
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*

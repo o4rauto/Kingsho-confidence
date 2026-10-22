@@ -39,14 +39,81 @@ static func scroll(parent: Control) -> VBoxContainer:
 	sc.add_child(list)
 	return list
 
-## A drawn character standing on a wooden stump inside a framed box.
+## A character on a wooden stump inside a framed box: its 3D model when there is one, else the drawing.
 static func stage(id: String, height := 380.0, evolved := false) -> Control:
 	var frame := PanelContainer.new()
 	frame.add_theme_stylebox_override("panel", UIKit.box(Color("bfe0f0"), UIKit.WOOD, 20, 8))
 	frame.custom_minimum_size = Vector2(0, height)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(figure(id, evolved))
+	frame.add_child(turntable(id, evolved) if AssetLib.has_model(id) else figure(id, evolved))
 	return frame
+
+## The 3D model turning slowly on a wooden stump (own small world, simple light); every few
+## seconds it shows off its melee swing and its ranged/special clip.
+static func turntable(id: String, evolved := false) -> Control:
+	var svc := SubViewportContainer.new()
+	svc.stretch = true
+	svc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var vp := SubViewport.new()
+	vp.transparent_bg = true
+	vp.own_world_3d = true
+	svc.add_child(vp)
+	var cam := Camera3D.new()
+	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+	cam.transform = Transform3D.IDENTITY.looking_at(Vector3(0, -0.3, -1.0)).translated(Vector3(0, 3.0, 10.0))
+	vp.add_child(cam)
+	var sun := DirectionalLight3D.new()
+	sun.rotation_degrees = Vector3(-45, 25, 0)
+	sun.light_energy = 1.0
+	vp.add_child(sun)
+	var env := WorldEnvironment.new()
+	env.environment = Environment.new()
+	env.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.environment.ambient_light_color = Color("e0e8f4")
+	env.environment.ambient_light_energy = 0.95
+	vp.add_child(env)
+	var stump := MeshInstance3D.new()
+	var cyl := CylinderMesh.new(); cyl.top_radius = 0.8; cyl.bottom_radius = 0.9; cyl.height = 0.22
+	stump.mesh = cyl
+	stump.material_override = AssetLib.mat(Color("8a5a2e"))
+	stump.position.y = -0.11
+	vp.add_child(stump)
+	var ring := MeshInstance3D.new()
+	var top := CylinderMesh.new(); top.top_radius = 0.66; top.bottom_radius = 0.66; top.height = 0.01
+	ring.mesh = top
+	ring.material_override = AssetLib.mat(Color("c79a5e"))
+	ring.position.y = 0.005
+	vp.add_child(ring)
+	var spin := Turntable.new()
+	vp.add_child(spin)
+	spin.rig = AssetLib.make(id, "hero", Color.WHITE, 1.75, evolved)
+	spin.add_child(spin.rig)
+	spin.cam = cam
+	var box: AABB = spin.rig._aabb(spin.rig, Transform3D.IDENTITY)
+	spin.reach = maxf(0.9, Vector2(maxf(absf(box.position.x), absf(box.end.x)), maxf(absf(box.position.z), absf(box.end.z))).length())
+	spin.tall = box.end.y + 0.25
+	return svc
+
+class Turntable extends Node3D:
+	var rig
+	var cam: Camera3D
+	var reach := 1.0   # radius the model sweeps while turning (stump included)
+	var tall := 2.0
+	var _t := 0.0
+	var _n := 0
+
+	func _process(d: float) -> void:
+		rotation.y += d * 0.6
+		# fit the turning model to the frame, whatever its aspect (portrait cards or wide stages)
+		var sz := get_viewport().get_visible_rect().size
+		var aspect := sz.x / maxf(1.0, sz.y)
+		cam.size = maxf(tall, 2.0 * reach / aspect) * 1.2
+		cam.position.y = tall * 0.45 + 3.0   # the view ray drops 0.3 per unit over the 10 units to the model
+		_t += d
+		if _t > 3.5 and rig:
+			_t = 0.0
+			_n += 1
+			rig.play("attack" if _n % 2 == 1 else "cast")
 
 ## The bare drawing (portraits/<id>.png, or its drawn idle/walk/fly frames) with an
 ## oval shadow; the still drawing breathes with a gentle squash.
