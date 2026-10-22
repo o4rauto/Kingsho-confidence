@@ -1,0 +1,18 @@
+{
+ "tris": 9026,
+ "verts": 4746,
+ "bones": 18,
+ "materials": 10,
+ "height": 1.535,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 20,
+  "cast": 20,
+  "die": 28
+ },
+ "id": "rift_sovereign",
+ "glb": "godot/assets/models/rift_sovereign.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 13
+}

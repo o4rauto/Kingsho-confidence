@@ -1,0 +1,17 @@
+{
+ "tris": 4800,
+ "verts": 2518,
+ "bones": 18,
+ "materials": 8,
+ "height": 0.821,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 14,
+  "die": 28
+ },
+ "id": "bog_lurker",
+ "glb": "godot/assets/models/bog_lurker.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

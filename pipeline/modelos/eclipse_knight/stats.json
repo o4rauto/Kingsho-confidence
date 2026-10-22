@@ -1,0 +1,17 @@
+{
+ "tris": 5688,
+ "verts": 2987,
+ "bones": 18,
+ "materials": 8,
+ "height": 1.05,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 16,
+  "die": 28
+ },
+ "id": "eclipse_knight",
+ "glb": "godot/assets/models/eclipse_knight.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 10
+}

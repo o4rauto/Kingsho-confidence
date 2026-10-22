@@ -1,0 +1,18 @@
+{
+ "tris": 9212,
+ "verts": 4847,
+ "bones": 18,
+ "materials": 14,
+ "height": 1.214,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 16,
+  "cast": 20,
+  "die": 28
+ },
+ "id": "warden",
+ "glb": "godot/assets/models/warden.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 9
+}

@@ -1,0 +1,18 @@
+{
+ "tris": 4844,
+ "verts": 2516,
+ "bones": 18,
+ "materials": 10,
+ "height": 1.009,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 16,
+  "cast": 14,
+  "die": 28
+ },
+ "id": "hexmage",
+ "glb": "godot/assets/models/hexmage.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 10
+}

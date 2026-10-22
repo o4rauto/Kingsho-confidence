@@ -1,0 +1,18 @@
+{
+ "tris": 5832,
+ "verts": 3053,
+ "bones": 18,
+ "materials": 10,
+ "height": 1.074,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 12,
+  "cast": 16,
+  "die": 28
+ },
+ "id": "sentry",
+ "glb": "godot/assets/models/sentry.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 7
+}

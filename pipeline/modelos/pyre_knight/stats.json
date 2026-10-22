@@ -1,0 +1,18 @@
+{
+ "tris": 7436,
+ "verts": 3887,
+ "bones": 18,
+ "materials": 12,
+ "height": 1.169,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 14,
+  "cast": 16,
+  "die": 28
+ },
+ "id": "pyre_knight",
+ "glb": "godot/assets/models/pyre_knight.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

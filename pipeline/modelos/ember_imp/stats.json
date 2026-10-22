@@ -1,0 +1,17 @@
+{
+ "tris": 5152,
+ "verts": 2686,
+ "bones": 18,
+ "materials": 8,
+ "height": 1.042,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 14,
+  "die": 28
+ },
+ "id": "ember_imp",
+ "glb": "godot/assets/models/ember_imp.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

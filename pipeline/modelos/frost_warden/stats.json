@@ -1,0 +1,18 @@
+{
+ "tris": 6056,
+ "verts": 3181,
+ "bones": 18,
+ "materials": 12,
+ "height": 1.031,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 14,
+  "cast": 20,
+  "die": 28
+ },
+ "id": "frost_warden",
+ "glb": "godot/assets/models/frost_warden.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 9
+}

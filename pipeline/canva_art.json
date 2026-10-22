@@ -1,0 +1,642 @@
+[
+ {
+  "n": 1,
+  "title": "Kael (herói) (ESTILO ANTIGO - substituído)",
+  "media_id": "MAHXvEfypFw",
+  "link": "https://www.canva.com/M/MAHXvEfypFw",
+  "slots": [],
+  "obsolete": true,
+  "slots_old": [
+   "portraits/warden.png"
+  ]
+ },
+ {
+  "n": 2,
+  "title": "Cavaleiro da Pira (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvI3HruY",
+  "link": "https://www.canva.com/M/MAHXvI3HruY",
+  "slots": [],
+  "slots_old": [
+   "portraits/pyre_knight.png",
+   "portraits/troop_knight.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 3,
+  "title": "Arqueira do Cardo (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvD_yjUU",
+  "link": "https://www.canva.com/M/MAHXvD_yjUU",
+  "slots": [],
+  "slots_old": [
+   "portraits/thistle_archer.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 4,
+  "title": "Irmã Vale (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvHs74LQ",
+  "link": "https://www.canva.com/M/MAHXvHs74LQ",
+  "slots": [],
+  "slots_old": [
+   "portraits/sister_vale.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 5,
+  "title": "Pedra Rúnica (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvHN0HAg",
+  "link": "https://www.canva.com/M/MAHXvHN0HAg",
+  "slots": [],
+  "slots_old": [
+   "portraits/runestone.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 6,
+  "title": "Matilha Oca (lobo) (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvB9tiUY",
+  "link": "https://www.canva.com/M/MAHXvB9tiUY",
+  "slots": [],
+  "slots_old": [
+   "portraits/wolf_pack.png",
+   "portraits/troop_wolves.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 7,
+  "title": "Guardiã do Gelo (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvAuZSBU",
+  "link": "https://www.canva.com/M/MAHXvAuZSBU",
+  "slots": [],
+  "slots_old": [
+   "portraits/frost_warden.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 8,
+  "title": "Golem de Pedra (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvFDhkSc",
+  "link": "https://www.canva.com/M/MAHXvFDhkSc",
+  "slots": [],
+  "slots_old": [
+   "portraits/boulder_golem.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 9,
+  "title": "Invocadora/Mago da Tempestade (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvNYRQI0",
+  "link": "https://www.canva.com/M/MAHXvNYRQI0",
+  "slots": [],
+  "slots_old": [
+   "portraits/stormcaller.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 10,
+  "title": "Lanceiro do Sol (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvF40DRc",
+  "link": "https://www.canva.com/M/MAHXvF40DRc",
+  "slots": [],
+  "slots_old": [
+   "portraits/sunspear_lancer.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 11,
+  "title": "Rainha das Cinzas (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvAU-ia4",
+  "link": "https://www.canva.com/M/MAHXvAU-ia4",
+  "slots": [],
+  "slots_old": [
+   "portraits/ashen_queen.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 12,
+  "title": "Milícia (tropa) (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvAkol9o",
+  "link": "https://www.canva.com/M/MAHXvAkol9o",
+  "slots": [],
+  "slots_old": [
+   "portraits/troop_militia.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 13,
+  "title": "Arqueiros (tropa)",
+  "media_id": "MAHXvNUml98",
+  "link": "https://www.canva.com/M/MAHXvNUml98",
+  "slots": [
+   "portraits/troop_bowmen.png"
+  ]
+ },
+ {
+  "n": 14,
+  "title": "Chefe: A Bocarra (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvNL2WyM",
+  "link": "https://www.canva.com/M/MAHXvNL2WyM",
+  "slots": [],
+  "slots_old": [
+   "portraits/the_maw.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 15,
+  "title": "Chefe: Ent de Cinzas (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvOkBKXk",
+  "link": "https://www.canva.com/M/MAHXvOkBKXk",
+  "slots": [],
+  "slots_old": [
+   "portraits/cinder_treant.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 16,
+  "title": "Chefe: O Rei Afogado (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvKFYw7c",
+  "link": "https://www.canva.com/M/MAHXvKFYw7c",
+  "slots": [],
+  "slots_old": [
+   "portraits/drowned_king.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 17,
+  "title": "Chefe: Titã de Cerco (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvJAQfpc",
+  "link": "https://www.canva.com/M/MAHXvJAQfpc",
+  "slots": [],
+  "slots_old": [
+   "portraits/siege_titan.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 18,
+  "title": "Chefe: Soberano da Fenda (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvHq3J8I",
+  "link": "https://www.canva.com/M/MAHXvHq3J8I",
+  "slots": [],
+  "slots_old": [
+   "portraits/rift_sovereign.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 19,
+  "title": "Chefe: Serpe Gélida (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvIjVWdY",
+  "link": "https://www.canva.com/M/MAHXvIjVWdY",
+  "slots": [],
+  "slots_old": [
+   "portraits/frost_wyrm.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 20,
+  "title": "Chefe: Colosso de Areia (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvIl1kIw",
+  "link": "https://www.canva.com/M/MAHXvIl1kIw",
+  "slots": [],
+  "slots_old": [
+   "portraits/sand_colossus.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 21,
+  "title": "Chefe: Tirano de Magma (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvGF_qj8",
+  "link": "https://www.canva.com/M/MAHXvGF_qj8",
+  "slots": [],
+  "slots_old": [
+   "portraits/magma_tyrant.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 22,
+  "title": "Chefe: Mãe do Pântano (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvNwOPQw",
+  "link": "https://www.canva.com/M/MAHXvNwOPQw",
+  "slots": [],
+  "slots_old": [
+   "portraits/bog_mother.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 23,
+  "title": "Chefe: O Eclipse (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvN_3URU",
+  "link": "https://www.canva.com/M/MAHXvN_3URU",
+  "slots": [],
+  "slots_old": [
+   "portraits/the_eclipse.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 24,
+  "title": "Logo BASTION RUSH",
+  "media_id": "MAHXvOaRh4I",
+  "link": "https://www.canva.com/M/MAHXvOaRh4I",
+  "slots": [
+   "ui/logo.png"
+  ]
+ },
+ {
+  "n": 25,
+  "title": "Fundo do menu",
+  "media_id": "MAHXvBijgQ0",
+  "link": "https://www.canva.com/M/MAHXvBijgQ0",
+  "slots": [
+   "ui/menu_bg.png"
+  ]
+ },
+ {
+  "n": 26,
+  "title": "Reino 1: O Portão Partido",
+  "media_id": "MAHXvNQTiYQ",
+  "link": "https://www.canva.com/M/MAHXvNQTiYQ",
+  "slots": [
+   "realms/broken_gate.png"
+  ]
+ },
+ {
+  "n": 27,
+  "title": "Reino 2: Bosque das Brasas",
+  "media_id": "MAHXvIItaj0",
+  "link": "https://www.canva.com/M/MAHXvIItaj0",
+  "slots": [
+   "realms/emberfall_wood.png"
+  ]
+ },
+ {
+  "n": 28,
+  "title": "Reino 3: O Brejo Afundado",
+  "media_id": "MAHXvPRRJ4Q",
+  "link": "https://www.canva.com/M/MAHXvPRRJ4Q",
+  "slots": [
+   "realms/sunken_march.png"
+  ]
+ },
+ {
+  "n": 29,
+  "title": "Reino 4: Fortaleza Oca",
+  "media_id": "MAHXvAvbutY",
+  "link": "https://www.canva.com/M/MAHXvAvbutY",
+  "slots": [
+   "realms/hollow_keep.png"
+  ]
+ },
+ {
+  "n": 30,
+  "title": "Reino 5: O Trono da Fenda",
+  "media_id": "MAHXvHasbIE",
+  "link": "https://www.canva.com/M/MAHXvHasbIE",
+  "slots": [
+   "realms/rift_throne.png"
+  ]
+ },
+ {
+  "n": 31,
+  "title": "Reino 6: Passo do Pico Gelado",
+  "media_id": "MAHXvJc-1X8",
+  "link": "https://www.canva.com/M/MAHXvJc-1X8",
+  "slots": [
+   "realms/frostpeak_pass.png"
+  ]
+ },
+ {
+  "n": 32,
+  "title": "Reino 7: Dunas Queimadas",
+  "media_id": "MAHXvGRc-b0",
+  "link": "https://www.canva.com/M/MAHXvGRc-b0",
+  "slots": [
+   "realms/sunscar_dunes.png"
+  ]
+ },
+ {
+  "n": 33,
+  "title": "Reino 8: Caldeira de Cinzas",
+  "media_id": "MAHXvOd_bzI",
+  "link": "https://www.canva.com/M/MAHXvOd_bzI",
+  "slots": [
+   "realms/ashen_caldera.png"
+  ]
+ },
+ {
+  "n": 34,
+  "title": "Reino 9: Pântano Raiz-Sombria",
+  "media_id": "MAHXvF4j68c",
+  "link": "https://www.canva.com/M/MAHXvF4j68c",
+  "slots": [
+   "realms/gloomroot_mire.png"
+  ]
+ },
+ {
+  "n": 35,
+  "title": "Reino 10: A Torre do Sol Partida",
+  "media_id": "MAHXvDtoHf0",
+  "link": "https://www.canva.com/M/MAHXvDtoHf0",
+  "slots": [
+   "realms/shattered_sunspire.png"
+  ]
+ },
+ {
+  "n": 36,
+  "title": "Mapa de batalha: Portão Partido (vertical)",
+  "media_id": "MAHXvPjG1cg",
+  "link": "https://www.canva.com/M/MAHXvPjG1cg",
+  "slots": [
+   "battle/broken_gate.png"
+  ]
+ },
+ {
+  "n": 37,
+  "title": "Monstro: Fagulha da Fenda (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvAlw3A8",
+  "link": "https://www.canva.com/M/MAHXvAlw3A8",
+  "slots": [],
+  "slots_old": [
+   "portraits/wisp.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 38,
+  "title": "Monstro: Casca Cinzenta (ESTILO ANTIGO - substituído)",
+  "media_id": "MAHXvMf5Img",
+  "link": "https://www.canva.com/M/MAHXvMf5Img",
+  "slots": [],
+  "obsolete": true,
+  "slots_old": [
+   "portraits/husk.png"
+  ]
+ },
+ {
+  "n": 39,
+  "title": "Monstro: Devastador (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvKTpLPs",
+  "link": "https://www.canva.com/M/MAHXvKTpLPs",
+  "slots": [],
+  "slots_old": [
+   "portraits/ravager.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 40,
+  "title": "Monstro: Diabrete de Brasa (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvIkJ-ZQ",
+  "link": "https://www.canva.com/M/MAHXvIkJ-ZQ",
+  "slots": [],
+  "slots_old": [
+   "portraits/ember_imp.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 41,
+  "title": "Monstro: Muda em Chamas (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvEZ6KIo",
+  "link": "https://www.canva.com/M/MAHXvEZ6KIo",
+  "slots": [],
+  "slots_old": [
+   "portraits/sapling.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 42,
+  "title": "Monstro: Morcego Sombrio (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvE09E5A",
+  "link": "https://www.canva.com/M/MAHXvE09E5A",
+  "slots": [],
+  "slots_old": [
+   "portraits/gloombat.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 43,
+  "title": "Monstro: Soldado Afogado (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvDGs8yo",
+  "link": "https://www.canva.com/M/MAHXvDGs8yo",
+  "slots": [],
+  "slots_old": [
+   "portraits/drowned.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 44,
+  "title": "Monstro: Espreitador do Pântano (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvEP9x_Y",
+  "link": "https://www.canva.com/M/MAHXvEP9x_Y",
+  "slots": [],
+  "slots_old": [
+   "portraits/bog_lurker.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 45,
+  "title": "Monstro: Mago Maldito (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvCDpZ8A",
+  "link": "https://www.canva.com/M/MAHXvCDpZ8A",
+  "slots": [],
+  "slots_old": [
+   "portraits/hexmage.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 46,
+  "title": "Monstro: Sentinela (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvLe42og",
+  "link": "https://www.canva.com/M/MAHXvLe42og",
+  "slots": [],
+  "slots_old": [
+   "portraits/sentry.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 47,
+  "title": "Monstro: Cavaleiro Sombrio (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvAIxrzA",
+  "link": "https://www.canva.com/M/MAHXvAIxrzA",
+  "slots": [],
+  "slots_old": [
+   "portraits/knight.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 48,
+  "title": "Monstro: Cria do Vazio (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvFRkbW8",
+  "link": "https://www.canva.com/M/MAHXvFRkbW8",
+  "slots": [],
+  "slots_old": [
+   "portraits/void_spawn.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 49,
+  "title": "Monstro: Ácaro do Vazio (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvMLg6uQ",
+  "link": "https://www.canva.com/M/MAHXvMLg6uQ",
+  "slots": [],
+  "slots_old": [
+   "portraits/void_mite.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 50,
+  "title": "Monstro: Ogro (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvIT5iEg",
+  "link": "https://www.canva.com/M/MAHXvIT5iEg",
+  "slots": [],
+  "slots_old": [
+   "portraits/ogre.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 51,
+  "title": "Torre: Arqueiros",
+  "media_id": "MAHXvHtYJTs",
+  "link": "https://www.canva.com/M/MAHXvHtYJTs",
+  "slots": [
+   "towers/archer.png"
+  ]
+ },
+ {
+  "n": 52,
+  "title": "Torre: Quartel",
+  "media_id": "MAHXvAWU84M",
+  "link": "https://www.canva.com/M/MAHXvAWU84M",
+  "slots": [
+   "towers/barracks.png"
+  ]
+ },
+ {
+  "n": 53,
+  "title": "Torre: Magos",
+  "media_id": "MAHXvLHFiko",
+  "link": "https://www.canva.com/M/MAHXvLHFiko",
+  "slots": [
+   "towers/mage.png"
+  ]
+ },
+ {
+  "n": 54,
+  "title": "Torre: Artilharia",
+  "media_id": "MAHXvDJGGSw",
+  "link": "https://www.canva.com/M/MAHXvDJGGSw",
+  "slots": [
+   "towers/artillery.png"
+  ]
+ },
+ {
+  "n": 55,
+  "title": "Torre: Balista",
+  "media_id": "MAHXvLXMHPA",
+  "link": "https://www.canva.com/M/MAHXvLXMHPA",
+  "slots": [
+   "towers/ballista.png"
+  ]
+ },
+ {
+  "n": 56,
+  "title": "Torre: Caldeirão",
+  "media_id": "MAHXvMjUZDw",
+  "link": "https://www.canva.com/M/MAHXvMjUZDw",
+  "slots": [
+   "towers/cauldron.png"
+  ]
+ },
+ {
+  "n": 57,
+  "title": "Torre: Tesla",
+  "media_id": "MAHXvP0I91Y",
+  "link": "https://www.canva.com/M/MAHXvP0I91Y",
+  "slots": [
+   "towers/tesla.png"
+  ]
+ },
+ {
+  "n": 58,
+  "title": "Torre: Mina de Ouro",
+  "media_id": "MAHXvFH-Msk",
+  "link": "https://www.canva.com/M/MAHXvFH-Msk",
+  "slots": [
+   "towers/goldmine.png"
+  ]
+ },
+ {
+  "n": 59,
+  "title": "Animação: Casca Cinzenta andando (ESTILO ANTIGO - substituído)",
+  "media_id": "MAHXvbAWdfg",
+  "link": "https://www.canva.com/M/MAHXvbAWdfg",
+  "slots": [],
+  "obsolete": true,
+  "slots_old": [
+   "anims/husk/walk.sheet"
+  ]
+ },
+ {
+  "n": 60,
+  "title": "Animação: Devastador atacando (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvbNaa8A",
+  "link": "https://www.canva.com/M/MAHXvbNaa8A",
+  "slots": [],
+  "slots_old": [
+   "anims/ravager/attack.sheet"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 61,
+  "title": "Herói: Kael (estilo padrão) (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvUPX584",
+  "link": "https://www.canva.com/M/MAHXvUPX584",
+  "slots": [],
+  "slots_old": [
+   "portraits/warden.png"
+  ],
+  "obsolete": true
+ },
+ {
+  "n": 62,
+  "title": "Monstro: Casca Cinzenta (estilo padrão) (SUBSTITUÍDO pelas folhas do dev, 2026-10-19)",
+  "media_id": "MAHXvY4CaRE",
+  "link": "https://www.canva.com/M/MAHXvY4CaRE",
+  "slots": [],
+  "slots_old": [
+   "portraits/husk.png"
+  ],
+  "obsolete": true
+ }
+]

@@ -1,0 +1,18 @@
+{
+ "tris": 6472,
+ "verts": 3408,
+ "bones": 18,
+ "materials": 12,
+ "height": 1.153,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 14,
+  "cast": 18,
+  "die": 28
+ },
+ "id": "sunspear_lancer",
+ "glb": "godot/assets/models/sunspear_lancer.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

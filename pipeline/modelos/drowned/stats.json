@@ -1,0 +1,17 @@
+{
+ "tris": 4296,
+ "verts": 2236,
+ "bones": 18,
+ "materials": 10,
+ "height": 0.977,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 14,
+  "die": 28
+ },
+ "id": "drowned",
+ "glb": "godot/assets/models/drowned.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

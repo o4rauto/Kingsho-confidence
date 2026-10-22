@@ -1,0 +1,18 @@
+{
+ "tris": 3440,
+ "verts": 1782,
+ "bones": 19,
+ "materials": 9,
+ "height": 0.677,
+ "clips": {
+  "idle": 40,
+  "run": 12,
+  "attack": 14,
+  "cast": 16,
+  "die": 24
+ },
+ "id": "wolf_pack",
+ "glb": "godot/assets/models/wolf_pack.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

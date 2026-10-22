@@ -1,0 +1,18 @@
+{
+ "tris": 2832,
+ "verts": 1502,
+ "bones": 3,
+ "materials": 7,
+ "height": 0.978,
+ "clips": {
+  "idle": 36,
+  "run": 16,
+  "attack": 14,
+  "cast": 14,
+  "die": 24
+ },
+ "id": "wisp",
+ "glb": "godot/assets/models/wisp.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

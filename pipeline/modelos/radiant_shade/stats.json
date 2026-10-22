@@ -1,0 +1,18 @@
+{
+ "tris": 2282,
+ "verts": 1236,
+ "bones": 7,
+ "materials": 7,
+ "height": 0.911,
+ "clips": {
+  "idle": 16,
+  "run": 10,
+  "attack": 14,
+  "cast": 14,
+  "die": 22
+ },
+ "id": "radiant_shade",
+ "glb": "godot/assets/models/radiant_shade.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

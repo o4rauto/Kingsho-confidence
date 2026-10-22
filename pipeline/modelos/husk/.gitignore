@@ -1,0 +1,6 @@
+# arquivos regeráveis pelos scripts de build/ (não versionar)
+*.blend
+*.blend1
+review/*
+!review/final/
+exports/*.glb

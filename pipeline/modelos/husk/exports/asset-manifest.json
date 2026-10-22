@@ -1,0 +1,146 @@
+{
+  "asset": "CH_Husk",
+  "generated": "2026-10-22T03:44:02",
+  "blender": "5.2.2 LTS",
+  "source": "/home/user/Kingsho-confidence/pipeline/modelos/husk/CH_Husk_master.blend",
+  "target_engine": "godot",
+  "units": {
+    "system": "METRIC",
+    "scale_length": 1.0,
+    "authoring_up": "Z",
+    "authoring_forward": "-Y",
+    "export_up": "Y",
+    "export_forward": "+Z",
+    "note": "glTF converts Z up to Y up; a subject facing -Y in Blender faces +Z in glTF"
+  },
+  "target_height_m": 1.2,
+  "bounds_m": {
+    "min": [
+      -0.3207,
+      -0.3087,
+      -0.005
+    ],
+    "max": [
+      0.3207,
+      0.16,
+      1.2
+    ],
+    "size": [
+      0.6415,
+      0.4687,
+      1.205
+    ]
+  },
+  "files": {
+    "all": "exports/CH_Husk.glb"
+  },
+  "lods": [
+    {
+      "level": 0,
+      "objects": [
+        "CH_Husk"
+      ],
+      "tris": 5116
+    }
+  ],
+  "materials": [
+    "M_Husk_Cloth",
+    "M_Husk_Eye",
+    "M_Husk_Leather",
+    "M_Husk_Mouth",
+    "M_Husk_Rust",
+    "M_Husk_Skin",
+    "M_Husk_Steel",
+    "M_Husk_Teeth",
+    "M_Husk_Wrap"
+  ],
+  "textures": [],
+  "texture_contract": {
+    "basecolor": "sRGB",
+    "normal": "Non-Color, tangent space, OpenGL +Y",
+    "roughness": "Non-Color",
+    "metallic": "Non-Color",
+    "ao": "Non-Color",
+    "packed_channels": "none by default; document any ORM packing here"
+  },
+  "skeleton": [
+    {
+      "armature": "CH_Husk_Rig",
+      "bones": 18,
+      "deform_bones": [
+        "DEF-root",
+        "DEF-pelvis",
+        "DEF-spine",
+        "DEF-chest",
+        "DEF-neck",
+        "DEF-head",
+        "DEF-upper_arm.L",
+        "DEF-forearm.L",
+        "DEF-hand.L",
+        "DEF-upper_arm.R",
+        "DEF-forearm.R",
+        "DEF-hand.R",
+        "DEF-thigh.L",
+        "DEF-shin.L",
+        "DEF-foot.L",
+        "DEF-thigh.R",
+        "DEF-shin.R",
+        "DEF-foot.R"
+      ],
+      "roots": [
+        "DEF-root"
+      ],
+      "rest_pose": "as exported"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "SOCKET_hand.R",
+      "parent": "CH_Husk_Rig",
+      "parent_bone": "DEF-hand.R",
+      "world_location": [
+        -0.245,
+        -0.04,
+        0.2556
+      ],
+      "world_rotation_deg": [
+        -0.0,
+        0.0,
+        0.0
+      ],
+      "axes": "local +Y forward of the attachment, +Z up",
+      "props": {
+        "owner": "phase:06_rig"
+      }
+    },
+    {
+      "name": "SOCKET_head",
+      "parent": "CH_Husk_Rig",
+      "parent_bone": "DEF-head",
+      "world_location": [
+        0.0,
+        -0.055,
+        1.2
+      ],
+      "world_rotation_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "axes": "local +Y forward of the attachment, +Z up",
+      "props": {
+        "owner": "phase:06_rig"
+      }
+    }
+  ],
+  "colliders": [],
+  "animation_contract": "animation-contract.json",
+  "inferred_from_no_reference": [
+    "costas do corpo e do capacete (simetria)",
+    "lado esquerdo do rosto (simetria)",
+    "planta dos p\u00e9s",
+    "profundidade de todas as pe\u00e7as",
+    "altura real 1.20 m"
+  ],
+  "dependencies": []
+}
