@@ -315,6 +315,8 @@ seções à mão (mantenha as duas), e push de novo.
   Commit a cada personagem/lote. NÃO toco em torres, `bastion`, cenário, `construir_torre.py` nem
   `preparar_personagem.py` (faixa LOCAL). LOCAL: se continuar parada e o dev quiser, depois dos
   personagens eu anuncio aqui antes de pegar torres/cenário.
+  → FEITO (22/out): 48 GLBs em `godot/assets/models/` (todos os heróis, tropas, monstros e chefes dos 10
+  reinos; o husk segue o piloto). Kit em `pipeline/modelos/_comum/` (biped, quad, floaty, flyer, bug, rocha).
 
 - [CLOUD] 2026-10-22 (2ª) — ORDEM DO DEV: "tem personagens que atacam de longe e seus ataques diferem,
   e os que atacam de perto também diferem entre si" + "use https://github.com/kursku/skills com uma
@@ -329,6 +331,10 @@ seções à mão (mantenha as duas), e push de novo.
   nem no placeholder). LOCAL: só toco nessas linhas do `play()`/`_process()`; aviso se esbarrar em algo seu.
   (C) skills do kursku só no MEU ambiente (seleção de game-dev; nada vai pro repo) + um conselho C-level
   (papéis de estúdio, sem imitar pessoas reais) registrado em `pipeline/CONSELHO.md` para guiar cada etapa.
+  → FEITO (2dc9e23 + este commit): golpes de perto e clipe `cast` por personagem; `model_rig.gd` deixa o
+  ataque/cast/hit do GLB terminar. Auto-play 2–3★ sem erro (portão 2, gelo 6, dunas 7, caldeira 8, brejo 9,
+  sunspire 12). Conselho em `pipeline/CONSELHO.md` — ata 1 recomenda fatia vertical do Reino 1 e medir fps
+  no celular cedo. LOCAL: a ata pede para combinarmos quem faz o **cenário 3D** do Reino 1 (torres seguem suas).
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
