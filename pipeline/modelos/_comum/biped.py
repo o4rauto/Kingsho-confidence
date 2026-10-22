@@ -248,3 +248,71 @@ def animate(arm, attack_style="claw", lean=6, run_lean=18, hold_right=False):
     run(arm, lean=run_lean, hold_right=hold_right)
     attack(arm, attack_style)
     die(arm)
+
+
+# ───────────────────────── shared looks ─────────────────────────
+
+def chibi_face(hc, hr, eye_z, eye_dx=0.064, eye_size=(0.046, 0.02, 0.054), pupil=0.028, slant=-6,
+               brow_role=None, brow_tilt=12, mouth_role="Mouth", mouth_w=0.028, shine_role=None,
+               chin=True, nose=True, ears=None, skin="Skin", eye_role="Eye", pupil_role="Pupil"):
+    """Big-eyed chibi face on the head ellipsoid. ears: None | 'elf' | 'round'."""
+    c = Vector(hc)
+    K.sphere("Head", skin, "DEF-head", c, hr, u=18, v=12)
+    K.eyes("", hc, hr, eye_z, eye_dx, size=eye_size, slant=slant, pupils=pupil, role=eye_role, pupil_role=pupil_role)
+    if shine_role:
+        for s, sd in ((1, ".L"), (-1, ".R")):
+            x = s * (eye_dx + 0.006)
+            z = eye_z + eye_size[2] * 0.35
+            K.sphere("Shine" + sd, shine_role, "DEF-head", (x, K.ellipsoid_front_y(hc, hr, x, z, -0.012), z),
+                     (0.011, 0.006, 0.011), u=8, v=4)
+    if brow_role:
+        bz = eye_z + eye_size[2] * 1.05
+        for s, sd in ((1, ".L"), (-1, ".R")):
+            x = s * eye_dx
+            K.box("Brow" + sd, brow_role, "DEF-head", (x, K.ellipsoid_front_y(hc, hr, x, bz, 0.004), bz),
+                  (0.05, 0.013, 0.012), rotation=(0, math.radians(-brow_tilt) * s, math.radians(16) * s))
+    mz = eye_z - eye_size[2] - 0.035
+    if nose:
+        nz = (eye_z + mz) / 2 - 0.005
+        K.sphere("Nose", skin, "DEF-head", (0, K.ellipsoid_front_y(hc, hr, 0, nz, 0.005), nz), (0.013, 0.01, 0.013), u=8, v=5)
+    if mouth_role:
+        K.sphere("Mouth", mouth_role, "DEF-head", (0, K.ellipsoid_front_y(hc, hr, 0, mz, 0.007), mz), (mouth_w, 0.006, 0.007), u=8, v=4)
+    if chin:
+        K.sphere("Chin", skin, "DEF-head", (0, c.y - 0.04, c.z - hr[2] * 0.78), (hr[0] * 0.46, hr[1] * 0.43, hr[2] * 0.27), u=12, v=8)
+    if ears:
+        for s, sd in ((1, ".L"), (-1, ".R")):
+            if ears == "elf":
+                K.leaf("Ear" + sd, skin, "DEF-head", (s * (hr[0] - 0.01), c.y + 0.01, eye_z), 0.09, 0.03, side=s,
+                       rotation=(0, math.radians(-30), math.radians(-20)))
+            else:
+                K.sphere("Ear" + sd, skin, "DEF-head", (s * hr[0], c.y + 0.01, eye_z - 0.01), (0.02, 0.03, 0.035), u=8, v=6)
+
+
+def robe(role, top_z=0.40, hem_z=0.03, top_r=0.10, hem_r=0.2, trim_role=None, ragged=0.0, front_open=False):
+    """Long skirt to the floor (casters, queens). Skinned to the legs so it sways with the stride."""
+    arc = (110, 430) if front_open else None
+    K.skirt("Robe", role, "AUTO", top_z, hem_z, top_r, hem_r, depth=0.85, ragged=ragged, segments=20, thickness=0.012, arc=arc)
+    if trim_role:
+        K.band("RobeHem", trim_role, "DEF-pelvis", (0, 0, hem_z + 0.012), hem_r + 0.004, (hem_r + 0.004) * 0.85, 0.025, segments=20)
+
+
+def staff(bone, base, top, role="Wood", r=0.014):
+    K.along("Staff", role, bone, base, top, r, r * 0.9, segments=8)
+
+
+HERO = dict(   # the warden's chibi proportions (H 1.2): heroes start from these and tweak
+    hunch=0.01, head_c=(0, -0.035, 0.775), head_r=(0.15, 0.14, 0.17),
+    neck0_z=0.55, neck1_z=0.60, chest_z=0.47, waist_z=0.39, pelvis_z=0.33,
+    shoulder_z=0.525, shoulder_x=0.105, elbow_out=0.05, elbow_z=0.41,
+    wrist_x=0.19, wrist_z=0.31, wrist_y=-0.03, hand_bottom=0.235, hand_size=0.10,
+    hip_x=0.06, hip_z=0.31, knee_x=0.075, knee_y=-0.025, knee_z=0.17, ankle_x=0.09, ankle_z=0.085,
+    foot_len=0.15,
+    r_pelvis=(0.095, 0.068), r_waist=(0.082, 0.058), r_chest=(0.105, 0.072), r_neck0=(0.045, 0.04),
+    r_neck1=(0.04, 0.036), r_shoulder=0.038, r_elbow=0.029, r_wrist=0.03, r_hip=0.05, r_knee=0.04, r_ankle=0.034,
+)
+
+
+def hero(**over):
+    d = dict(HERO)
+    d.update(over)
+    return params(**d)

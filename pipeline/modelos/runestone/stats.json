@@ -1,0 +1,17 @@
+{
+ "tris": 2760,
+ "verts": 1444,
+ "bones": 18,
+ "materials": 4,
+ "height": 1.232,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 18,
+  "die": 28
+ },
+ "id": "runestone",
+ "glb": "godot/assets/models/runestone.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 11
+}

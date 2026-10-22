@@ -1,0 +1,17 @@
+{
+ "tris": 6892,
+ "verts": 3613,
+ "bones": 18,
+ "materials": 12,
+ "height": 1.225,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 20,
+  "die": 28
+ },
+ "id": "ashen_queen",
+ "glb": "godot/assets/models/ashen_queen.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 13
+}

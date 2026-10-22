@@ -1,0 +1,17 @@
+{
+ "tris": 2656,
+ "verts": 1396,
+ "bones": 18,
+ "materials": 5,
+ "height": 1.05,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 18,
+  "die": 28
+ },
+ "id": "boulder_golem",
+ "glb": "godot/assets/models/boulder_golem.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 11
+}
