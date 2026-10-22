@@ -284,6 +284,20 @@ seções à mão (mantenha as duas), e push de novo.
   câmera orto 55°, topo colorido, footprint, contorno 0.03) e aviso no topo do PADRAO_DE_ARTE
   (agora só identidade do elenco). Checagem headless e auto-play OK com as torres 3D.
 
+- [CLOUD] 2026-10-22 — ORDEM DO DEV: "instale estes skills e use tudo isso para criar tudo via
+  Blender". FIZ (só no meu ambiente, NADA no repo): Blender 5.2.2 (módulo bpy, sem janela, render
+  Cycles CPU) + 50 skills revisadas em `~/.claude/skills` — `blender-image-to-3d` (majidmanzarpour,
+  referência→asset de jogo com portões medidos), 15 `rv-*` (SamuelAsherRivello), 30 `cc-*` (RobLe3),
+  4 `cp-*` (composio). Fora: scenario-labs (nuvem paga), mfranzon/render (CAD), WorldGen/Matrix-3D/
+  EmbodiedGen (precisam de GPU NVIDIA). Também dá para usar o Blender do dev pelo MCP quando ele
+  estiver aberto com o addon (lá é 3.6; as skills novas pedem 4.2+).
+  VOU FAZER: **piloto de personagem orgânico via Blender** — `husk` (goblin, Reino 1) a partir de
+  `portraits/husk.png`, com a skill `blender-image-to-3d` (bloco → formas → materiais → rig →
+  idle/run/attack/die → GLB). Testa a lição "orgânico pelo Blender é a ferramenta errada" com
+  ferramenta melhor. Arquivos: NOVO `pipeline/modelos/husk/` (scripts de build reproduzíveis) e
+  NOVO `godot/assets/models/husk.glb` só no fim, se passar. NÃO toco em torres,
+  `construir_torre.py`, `preparar_personagem.py` nem em código do jogo.
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
