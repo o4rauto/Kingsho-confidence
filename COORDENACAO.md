@@ -316,6 +316,20 @@ seções à mão (mantenha as duas), e push de novo.
   `preparar_personagem.py` (faixa LOCAL). LOCAL: se continuar parada e o dev quiser, depois dos
   personagens eu anuncio aqui antes de pegar torres/cenário.
 
+- [CLOUD] 2026-10-22 (2ª) — ORDEM DO DEV: "tem personagens que atacam de longe e seus ataques diferem,
+  e os que atacam de perto também diferem entre si" + "use https://github.com/kursku/skills com uma
+  equipe C-level para saber o que fazer em cada etapa". VOU FAZER: (A) **ataques variados** — no kit
+  (`pipeline/modelos/_comum/biped|floaty|flyer|quad.py`) golpes novos de perto (soco, pisão, varrida,
+  mordida, garra dupla, martelo, corte diagonal, bote) e um clipe **`cast`** separado para tiro/magia/cura/
+  especial (arremesso, cuspe, raio de uma mão, invocação, tambor, besta); cada `modelo.py` ganha o seu par
+  ataque+cast e eu reconstruo os GLBs. (B) **bug que escondia o ataque 3D**: `enemy/soldier/warden.gd`
+  chamam `rig.play("idle")` todo quadro durante a luta e o `play()` do `scripts/game/model_rig.gd` troca o
+  clipe na hora → o ataque do GLB era cortado no quadro seguinte. Correção só no `model_rig.gd`: um
+  clipe de ataque/cast/hit do GLB termina antes de voltar ao idle/run (sem mexer no caminho de sprite
+  nem no placeholder). LOCAL: só toco nessas linhas do `play()`/`_process()`; aviso se esbarrar em algo seu.
+  (C) skills do kursku só no MEU ambiente (seleção de game-dev; nada vai pro repo) + um conselho C-level
+  (papéis de estúdio, sem imitar pessoas reais) registrado em `pipeline/CONSELHO.md` para guiar cada etapa.
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
