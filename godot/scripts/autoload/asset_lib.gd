@@ -152,6 +152,7 @@ func make(id: String, kind: String, color: Color, height: float, evolved := fals
 	if has_model(id):
 		var inst := _load_glb(MODEL_DIR + id + ".glb")
 		if inst:
+			aplicar_toon(inst)
 			rig.setup_glb(inst, height * (1.15 if evolved else 1.0))
 			return rig
 	var body := Node3D.new()

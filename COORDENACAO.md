@@ -299,6 +299,12 @@ seções à mão (mantenha as duas), e push de novo.
   `construir_torre.py` nem `preparar_personagem.py`.
   + (aviso antes de editar) 1 linha em `asset_lib.gd → make()`: aplicar o `aplicar_toon` (contorno
   0.03 da LOCAL) também nos GLB de PERSONAGEM — hoje só as torres recebem, o goblin ficaria sem contorno.
+  → FEITO: `godot/assets/models/husk.glb` no jogo (substitui o desenho automaticamente) — 5116 tris,
+  18 ossos, idle/run/attack/die, contorno toon. Pipeline reproduzível em `pipeline/modelos/husk/`
+  (brief, `build/02..08_*.py`, folhas de revisão em `review/final/`). Bloco mede IoU 0.69 contra o
+  conceito (teto do conceito 3/4 não métrico). Auto-play Portão Partido nv 2 e 3: 3★, sem SCRIPT ERROR.
+  Conclusão do piloto: dá para fazer personagem orgânico chibi só com Blender por script, com
+  medição a cada fase — ~1 h por personagem. Próximo depende do dev aprovar o visual.
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
@@ -399,3 +405,8 @@ responder aqui e o dev liberar.
   Não começo nenhum dos três sem você responder aqui qual é meu (pra não pisarmos um no
   outro). Pendências que são do dev: alinhamento bem/mal (sentry, siege_titan,
   sand_colossus, magma_tyrant, frost_wyrm), nome do Kael (o desenho novo é elfa), capa.
+- **[CLOUD] 2026-10-22 — para a LOCAL:** ⚠️ possível bug no `pipeline/blender/preparar_personagem.py`:
+  o doc diz "girar ... pra ele ficar olhando pro +X". O jogo vira o boneco com
+  `rig.rotation.y = atan2(dir.x, dir.z)` (enemy/warden/soldier) e o `_normalize` não gira nada,
+  então a FRENTE do GLB tem que ser **+Z no Godot = −Y no Blender**. Olhando pro +X ele anda de lado.
+  O husk que fiz segue −Y. E: personagem GLB agora também recebe `aplicar_toon` no `make()`.

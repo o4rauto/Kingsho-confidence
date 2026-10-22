@@ -1,0 +1,44 @@
+{
+  "asset": "CH_Husk",
+  "fps": 24,
+  "time_unit": "seconds from clip start",
+  "clips": [
+    {
+      "name": "attack",
+      "fps": 24,
+      "frame_start": 1,
+      "frame_end": 14,
+      "length_s": 0.5417,
+      "loop": false,
+      "events_s": {}
+    },
+    {
+      "name": "die",
+      "fps": 24,
+      "frame_start": 1,
+      "frame_end": 28,
+      "length_s": 1.125,
+      "loop": false,
+      "events_s": {}
+    },
+    {
+      "name": "idle",
+      "fps": 24,
+      "frame_start": 1,
+      "frame_end": 49,
+      "length_s": 2.0,
+      "loop": true,
+      "events_s": {}
+    },
+    {
+      "name": "run",
+      "fps": 24,
+      "frame_start": 1,
+      "frame_end": 17,
+      "length_s": 0.6667,
+      "loop": true,
+      "events_s": {}
+    }
+  ],
+  "note": "events come from pose markers on each action; loop/speed/root_motion from action custom properties"
+}

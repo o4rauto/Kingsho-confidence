@@ -1,0 +1,132 @@
+{
+  "file": "/home/user/Kingsho-confidence/pipeline/modelos/husk/exports/CH_Husk.glb",
+  "errors": [
+    "height 1.185 differs from expected 1.200"
+  ],
+  "meshes": [
+    {
+      "name": "CH_Husk",
+      "tris": 5116,
+      "verts": 9205,
+      "uv": false,
+      "materials": [
+        "M_Husk_Skin",
+        "M_Husk_Rust",
+        "M_Husk_Steel",
+        "M_Husk_Cloth",
+        "M_Husk_Leather",
+        "M_Husk_Eye",
+        "M_Husk_Mouth",
+        "M_Husk_Teeth",
+        "M_Husk_Wrap"
+      ],
+      "skinned": true,
+      "shape_keys": 0
+    }
+  ],
+  "armatures": [
+    {
+      "name": "CH_Husk_Rig",
+      "bones": [
+        "DEF-root",
+        "DEF-pelvis",
+        "DEF-spine",
+        "DEF-chest",
+        "DEF-neck",
+        "DEF-head",
+        "DEF-upper_arm.L",
+        "DEF-forearm.L",
+        "DEF-hand.L",
+        "DEF-upper_arm.R",
+        "DEF-forearm.R",
+        "DEF-hand.R",
+        "DEF-thigh.L",
+        "DEF-shin.L",
+        "DEF-foot.L",
+        "DEF-thigh.R",
+        "DEF-shin.R",
+        "DEF-foot.R"
+      ],
+      "roots": [
+        "DEF-root"
+      ]
+    }
+  ],
+  "clips": [
+    {
+      "name": "attack",
+      "frames": [
+        1,
+        14
+      ],
+      "length_s": 0.5417
+    },
+    {
+      "name": "die",
+      "frames": [
+        1,
+        28
+      ],
+      "length_s": 1.125
+    },
+    {
+      "name": "idle",
+      "frames": [
+        1,
+        49
+      ],
+      "length_s": 2.0
+    },
+    {
+      "name": "run",
+      "frames": [
+        1,
+        17
+      ],
+      "length_s": 0.6667
+    }
+  ],
+  "materials": [
+    "M_Husk_Cloth",
+    "M_Husk_Eye",
+    "M_Husk_Leather",
+    "M_Husk_Mouth",
+    "M_Husk_Rust",
+    "M_Husk_Skin",
+    "M_Husk_Steel",
+    "M_Husk_Teeth",
+    "M_Husk_Wrap"
+  ],
+  "images": [],
+  "empties": [
+    {
+      "name": "SOCKET_head",
+      "parent": "CH_Husk_Rig",
+      "parent_bone": "DEF-head"
+    },
+    {
+      "name": "SOCKET_hand.R",
+      "parent": "CH_Husk_Rig",
+      "parent_bone": "DEF-hand.R"
+    }
+  ],
+  "bounds_m": {
+    "min": [
+      -0.3485,
+      -0.3397,
+      0.0055
+    ],
+    "max": [
+      0.3485,
+      0.125,
+      1.1907
+    ],
+    "size": [
+      0.6969,
+      0.4647,
+      1.1853
+    ]
+  },
+  "height_m": 1.1853,
+  "render": "review/09_roundtrip/roundtrip_clay_threequarter.png"
+}
