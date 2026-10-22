@@ -1,0 +1,17 @@
+{
+ "tris": 5512,
+ "verts": 2943,
+ "bones": 21,
+ "materials": 10,
+ "height": 1.262,
+ "clips": {
+  "idle": 40,
+  "run": 12,
+  "attack": 14,
+  "die": 24
+ },
+ "id": "frost_wyrm",
+ "glb": "godot/assets/models/frost_wyrm.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

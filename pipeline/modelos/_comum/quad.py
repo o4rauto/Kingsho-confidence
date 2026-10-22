@@ -70,17 +70,24 @@ def bones(J, P):
     return B
 
 
-def animate(arm, stride=32):
+def animate(arm, stride=32, extra=None):
+    """extra(clip, t) -> pose dict for the character's own bones (wings, jaw...), t: 0..1 through the clip."""
+    def key(name, n, f, pose):
+        if extra:
+            pose = dict(pose)
+            pose.update(extra(name, (f - 1) / n))
+        K.key(arm, f, pose)
+
     K.clip(arm, "idle", 40, True)
     for f, k in ((1, 0.0), (11, 1.0), (21, 0.0), (31, -1.0), (41, 0.0)):
-        K.key(arm, f, {"DEF-root": {"rot": [], "loc": (0, 0, -0.006 * abs(k))}, "DEF-chest": [("X", -2 * abs(k))],
+        key("idle", 40, f, {"DEF-root": {"rot": [], "loc": (0, 0, -0.006 * abs(k))}, "DEF-chest": [("X", -2 * abs(k))],
                        "DEF-head": [("X", 4 * k), ("Z", 5 * k)], "DEF-tail1": [("Z", 20 * k), ("X", -10)],
                        "DEF-tail2": [("Z", 15 * k)]})
     K.clip(arm, "run", 12, True)
     for f in range(1, 14, 2):
         ph = 2 * math.pi * (f - 1) / 12
         sw, c = math.sin(ph), math.cos(ph)
-        K.key(arm, f, {"DEF-root": {"rot": [], "loc": (0, 0, 0.035 * abs(c))},
+        key("run", 12, f, {"DEF-root": {"rot": [], "loc": (0, 0, 0.035 * abs(c))},
                        "DEF-pelvis": [("X", 6 * sw)], "DEF-chest": [("X", -5 * sw)], "DEF-head": [("X", -4 * sw)],
                        "DEF-leg_f_up.L": [("X", stride * sw)], "DEF-leg_f_up.R": [("X", stride * math.sin(ph + 0.6))],
                        "DEF-leg_b_up.L": [("X", -stride * sw)], "DEF-leg_b_up.R": [("X", -stride * math.sin(ph + 0.6))],
@@ -95,9 +102,9 @@ def animate(arm, stride=32):
                          "DEF-leg_f_up.L": [("X", -40)], "DEF-leg_f_up.R": [("X", -35)],
                          "DEF-leg_b_up.L": [("X", 30)], "DEF-leg_b_up.R": [("X", 30)]}),
                     (14, {})):
-        K.key(arm, f, pose)
+        key("attack", 14, f, pose)
     K.clip(arm, "die", 24, False)
     for f, k in ((1, 0.0), (6, 0.2), (14, 1.0), (18, 0.92), (24, 1.0)):
-        K.key(arm, f, {"DEF-root": {"rot": [("Y", 88 * k)], "loc": (0.0, 0, 0.06 * k)},
+        key("die", 24, f, {"DEF-root": {"rot": [("Y", 88 * k)], "loc": (0.0, 0, 0.06 * k)},
                        "DEF-head": [("X", 15 * k)], "DEF-tail1": [("X", 20 * k)],
                        "DEF-leg_f_up.L": [("X", -20 * k)], "DEF-leg_b_up.L": [("X", 20 * k)]})

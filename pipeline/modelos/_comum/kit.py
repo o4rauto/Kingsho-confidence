@@ -174,10 +174,10 @@ def leaf(name, role, bone, root, length, width, thick=0.28, curl=0.03, side=1, r
     return _obj(name, bm, role, bone, root, rot)
 
 
-def lock(name, role, bone, root, direction, length, width, thick=0.35, curl=0.04, power=0.8):
+def lock(name, role, bone, root, direction, length, width, thick=0.35, curl=0.04, power=0.8, rings=9, seg=10):
     """A leaf pointed along an arbitrary direction (hair locks, flames, feathers, fins, leaves).
     The flat side faces the camera when direction is mostly vertical; curl bends the tip 'up'."""
-    ob = leaf(name, role, bone, (0, 0, 0), length, width, thick=thick, curl=curl, power=power)
+    ob = leaf(name, role, bone, (0, 0, 0), length, width, thick=thick, curl=curl, power=power, rings=rings, seg=seg)
     d = Vector(direction).normalized()
     ob.rotation_mode = "QUATERNION"
     ob.rotation_quaternion = Vector((1, 0, 0)).rotation_difference(d)

@@ -1,0 +1,17 @@
+{
+ "tris": 7068,
+ "verts": 3766,
+ "bones": 18,
+ "materials": 10,
+ "height": 1.054,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 18,
+  "die": 28
+ },
+ "id": "yeti",
+ "glb": "godot/assets/models/yeti.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 11
+}
