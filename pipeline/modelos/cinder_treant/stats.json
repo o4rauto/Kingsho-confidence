@@ -1,0 +1,17 @@
+{
+ "tris": 3024,
+ "verts": 1615,
+ "bones": 18,
+ "materials": 5,
+ "height": 1.508,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 18,
+  "die": 28
+ },
+ "id": "cinder_treant",
+ "glb": "godot/assets/models/cinder_treant.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 11
+}

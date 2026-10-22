@@ -1,0 +1,17 @@
+{
+ "tris": 4264,
+ "verts": 2227,
+ "bones": 18,
+ "materials": 12,
+ "height": 0.984,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 18,
+  "die": 28
+ },
+ "id": "war_drummer",
+ "glb": "godot/assets/models/war_drummer.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 11
+}

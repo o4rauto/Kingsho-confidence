@@ -1,0 +1,17 @@
+{
+ "tris": 2868,
+ "verts": 1518,
+ "bones": 9,
+ "materials": 9,
+ "height": 0.684,
+ "clips": {
+  "idle": 16,
+  "run": 10,
+  "attack": 14,
+  "die": 22
+ },
+ "id": "gloombat",
+ "glb": "godot/assets/models/gloombat.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

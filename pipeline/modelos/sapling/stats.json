@@ -1,0 +1,17 @@
+{
+ "tris": 2674,
+ "verts": 1423,
+ "bones": 18,
+ "materials": 7,
+ "height": 1.258,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 18,
+  "die": 28
+ },
+ "id": "sapling",
+ "glb": "godot/assets/models/sapling.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 11
+}
