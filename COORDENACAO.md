@@ -296,7 +296,9 @@ seções à mão (mantenha as duas), e push de novo.
   idle/run/attack/die → GLB). Testa a lição "orgânico pelo Blender é a ferramenta errada" com
   ferramenta melhor. Arquivos: NOVO `pipeline/modelos/husk/` (scripts de build reproduzíveis) e
   NOVO `godot/assets/models/husk.glb` só no fim, se passar. NÃO toco em torres,
-  `construir_torre.py`, `preparar_personagem.py` nem em código do jogo.
+  `construir_torre.py` nem `preparar_personagem.py`.
+  + (aviso antes de editar) 1 linha em `asset_lib.gd → make()`: aplicar o `aplicar_toon` (contorno
+  0.03 da LOCAL) também nos GLB de PERSONAGEM — hoje só as torres recebem, o goblin ficaria sem contorno.
 
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
