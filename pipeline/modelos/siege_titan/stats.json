@@ -7,11 +7,11 @@
  "clips": {
   "idle": 48,
   "run": 16,
-  "attack": 18,
+  "attack": 12,
   "die": 28
  },
  "id": "siege_titan",
  "glb": "godot/assets/models/siege_titan.glb",
  "unweighted_fixed": 0,
- "attack_frame": 11
+ "attack_frame": 7
 }

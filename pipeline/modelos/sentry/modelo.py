@@ -7,7 +7,7 @@ import kit as K
 import biped as BP
 
 NOME = "CH_Sentry"
-ATAQUE_QUADRO = 9
+ATAQUE_QUADRO = 7
 PALETA = {"Steel": ("6F8FBF", 0.4, 0.5), "SteelLight": ("A6C0E0", 0.35, 0.5), "SteelDark": ("45597E", 0.45, 0.5),
           "Plume": "5CC8EE", "PlumeLight": "A8E8FF", "Visor": "141824", "Eye": "6FF0FF",
           "Wood": "8A5A30", "Leather": "5A3A20", "String": "E8E2D2"}
@@ -82,8 +82,8 @@ def pecas():
     return BP.bones(J, P)
 
 
-def attack(arm):
-    """Aim, fire (the stock kicks the shoulders back), recover."""
+def crossbow_shot(arm):
+    """The ranged clip: aim, fire (the stock kicks the shoulders back), recover."""
     rest = {"DEF-spine": [("X", 6)], "DEF-head": [("X", -4)]}
     rest.update(BP._legs_rest())
     aim = {"DEF-spine": [("X", 12), ("Z", -6)], "DEF-head": [("X", -12), ("Z", 4)],
@@ -92,7 +92,7 @@ def attack(arm):
     fire = {"DEF-root": {"rot": [], "loc": (0, 0.035, 0)}, "DEF-spine": [("X", -10), ("Z", -4)], "DEF-head": [("X", 6)],
             "DEF-upper_arm.R": [("X", -34)], "DEF-upper_arm.L": [("X", -30)], "DEF-forearm.R": [("X", -8)],
             "DEF-thigh.L": [("X", -12)], "DEF-shin.L": [("X", 14)]}
-    K.clip(arm, "attack", 16, False)
+    K.clip(arm, "cast", 16, False)
     for f, pose in ((1, rest), (6, aim), (9, fire), (16, rest)):
         K.key(arm, f, pose)
 
@@ -100,5 +100,6 @@ def attack(arm):
 def animar(arm):
     BP.idle(arm, lean=3, arm_out=2)
     BP.run(arm, lean=14, stride=36, arm_swing=6)
-    attack(arm)
+    BP.attack(arm, "punch")   # blocked in melee: a jab with the stock
+    crossbow_shot(arm)
     BP.die(arm)

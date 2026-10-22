@@ -1,0 +1,18 @@
+{
+ "tris": 2153,
+ "verts": 1164,
+ "bones": 5,
+ "materials": 7,
+ "height": 0.963,
+ "clips": {
+  "idle": 36,
+  "run": 16,
+  "attack": 14,
+  "cast": 14,
+  "die": 24
+ },
+ "id": "sand_wraith",
+ "glb": "godot/assets/models/sand_wraith.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

@@ -103,6 +103,14 @@ def animate(arm, stride=32, extra=None):
                          "DEF-leg_b_up.L": [("X", 30)], "DEF-leg_b_up.R": [("X", 30)]}),
                     (14, {})):
         key("attack", 14, f, pose)
+    K.clip(arm, "cast", 16, False)   # roar / croak: rear up, head high, then thrust it forward
+    for f, pose in ((1, {}),
+                    (6, {"DEF-root": {"rot": [], "loc": (0, 0.03, 0.03)}, "DEF-chest": [("X", -18)], "DEF-head": [("X", -30)],
+                         "DEF-leg_f_up.L": [("X", -25)], "DEF-leg_f_up.R": [("X", -25)]}),
+                    (10, {"DEF-root": {"rot": [], "loc": (0, -0.04, 0)}, "DEF-chest": [("X", 6)], "DEF-head": [("X", 22)],
+                          "DEF-tail1": [("X", -25)]}),
+                    (16, {})):
+        key("cast", 16, f, pose)
     K.clip(arm, "die", 24, False)
     for f, k in ((1, 0.0), (6, 0.2), (14, 1.0), (18, 0.92), (24, 1.0)):
         key("die", 24, f, {"DEF-root": {"rot": [("Y", 88 * k)], "loc": (0.0, 0, 0.06 * k)},

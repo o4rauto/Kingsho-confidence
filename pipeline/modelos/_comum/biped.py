@@ -171,14 +171,24 @@ def run(arm, lean=18, stride=40, arm_swing=35, frames=16, hold_right=False):
         K.key(arm, f, pose)
 
 
-def attack(arm, style="claw"):
-    """claw: one-arm swipe · sword: side-overhead swing, right hand · slam: two-hand overhead smash ·
-    shoot: bow draw and release · cast: both arms gather and thrust · spear: forward thrust."""
+# frame where each style lands its hit (review renders and ATAQUE_QUADRO use it)
+HIT = {"claw": 8, "sword": 8, "slam": 11, "shoot": 9, "cast": 13, "spear": 8, "punch": 7, "stomp": 10, "sweep": 10,
+       "bite": 8, "swipe2": 7, "hammer": 10, "cleave": 10, "pounce": 8, "throw": 11, "spit": 9, "point": 9,
+       "summon": 12, "drum": 4}
+
+
+def _attack_keys(style):
+    """Melee: claw (one-arm swipe) · sword (side-overhead swing) · slam (two-hand overhead smash) · spear (thrust) ·
+    punch (right jab) · stomp (knee up, foot down) · sweep (two-arm horizontal sweep) · bite (head lunge) ·
+    swipe2 (right then left claw) · hammer (one-arm overhead to the ground) · cleave (two-hand diagonal) ·
+    pounce (crouch and leap). Ranged / specials: shoot (bow) · cast (both arms thrust) · throw (overhand) ·
+    spit (head recoil and spit) · point (one-hand bolt) · summon (arms raised, power up) · drum (alternate beats)."""
     rest = {"DEF-spine": [("X", 8)], "DEF-head": [("X", -6)],
             "DEF-upper_arm.R": [("Y", 6)], "DEF-upper_arm.L": [("Y", -6)]}
     rest.update(_legs_rest())
+    L = _legs_rest
+
     if style in ("claw", "sword"):
-        n = 14
         a = {"DEF-root": {"rot": [], "loc": (0, 0.02, 0)},
              "DEF-spine": [("X", 4), ("Z", -22)], "DEF-head": [("X", -10), ("Z", 10)],
              "DEF-upper_arm.R": [("Y", 115), ("X", -25)], "DEF-forearm.R": [("X", -55)],
@@ -189,9 +199,8 @@ def attack(arm, style="claw"):
              "DEF-upper_arm.R": [("Y", 30), ("X", -60), ("Z", -25)], "DEF-forearm.R": [("X", -10)],
              "DEF-hand.R": [("X", -30)], "DEF-upper_arm.L": [("Y", -15), ("X", 25)],
              "DEF-thigh.L": [("X", -30)], "DEF-thigh.R": [("X", 8)], "DEF-shin.L": [("X", 30)], "DEF-shin.R": [("X", 10)]}
-        keys = ((1, rest), (5, a), (8, b), (n, rest))
-    elif style == "slam":
-        n = 18
+        return 14, ((1, rest), (5, a), (8, b), (14, rest))
+    if style == "slam":
         a = {"DEF-root": {"rot": [], "loc": (0, 0.03, 0.01)}, "DEF-spine": [("X", -12)], "DEF-head": [("X", 8)],
              "DEF-upper_arm.L": [("X", -160), ("Y", -10)], "DEF-upper_arm.R": [("X", -160), ("Y", 10)],
              "DEF-forearm.L": [("X", -30)], "DEF-forearm.R": [("X", -30)]}
@@ -199,36 +208,153 @@ def attack(arm, style="claw"):
              "DEF-upper_arm.L": [("X", -40), ("Y", -10)], "DEF-upper_arm.R": [("X", -40), ("Y", 10)],
              "DEF-forearm.L": [("X", -5)], "DEF-forearm.R": [("X", -5)],
              "DEF-thigh.L": [("X", -30)], "DEF-thigh.R": [("X", -30)], "DEF-shin.L": [("X", 40)], "DEF-shin.R": [("X", 40)]}
-        keys = ((1, rest), (8, a), (11, b), (n, rest))
-    elif style == "shoot":
-        n = 16
+        return 18, ((1, rest), (8, a), (11, b), (18, rest))
+    if style == "shoot":
         a = {"DEF-spine": [("Z", 20), ("X", 4)], "DEF-head": [("Z", -16)],
              "DEF-upper_arm.L": [("X", -85), ("Y", -10)], "DEF-forearm.L": [("X", -5)],
              "DEF-upper_arm.R": [("X", -80), ("Y", 25)], "DEF-forearm.R": [("Z", -100)]}
         b = {"DEF-spine": [("Z", 22), ("X", 2)], "DEF-head": [("Z", -16)],
              "DEF-upper_arm.L": [("X", -88), ("Y", -10)], "DEF-forearm.L": [("X", -5)],
              "DEF-upper_arm.R": [("X", -70), ("Y", 55)], "DEF-forearm.R": [("Z", -20)]}
-        keys = ((1, rest), (7, a), (9, b), (n, rest))
-    elif style == "cast":
-        n = 20
+        return 16, ((1, rest), (7, a), (9, b), (16, rest))
+    if style == "cast":
         a = {"DEF-spine": [("X", -10)], "DEF-head": [("X", 10)],
              "DEF-upper_arm.L": [("X", -150), ("Y", -25)], "DEF-upper_arm.R": [("X", -150), ("Y", 25)],
              "DEF-forearm.L": [("X", -20)], "DEF-forearm.R": [("X", -20)]}
         b = {"DEF-root": {"rot": [], "loc": (0, -0.04, 0)}, "DEF-spine": [("X", 18)], "DEF-head": [("X", -10)],
              "DEF-upper_arm.L": [("X", -80), ("Y", -10)], "DEF-upper_arm.R": [("X", -80), ("Y", 10)],
              "DEF-forearm.L": [("X", -5)], "DEF-forearm.R": [("X", -5)]}
-        keys = ((1, rest), (9, a), (13, b), (n, rest))
-    else:   # spear
-        n = 14
+        return 20, ((1, rest), (9, a), (13, b), (20, rest))
+    if style == "spear":
         a = {"DEF-root": {"rot": [], "loc": (0, 0.04, 0)}, "DEF-spine": [("X", 0), ("Z", -15)],
              "DEF-upper_arm.R": [("X", -40), ("Y", 30)], "DEF-forearm.R": [("X", -70)]}
         b = {"DEF-root": {"rot": [], "loc": (0, -0.1, -0.01)}, "DEF-spine": [("X", 20), ("Z", 10)],
              "DEF-upper_arm.R": [("X", -85), ("Y", 10)], "DEF-forearm.R": [("X", -5)],
              "DEF-thigh.L": [("X", -35)], "DEF-thigh.R": [("X", 10)], "DEF-shin.L": [("X", 35)]}
-        keys = ((1, rest), (5, a), (8, b), (n, rest))
-    K.clip(arm, "attack", n, False)
+        return 14, ((1, rest), (5, a), (8, b), (14, rest))
+    if style == "punch":
+        a = dict(L(), **{"DEF-root": {"rot": [], "loc": (0, 0.03, 0)}, "DEF-spine": [("X", 4), ("Z", -24)],
+                         "DEF-upper_arm.R": [("X", -40), ("Y", 25)], "DEF-forearm.R": [("X", -100)],
+                         "DEF-upper_arm.L": [("X", -55), ("Y", -10)], "DEF-forearm.L": [("X", -90)]})
+        b = {"DEF-root": {"rot": [], "loc": (0, -0.09, 0)}, "DEF-spine": [("X", 16), ("Z", 26)], "DEF-head": [("X", -10)],
+             "DEF-upper_arm.R": [("X", -92), ("Y", -5)], "DEF-forearm.R": [("X", -4)],
+             "DEF-upper_arm.L": [("X", -40), ("Y", -15)], "DEF-forearm.L": [("X", -95)],
+             "DEF-thigh.L": [("X", -32)], "DEF-shin.L": [("X", 28)], "DEF-thigh.R": [("X", 10)], "DEF-shin.R": [("X", 10)]}
+        return 12, ((1, rest), (4, a), (7, b), (12, rest))
+    if style == "stomp":
+        a = {"DEF-root": {"rot": [], "loc": (0, 0, 0.03)}, "DEF-spine": [("X", -8)], "DEF-head": [("X", 8)],
+             "DEF-thigh.R": [("X", -65)], "DEF-shin.R": [("X", 75)], "DEF-thigh.L": [("X", -6)], "DEF-shin.L": [("X", 10)],
+             "DEF-upper_arm.L": [("Y", -75), ("X", -40)], "DEF-upper_arm.R": [("Y", 75), ("X", -40)],
+             "DEF-forearm.L": [("X", -40)], "DEF-forearm.R": [("X", -40)]}
+        b = {"DEF-root": {"rot": [], "loc": (0, -0.03, -0.05)}, "DEF-spine": [("X", 22)], "DEF-head": [("X", -14)],
+             "DEF-thigh.R": [("X", -20)], "DEF-shin.R": [("X", 18)], "DEF-thigh.L": [("X", -25)], "DEF-shin.L": [("X", 40)],
+             "DEF-upper_arm.L": [("X", -55), ("Y", -25)], "DEF-upper_arm.R": [("X", -55), ("Y", 25)],
+             "DEF-forearm.L": [("X", -15)], "DEF-forearm.R": [("X", -15)]}
+        return 16, ((1, rest), (7, a), (10, b), (13, b), (16, rest))
+    if style == "sweep":
+        a = dict(L(), **{"DEF-root": {"rot": [], "loc": (0, 0.02, 0)}, "DEF-spine": [("X", 4), ("Z", -38)],
+                         "DEF-upper_arm.R": [("X", -55), ("Y", 60)], "DEF-forearm.R": [("X", -20)],
+                         "DEF-upper_arm.L": [("X", -40), ("Y", -10)], "DEF-forearm.L": [("X", -40)]})
+        b = {"DEF-root": {"rot": [], "loc": (0, -0.06, -0.02)}, "DEF-spine": [("X", 22), ("Z", 38)], "DEF-head": [("X", -10)],
+             "DEF-upper_arm.R": [("X", -80), ("Y", -20)], "DEF-forearm.R": [("X", -10)],
+             "DEF-upper_arm.L": [("X", -65), ("Y", -60)], "DEF-forearm.L": [("X", -10)],
+             "DEF-thigh.L": [("X", -28)], "DEF-shin.L": [("X", 30)], "DEF-thigh.R": [("X", 6)], "DEF-shin.R": [("X", 12)]}
+        return 16, ((1, rest), (6, a), (10, b), (16, rest))
+    if style == "bite":
+        a = dict(L(), **{"DEF-root": {"rot": [], "loc": (0, 0.05, 0)}, "DEF-spine": [("X", -12)], "DEF-head": [("X", -28)],
+                         "DEF-upper_arm.L": [("X", 25), ("Y", -20)], "DEF-upper_arm.R": [("X", 25), ("Y", 20)]})
+        b = {"DEF-root": {"rot": [], "loc": (0, -0.13, -0.02)}, "DEF-spine": [("X", 34)], "DEF-head": [("X", 26)],
+             "DEF-upper_arm.L": [("X", -45), ("Y", -25)], "DEF-upper_arm.R": [("X", -45), ("Y", 25)],
+             "DEF-forearm.L": [("X", -30)], "DEF-forearm.R": [("X", -30)],
+             "DEF-thigh.L": [("X", -30)], "DEF-shin.L": [("X", 30)], "DEF-thigh.R": [("X", 12)], "DEF-shin.R": [("X", 12)]}
+        return 14, ((1, rest), (5, a), (8, b), (14, rest))
+    if style == "swipe2":
+        a = dict(L(), **{"DEF-spine": [("X", 6), ("Z", -12)], "DEF-upper_arm.R": [("X", -130), ("Y", 35)], "DEF-forearm.R": [("X", -30)],
+                         "DEF-upper_arm.L": [("X", -30), ("Y", -20)]})
+        b = dict(L(), **{"DEF-root": {"rot": [], "loc": (0, -0.05, 0)}, "DEF-spine": [("X", 18), ("Z", 16)],
+                         "DEF-upper_arm.R": [("X", -40), ("Y", -15)], "DEF-forearm.R": [("X", -10)],
+                         "DEF-upper_arm.L": [("X", -130), ("Y", -35)], "DEF-forearm.L": [("X", -30)]})
+        c = dict(L(), **{"DEF-root": {"rot": [], "loc": (0, -0.08, 0)}, "DEF-spine": [("X", 22), ("Z", -16)],
+                         "DEF-upper_arm.R": [("X", -60), ("Y", 10)], "DEF-upper_arm.L": [("X", -40), ("Y", 15)],
+                         "DEF-forearm.L": [("X", -10)]})
+        return 16, ((1, rest), (4, a), (7, b), (10, c), (16, rest))
+    if style == "hammer":
+        a = dict(L(), **{"DEF-root": {"rot": [], "loc": (0, 0.03, 0.01)}, "DEF-spine": [("X", -12), ("Z", -8)], "DEF-head": [("X", 8)],
+                         "DEF-upper_arm.R": [("X", -170), ("Y", 10)], "DEF-forearm.R": [("X", -45)],
+                         "DEF-upper_arm.L": [("X", -30), ("Y", -30)]})
+        b = {"DEF-root": {"rot": [], "loc": (0, -0.07, -0.03)}, "DEF-spine": [("X", 30), ("Z", 6)], "DEF-head": [("X", -16)],
+             "DEF-upper_arm.R": [("X", -50), ("Y", 5)], "DEF-forearm.R": [("X", -5)],
+             "DEF-upper_arm.L": [("X", 10), ("Y", -35)],
+             "DEF-thigh.L": [("X", -32)], "DEF-shin.L": [("X", 36)], "DEF-thigh.R": [("X", 6)], "DEF-shin.R": [("X", 14)]}
+        return 16, ((1, rest), (7, a), (10, b), (16, rest))
+    if style == "cleave":
+        a = dict(L(), **{"DEF-root": {"rot": [], "loc": (0, 0.03, 0)}, "DEF-spine": [("X", -10), ("Z", -30)], "DEF-head": [("X", 6)],
+                         "DEF-upper_arm.R": [("X", -150), ("Y", 45)], "DEF-forearm.R": [("X", -40)],
+                         "DEF-upper_arm.L": [("X", -140), ("Y", 15)], "DEF-forearm.L": [("X", -40)]})
+        b = {"DEF-root": {"rot": [], "loc": (0, -0.09, -0.02)}, "DEF-spine": [("X", 26), ("Z", 30)], "DEF-head": [("X", -12)],
+             "DEF-upper_arm.R": [("X", -50), ("Y", -40)], "DEF-forearm.R": [("X", -10)],
+             "DEF-upper_arm.L": [("X", -40), ("Y", -10)], "DEF-forearm.L": [("X", -10)],
+             "DEF-thigh.L": [("X", -32)], "DEF-shin.L": [("X", 30)], "DEF-thigh.R": [("X", 10)], "DEF-shin.R": [("X", 12)]}
+        return 16, ((1, rest), (7, a), (10, b), (16, rest))
+    if style == "pounce":
+        a = {"DEF-root": {"rot": [], "loc": (0, 0.02, -0.05)}, "DEF-spine": [("X", 26)], "DEF-head": [("X", -20)],
+             "DEF-thigh.L": [("X", -45)], "DEF-thigh.R": [("X", -45)], "DEF-shin.L": [("X", 70)], "DEF-shin.R": [("X", 70)],
+             "DEF-upper_arm.L": [("X", 40), ("Y", -10)], "DEF-upper_arm.R": [("X", 40), ("Y", 10)]}
+        b = {"DEF-root": {"rot": [], "loc": (0, -0.2, 0.12)}, "DEF-spine": [("X", 12)], "DEF-head": [("X", -8)],
+             "DEF-thigh.L": [("X", -12)], "DEF-thigh.R": [("X", 15)], "DEF-shin.L": [("X", 25)], "DEF-shin.R": [("X", 30)],
+             "DEF-upper_arm.L": [("X", -125), ("Y", -15)], "DEF-upper_arm.R": [("X", -125), ("Y", 15)],
+             "DEF-forearm.L": [("X", -10)], "DEF-forearm.R": [("X", -10)]}
+        c = {"DEF-root": {"rot": [], "loc": (0, -0.22, -0.02)}, "DEF-spine": [("X", 30)], "DEF-head": [("X", -14)],
+             "DEF-thigh.L": [("X", -40)], "DEF-thigh.R": [("X", -20)], "DEF-shin.L": [("X", 55)], "DEF-shin.R": [("X", 40)],
+             "DEF-upper_arm.L": [("X", -60), ("Y", -20)], "DEF-upper_arm.R": [("X", -60), ("Y", 20)]}
+        return 16, ((1, rest), (5, a), (8, b), (11, c), (16, rest))
+    if style == "throw":
+        a = dict(L(), **{"DEF-root": {"rot": [], "loc": (0, 0.03, 0)}, "DEF-spine": [("X", -8), ("Z", -26)], "DEF-head": [("Z", 12)],
+                         "DEF-upper_arm.R": [("X", -150), ("Y", 40)], "DEF-forearm.R": [("X", -65)],
+                         "DEF-upper_arm.L": [("X", -75), ("Y", -10)], "DEF-forearm.L": [("X", -10)]})
+        b = {"DEF-root": {"rot": [], "loc": (0, -0.05, 0)}, "DEF-spine": [("X", 20), ("Z", 22)], "DEF-head": [("X", -8)],
+             "DEF-upper_arm.R": [("X", -75), ("Y", -10)], "DEF-forearm.R": [("X", -5)],
+             "DEF-upper_arm.L": [("X", -20), ("Y", -25)],
+             "DEF-thigh.L": [("X", -28)], "DEF-shin.L": [("X", 22)], "DEF-thigh.R": [("X", 8)], "DEF-shin.R": [("X", 12)]}
+        return 18, ((1, rest), (8, a), (11, b), (18, rest))
+    if style == "spit":
+        a = dict(L(), **{"DEF-root": {"rot": [], "loc": (0, 0.04, 0)}, "DEF-spine": [("X", -16)], "DEF-head": [("X", -26)],
+                         "DEF-upper_arm.L": [("Y", -30)], "DEF-upper_arm.R": [("Y", 30)]})
+        b = dict(L(), **{"DEF-root": {"rot": [], "loc": (0, -0.05, 0)}, "DEF-spine": [("X", 22)], "DEF-head": [("X", 30)],
+                         "DEF-upper_arm.L": [("Y", -15), ("X", 20)], "DEF-upper_arm.R": [("Y", 15), ("X", 20)]})
+        return 14, ((1, rest), (6, a), (9, b), (14, rest))
+    if style == "point":
+        a = dict(L(), **{"DEF-spine": [("X", 2), ("Z", -14)], "DEF-upper_arm.R": [("X", -55), ("Y", 25)], "DEF-forearm.R": [("X", -80)],
+                         "DEF-upper_arm.L": [("X", -20), ("Y", -15)]})
+        b = dict(L(), **{"DEF-root": {"rot": [], "loc": (0, -0.03, 0)}, "DEF-spine": [("X", 10), ("Z", 16)], "DEF-head": [("X", -6)],
+                         "DEF-upper_arm.R": [("X", -98), ("Y", 0)], "DEF-forearm.R": [("X", 0)],
+                         "DEF-upper_arm.L": [("X", 25), ("Y", -25)]})
+        return 14, ((1, rest), (6, a), (9, b), (14, rest))
+    if style == "summon":
+        a = dict(L(), **{"DEF-root": {"rot": [], "loc": (0, 0, 0.03)}, "DEF-spine": [("X", -14)], "DEF-head": [("X", 16)],
+                         "DEF-upper_arm.L": [("X", -165), ("Y", -22)], "DEF-upper_arm.R": [("X", -165), ("Y", 22)],
+                         "DEF-forearm.L": [("X", -10)], "DEF-forearm.R": [("X", -10)]})
+        b = dict(a, **{"DEF-root": {"rot": [], "loc": (0, 0, 0.05)}, "DEF-spine": [("X", -18)],
+                       "DEF-upper_arm.L": [("X", -172), ("Y", -30)], "DEF-upper_arm.R": [("X", -172), ("Y", 30)]})
+        return 20, ((1, rest), (8, a), (12, b), (20, rest))
+    if style == "drum":
+        up = {"DEF-upper_arm.L": [("X", -45), ("Y", -15)], "DEF-upper_arm.R": [("X", -45), ("Y", 15)]}
+        a = dict(L(), **up, **{"DEF-forearm.R": [("X", -15)], "DEF-forearm.L": [("X", -95)], "DEF-spine": [("X", 12), ("Z", 6)]})
+        b = dict(L(), **up, **{"DEF-forearm.R": [("X", -95)], "DEF-forearm.L": [("X", -15)], "DEF-spine": [("X", 12), ("Z", -6)]})
+        return 16, ((1, rest), (4, a), (8, b), (12, a), (16, rest))
+    raise ValueError("unknown attack style " + style)
+
+
+def attack(arm, style="claw", name="attack"):
+    n, keys = _attack_keys(style)
+    K.clip(arm, name, n, False)
     for f, pose in keys:
         K.key(arm, f, pose)
+
+
+def cast(arm, style="cast"):
+    """The clip the game plays for ranged shots, heals and specials (falls back to 'attack' when missing)."""
+    attack(arm, style, name="cast")
 
 
 def die(arm):

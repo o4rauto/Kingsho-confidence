@@ -7,11 +7,11 @@
  "clips": {
   "idle": 48,
   "run": 16,
-  "attack": 18,
+  "attack": 16,
   "die": 28
  },
  "id": "yeti",
  "glb": "godot/assets/models/yeti.glb",
  "unweighted_fixed": 0,
- "attack_frame": 11
+ "attack_frame": 10
 }

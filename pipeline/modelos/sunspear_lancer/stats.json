@@ -8,6 +8,7 @@
   "idle": 48,
   "run": 16,
   "attack": 14,
+  "cast": 18,
   "die": 28
  },
  "id": "sunspear_lancer",

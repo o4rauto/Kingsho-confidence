@@ -1,0 +1,17 @@
+{
+ "tris": 3368,
+ "verts": 1753,
+ "bones": 18,
+ "materials": 8,
+ "height": 0.952,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 16,
+  "die": 28
+ },
+ "id": "fire_imp",
+ "glb": "godot/assets/models/fire_imp.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

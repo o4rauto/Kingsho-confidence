@@ -8,7 +8,7 @@ import kit as K
 import biped as BP
 
 NOME = "CR_SiegeTitan"
-ATAQUE_QUADRO = 11
+ATAQUE_QUADRO = 7
 PALETA = {"Red": ("C8402A", 0.5, 0.25), "RedDark": ("8E2A1E", 0.55, 0.25), "Bronze": ("D8963A", 0.4, 0.55),
           "Joint": ("6E6862", 0.5, 0.45), "Steel": ("C4C8D0", 0.3, 0.65), "SteelDark": ("70767E", 0.4, 0.6),
           "Visor": "181212", "Eye": "FFB03A", "Soot": "2A2622"}
@@ -101,5 +101,5 @@ def pecas():
 def animar(arm):
     BP.idle(arm, lean=6, arm_out=8)
     BP.run(arm, lean=8, stride=22, arm_swing=12)
-    BP.attack(arm, "slam")
+    BP.attack(arm, "punch")
     BP.die(arm)

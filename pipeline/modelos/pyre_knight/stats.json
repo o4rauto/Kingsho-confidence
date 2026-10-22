@@ -8,6 +8,7 @@
   "idle": 48,
   "run": 16,
   "attack": 14,
+  "cast": 16,
   "die": 28
  },
  "id": "pyre_knight",

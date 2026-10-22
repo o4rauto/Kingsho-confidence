@@ -7,11 +7,12 @@
  "clips": {
   "idle": 48,
   "run": 16,
-  "attack": 20,
+  "attack": 18,
+  "cast": 20,
   "die": 28
  },
  "id": "ashen_queen",
  "glb": "godot/assets/models/ashen_queen.glb",
  "unweighted_fixed": 0,
- "attack_frame": 13
+ "attack_frame": 11
 }

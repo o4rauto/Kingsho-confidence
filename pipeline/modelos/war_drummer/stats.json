@@ -7,11 +7,12 @@
  "clips": {
   "idle": 48,
   "run": 16,
-  "attack": 18,
+  "attack": 16,
+  "cast": 16,
   "die": 28
  },
  "id": "war_drummer",
  "glb": "godot/assets/models/war_drummer.glb",
  "unweighted_fixed": 0,
- "attack_frame": 11
+ "attack_frame": 10
 }

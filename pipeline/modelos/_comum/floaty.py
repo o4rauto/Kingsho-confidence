@@ -35,6 +35,14 @@ def animate(arm, bob=0.05, sway=10):
                          "DEF-top": [("X", -30)], "DEF-arm.L": [("X", -80)], "DEF-arm.R": [("X", -80)]}),
                     (14, {})):
         K.key(arm, f, pose)
+    K.clip(arm, "cast", 14, False)   # ranged puff / spell: recoil, swell, push forward without lunging
+    for f, pose in ((1, {}),
+                    (6, {"DEF-body": {"rot": [("X", -16)], "loc": (0, 0.06, 0.03), "scale": (1.12, 1.12, 1.0)},
+                         "DEF-top": [("X", 18)], "DEF-arm.L": [("Y", -70)], "DEF-arm.R": [("Y", 70)]}),
+                    (9, {"DEF-body": {"rot": [("X", 16)], "loc": (0, -0.05, 0.0), "scale": (0.9, 0.9, 1.08)},
+                         "DEF-top": [("X", -14)], "DEF-arm.L": [("X", -95), ("Y", -10)], "DEF-arm.R": [("X", -95), ("Y", 10)]}),
+                    (14, {})):
+        K.key(arm, f, pose)
     K.clip(arm, "die", 24, False)
     for f, k in ((1, 0.0), (6, 0.25), (16, 0.85), (24, 1.0)):
         s = 1 - 0.85 * k

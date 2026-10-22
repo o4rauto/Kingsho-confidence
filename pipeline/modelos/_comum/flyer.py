@@ -40,6 +40,12 @@ def animate(arm, hover=0.04):
                     (8, dict(_flap(-0.8), **{"DEF-body": {"rot": [("X", 35)], "loc": (0, -0.2, -0.1)}, "DEF-head": [("X", 25)]})),
                     (14, _flap(0.3))):
         K.key(arm, f, pose)
+    K.clip(arm, "cast", 14, False)   # ranged spit: back off, rear the head, spit forward
+    for f, pose in ((1, _flap(0.3)),
+                    (6, dict(_flap(1.0), **{"DEF-body": {"rot": [("X", -20)], "loc": (0, 0.08, 0.06)}, "DEF-head": [("X", -25)]})),
+                    (9, dict(_flap(-0.4), **{"DEF-body": {"rot": [("X", 12)], "loc": (0, 0.0, 0.02)}, "DEF-head": [("X", 35)]})),
+                    (14, _flap(0.3))):
+        K.key(arm, f, pose)
     K.clip(arm, "die", 22, False)
     for f, k in ((1, 0.0), (6, 0.3), (16, 1.0), (22, 1.0)):
         pose = {"DEF-root": {"rot": [("Y", 70 * k)], "loc": (0, 0, 0)},

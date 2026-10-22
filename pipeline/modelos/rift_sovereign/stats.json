@@ -8,6 +8,7 @@
   "idle": 48,
   "run": 16,
   "attack": 20,
+  "cast": 20,
   "die": 28
  },
  "id": "rift_sovereign",

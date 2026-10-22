@@ -37,6 +37,7 @@ var _wings: Array[Node3D] = []
 var _limbs := {}         # name -> Node3D
 var _rest := {}          # name -> Vector3 rest rotation
 var _height := 1.0
+var _oneshot := 0.0      # GLB: seconds left of an attack/cast/hit clip; idle/run wait for it
 
 const ATTACK_TIME := 0.32
 const CAST_TIME := 0.5
@@ -99,12 +100,18 @@ func play(name: String) -> void:
 	elif name == "hit":
 		_hit_t = HIT_TIME
 	if anim_player:
+		# callers ask for idle/run every frame while fighting: let a one-shot clip finish first
+		if name in ["idle", "run", "fly"] and _oneshot > 0.0:
+			current = name
+			return
 		var found := _match_anim(name)
-		if found != "" and (found != anim_player.current_animation or name == "attack"):
+		if found != "" and (found != anim_player.current_animation or name in ["attack", "cast", "hit"]):
 			anim_player.play(found, 0.15)
+			var a := anim_player.get_animation(found)
 			if name in ["idle", "run", "fly"]:
-				var a := anim_player.get_animation(found)
 				if a: a.loop_mode = Animation.LOOP_LINEAR
+			elif name in ["attack", "cast", "hit"] and a:
+				_oneshot = a.length
 	if name in ["idle", "run", "fly", "die"]:
 		current = name
 
@@ -112,6 +119,12 @@ func _process(delta: float) -> void:
 	if is_sprite:
 		_animate_sprite(delta)
 		return
+	if _oneshot > 0.0:
+		_oneshot -= delta
+		if _oneshot <= 0.0 and current not in ["die", ""]:
+			var back := current
+			current = ""
+			play(back)
 	if not is_placeholder or _body == null:
 		return
 	_t += delta

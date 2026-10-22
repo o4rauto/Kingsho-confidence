@@ -8,6 +8,7 @@
   "idle": 48,
   "run": 16,
   "attack": 18,
+  "cast": 16,
   "die": 28
  },
  "id": "boulder_golem",

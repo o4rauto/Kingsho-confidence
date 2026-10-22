@@ -1,0 +1,17 @@
+{
+ "tris": 3992,
+ "verts": 2241,
+ "bones": 18,
+ "materials": 7,
+ "height": 1.124,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 16,
+  "die": 28
+ },
+ "id": "root_horror",
+ "glb": "godot/assets/models/root_horror.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 10
+}

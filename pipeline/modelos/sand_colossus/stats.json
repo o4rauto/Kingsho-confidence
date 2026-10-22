@@ -1,0 +1,17 @@
+{
+ "tris": 6046,
+ "verts": 3098,
+ "bones": 18,
+ "materials": 9,
+ "height": 1.321,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 12,
+  "die": 28
+ },
+ "id": "sand_colossus",
+ "glb": "godot/assets/models/sand_colossus.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 7
+}

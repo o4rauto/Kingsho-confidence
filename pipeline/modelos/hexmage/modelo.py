@@ -7,7 +7,7 @@ import kit as K
 import biped as BP
 
 NOME = "CH_Hexmage"
-ATAQUE_QUADRO = 13
+ATAQUE_QUADRO = 10
 PALETA = {"Skin": "7AB83A", "SkinDark": "5A8A2A", "Robe": "8A3AB8", "RobeDark": "5E2486", "Leather": "6B4426",
           "Wood": "7A5434", "Eye": "F2D24A", "Pupil": "1A1408", "Mouth": "3A1A1A", "Gem": ("E04AF0", 0.3, 0.0)}
 BRILHO = ("Gem",)
@@ -48,5 +48,6 @@ def pecas():
 def animar(arm):
     BP.idle(arm, lean=8, arm_out=6)
     BP.run(arm, lean=14, stride=28, arm_swing=20, hold_right=True)
-    BP.attack(arm, "cast")
+    BP.attack(arm, "hammer")
+    BP.cast(arm, "point")
     BP.die(arm)

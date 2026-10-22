@@ -1,0 +1,17 @@
+{
+ "tris": 7224,
+ "verts": 3969,
+ "bones": 18,
+ "materials": 7,
+ "height": 1.352,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 18,
+  "die": 28
+ },
+ "id": "magma_tyrant",
+ "glb": "godot/assets/models/magma_tyrant.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 11
+}

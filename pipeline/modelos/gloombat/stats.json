@@ -8,6 +8,7 @@
   "idle": 16,
   "run": 10,
   "attack": 14,
+  "cast": 14,
   "die": 22
  },
  "id": "gloombat",

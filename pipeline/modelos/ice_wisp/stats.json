@@ -8,6 +8,7 @@
   "idle": 36,
   "run": 16,
   "attack": 14,
+  "cast": 14,
   "die": 24
  },
  "id": "ice_wisp",

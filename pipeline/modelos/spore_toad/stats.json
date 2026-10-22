@@ -1,0 +1,18 @@
+{
+ "tris": 4980,
+ "verts": 2631,
+ "bones": 19,
+ "materials": 10,
+ "height": 0.688,
+ "clips": {
+  "idle": 40,
+  "run": 12,
+  "attack": 14,
+  "cast": 16,
+  "die": 24
+ },
+ "id": "spore_toad",
+ "glb": "godot/assets/models/spore_toad.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

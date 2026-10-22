@@ -7,7 +7,7 @@ import kit as K
 import biped as BP
 
 NOME = "CR_DrownedKing"
-ATAQUE_QUADRO = 8
+ATAQUE_QUADRO = 10
 PALETA = {"Skin": "6FA89A", "SkinDark": "4E7E72", "Hair": "A8A8A0", "Cape": "2A3E52", "Fur": "B8B0A0",
           "Gold": ("D8A030", 0.4, 0.45), "Rust": ("6A5A4A", 0.7, 0.3), "Steel": ("8AA0A8", 0.45, 0.45),
           "Cloth": "5A4A36", "Eye": "F2E8A0", "Mouth": "2A1A1E"}
@@ -54,5 +54,6 @@ def pecas():
 def animar(arm):
     BP.idle(arm, lean=8, arm_out=6)
     BP.run(arm, lean=14, stride=26, arm_swing=18, hold_right=True)
-    BP.attack(arm, "spear")
+    BP.attack(arm, "hammer")
+    BP.cast(arm, "summon")
     BP.die(arm)

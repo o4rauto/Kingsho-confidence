@@ -7,7 +7,7 @@ import kit as K
 import biped as BP
 
 NOME = "CH_SisterVale"
-ATAQUE_QUADRO = 13
+ATAQUE_QUADRO = 9
 PALETA = {"Skin": "F2C6A2", "Hair": "F2CB5A", "HairLight": "F8DE8A", "Robe": "F2F2F4", "Blue": "4A86C8",
           "Gold": ("E3B23A", 0.4, 0.4), "Wing": "F0C24A", "WingLight": "F8DC80", "Eye": "F4F4F4", "Pupil": "2E78C8",
           "Brow": "C89A3A", "Mouth": "C06A5A", "Crystal": ("8AD8FF", 0.2, 0.0), "Shine": "FFFFFF"}
@@ -74,5 +74,6 @@ def pecas():
 def animar(arm):
     BP.idle(arm, lean=2, arm_out=4)
     BP.run(arm, lean=10, stride=28, arm_swing=20, hold_right=True)
-    BP.attack(arm, "cast")
+    BP.attack(arm, "point")
+    BP.cast(arm, "summon")
     BP.die(arm)

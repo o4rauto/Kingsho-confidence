@@ -1,0 +1,18 @@
+{
+ "tris": 6987,
+ "verts": 3657,
+ "bones": 18,
+ "materials": 15,
+ "height": 1.441,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 16,
+  "cast": 20,
+  "die": 28
+ },
+ "id": "bog_mother",
+ "glb": "godot/assets/models/bog_mother.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 10
+}

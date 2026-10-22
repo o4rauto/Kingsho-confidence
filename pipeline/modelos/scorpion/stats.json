@@ -1,0 +1,17 @@
+{
+ "tris": 3548,
+ "verts": 1872,
+ "bones": 16,
+ "materials": 7,
+ "height": 0.725,
+ "clips": {
+  "idle": 36,
+  "run": 8,
+  "attack": 14,
+  "die": 24
+ },
+ "id": "scorpion",
+ "glb": "godot/assets/models/scorpion.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

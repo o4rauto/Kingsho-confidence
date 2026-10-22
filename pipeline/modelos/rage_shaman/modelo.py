@@ -8,7 +8,7 @@ import kit as K
 import biped as BP
 
 NOME = "CH_RageShaman"
-ATAQUE_QUADRO = 13
+ATAQUE_QUADRO = 8
 PALETA = {"Skin": "7E9048", "SkinDark": "5C6C34", "Robe": "B0202A", "RobeDark": "781419", "Bone": "EFE6CF",
           "Horn": "C8B48C", "Socket": "201014", "Eye": "FF4A2A", "Tusk": "F4ECD8", "Mouth": "3A1410",
           "Paint": "E8E0D0", "Wood": "6B4426", "Fur": "6A5040", "Leather": "5A3A20", "Gem": ("FF3A2A", 0.3, 0.0),
@@ -100,5 +100,6 @@ def pecas():
 def animar(arm):
     BP.idle(arm, lean=10, arm_out=8)
     BP.run(arm, lean=16, stride=30, arm_swing=22, hold_right=True)
-    BP.attack(arm, "cast")
+    BP.attack(arm, "sword")
+    BP.cast(arm, "summon")
     BP.die(arm)

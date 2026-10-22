@@ -8,7 +8,7 @@ import kit as K
 import biped as BP
 
 NOME = "CR_CinderTreant"
-ATAQUE_QUADRO = 11
+ATAQUE_QUADRO = 10
 PALETA = {"Bark": "4A2E1C", "BarkDark": "2E1C12", "Lava": "FF8A1A", "LavaLight": "FFD24A", "Fire": "FF6A1A",
           "Leaf": "E8782A"}
 BRILHO = ("Lava", "LavaLight", "Fire")
@@ -57,5 +57,6 @@ def pecas():
 def animar(arm):
     BP.idle(arm, lean=8, arm_out=14)
     BP.run(arm, lean=12, stride=26, arm_swing=26)
-    BP.attack(arm, "slam")
+    BP.attack(arm, "sweep")
+    BP.cast(arm, "summon")
     BP.die(arm)

@@ -8,6 +8,7 @@
   "idle": 40,
   "run": 12,
   "attack": 14,
+  "cast": 16,
   "die": 24
  },
  "id": "frost_wyrm",

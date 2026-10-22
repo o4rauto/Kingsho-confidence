@@ -63,5 +63,6 @@ def pecas():
 def animar(arm):
     BP.idle(arm, lean=4, arm_out=10)
     BP.run(arm, lean=10, stride=26, arm_swing=22)
-    BP.attack(arm, "slam")
+    BP.attack(arm, "throw")
+    BP.cast(arm, "slam")
     BP.die(arm)

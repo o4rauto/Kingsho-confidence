@@ -7,7 +7,7 @@ import kit as K
 import biped as BP
 
 NOME = "CR_Sapling"
-ATAQUE_QUADRO = 11
+ATAQUE_QUADRO = 7
 PALETA = {"Bark": "7A4A26", "BarkDark": "54301A", "Leaf": "E8782A", "LeafDark": "C8501E", "Flame": "FF9A2A",
           "FlameLight": "FFD24A", "Glow": "FFC23A"}
 BRILHO = ("Flame", "FlameLight", "Glow")
@@ -48,5 +48,5 @@ def pecas():
 def animar(arm):
     BP.idle(arm, lean=2, arm_out=14)
     BP.run(arm, lean=8, stride=24, arm_swing=26)
-    BP.attack(arm, "slam")
+    BP.attack(arm, "swipe2")
     BP.die(arm)

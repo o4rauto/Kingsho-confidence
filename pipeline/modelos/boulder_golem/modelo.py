@@ -59,4 +59,5 @@ def animar(arm):
     BP.idle(arm, lean=6, arm_out=12)
     BP.run(arm, lean=10, stride=24, arm_swing=20)
     BP.attack(arm, "slam")
+    BP.cast(arm, "stomp")
     BP.die(arm)

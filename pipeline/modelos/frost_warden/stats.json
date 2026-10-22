@@ -7,11 +7,12 @@
  "clips": {
   "idle": 48,
   "run": 16,
-  "attack": 20,
+  "attack": 14,
+  "cast": 20,
   "die": 28
  },
  "id": "frost_warden",
  "glb": "godot/assets/models/frost_warden.glb",
  "unweighted_fixed": 0,
- "attack_frame": 13
+ "attack_frame": 9
 }
