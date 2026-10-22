@@ -1,0 +1,6 @@
+# regeráveis: master .blend e renders de revisão (fica só a folha final)
+*_master.blend
+*.blend1
+*/review/*
+!*/review/folha.png
+!*/review/compare_ref.png
