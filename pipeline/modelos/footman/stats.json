@@ -1,0 +1,17 @@
+{
+ "tris": 4532,
+ "verts": 2364,
+ "bones": 18,
+ "materials": 12,
+ "height": 0.976,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 14,
+  "die": 28
+ },
+ "id": "footman",
+ "glb": "godot/assets/models/footman.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

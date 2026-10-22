@@ -166,11 +166,13 @@ def lock(name, role, bone, root, direction, length, width, thick=0.35, curl=0.04
     return ob
 
 
-def dome(name, role, bone, base_center, radii, cut=-0.05, u=20, v=10):
-    """Upper half of an ellipsoid sitting on base_center (helmets, caps, shells)."""
+def dome(name, role, bone, base_center, radii, cut=-0.05, u=20, v=10, face_open=None):
+    """Upper part of an ellipsoid sitting on base_center (helmets, caps, shells, hoods).
+    face_open=(y, z) removes the front window y < -y, z < z (unit-sphere units) for hoods and cowls."""
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=u, v_segments=v, radius=1.0)
-    bmesh.ops.delete(bm, geom=[x for x in bm.verts if x.co.z < cut], context="VERTS")
+    gone = [x for x in bm.verts if x.co.z < cut or (face_open and x.co.y < -face_open[0] and x.co.z < face_open[1])]
+    bmesh.ops.delete(bm, geom=gone, context="VERTS")
     bmesh.ops.scale(bm, vec=radii, verts=bm.verts)
     return _obj(name, bm, role, bone, base_center)
 
@@ -211,19 +213,21 @@ def arc_strip(name, role, bone, center, rx, ry, rz, width, plane="YZ", n=16, thi
 
 
 def skirt(name, role, bone, top_z, bot_z, top_r, bot_r, depth=0.78, ragged=0.0, side_lift=0.0,
-          segments=16, thickness=0.012, center=(0, 0, 0)):
-    """Open tube from top ring to bottom ring: skirts, robes, loincloths, capes (with ragged hem)."""
+          segments=16, thickness=0.012, center=(0, 0, 0), arc=None):
+    """Open tube from top ring to bottom ring: skirts, robes, loincloths, capes (with ragged hem).
+    arc=(a0, a1) in degrees keeps only part of the ring (0 = +X, 90 = back/+Y): capes, aprons."""
     bm = bmesh.new()
     top, bot = [], []
     cx, cy = center[0], center[1]
-    for i in range(segments):
-        a = 2 * math.pi * i / segments
+    n = segments + (1 if arc else 0)
+    for i in range(n):
+        a = (math.radians(arc[0] + (arc[1] - arc[0]) * i / segments) if arc else 2 * math.pi * i / segments)
         side = abs(math.cos(a))
         hem = bot_z + side_lift * side ** 2 - (ragged if i % 2 else 0.0)
         top.append(bm.verts.new((cx + math.cos(a) * top_r, cy + math.sin(a) * top_r * depth, top_z)))
         bot.append(bm.verts.new((cx + math.cos(a) * bot_r, cy + math.sin(a) * bot_r * depth, hem)))
-    for i in range(segments):
-        j = (i + 1) % segments
+    for i in range(segments if not arc else n - 1):
+        j = (i + 1) % n
         bm.faces.new((top[i], top[j], bot[j], bot[i]))
     ob = _obj(name, bm, role, bone)
     solidify(ob, thickness)
@@ -472,15 +476,14 @@ def key(arm, frame, pose):
         pb.rotation_mode = "QUATERNION"
         pb.rotation_quaternion = q
         pb.keyframe_insert("rotation_quaternion", frame=frame)
+        # location and scale are keyed on every bone at every key (neutral when not given), so a value
+        # set mid-clip never sticks to the following keys
         loc = spec.get("loc") if isinstance(spec, dict) else None
-        if pb.parent is None or loc is not None:
-            pb.location = pb.bone.matrix_local.to_3x3().inverted() @ Vector(loc or (0, 0, 0))
-            pb.keyframe_insert("location", frame=frame)
-        sc = spec.get("scale") if isinstance(spec, dict) else None
-        if sc is not None or pb.parent is None:
-            s = sc if sc is not None else 1.0
-            pb.scale = (s, s, s) if isinstance(s, (int, float)) else s
-            pb.keyframe_insert("scale", frame=frame)
+        pb.location = pb.bone.matrix_local.to_3x3().inverted() @ Vector(loc or (0, 0, 0))
+        pb.keyframe_insert("location", frame=frame)
+        s = spec.get("scale", 1.0) if isinstance(spec, dict) else 1.0
+        pb.scale = (s, s, s) if isinstance(s, (int, float)) else s
+        pb.keyframe_insert("scale", frame=frame)
 
 
 CLIPS = {}

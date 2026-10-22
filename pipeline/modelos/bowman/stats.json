@@ -1,0 +1,17 @@
+{
+ "tris": 5360,
+ "verts": 2812,
+ "bones": 18,
+ "materials": 12,
+ "height": 1.057,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 16,
+  "die": 28
+ },
+ "id": "bowman",
+ "glb": "godot/assets/models/bowman.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 9
+}

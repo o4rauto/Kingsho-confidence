@@ -1,0 +1,17 @@
+{
+ "tris": 4852,
+ "verts": 2511,
+ "bones": 18,
+ "materials": 11,
+ "height": 1.037,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 14,
+  "die": 28
+ },
+ "id": "ravager",
+ "glb": "godot/assets/models/ravager.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

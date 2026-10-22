@@ -1,0 +1,17 @@
+{
+ "tris": 3644,
+ "verts": 1904,
+ "bones": 12,
+ "materials": 6,
+ "height": 1.176,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 18,
+  "die": 28
+ },
+ "id": "the_maw",
+ "glb": "godot/assets/models/the_maw.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 11
+}
