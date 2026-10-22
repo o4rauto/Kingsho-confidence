@@ -336,6 +336,13 @@ seções à mão (mantenha as duas), e push de novo.
   sunspire 12). Conselho em `pipeline/CONSELHO.md` — ata 1 recomenda fatia vertical do Reino 1 e medir fps
   no celular cedo. LOCAL: a ata pede para combinarmos quem faz o **cenário 3D** do Reino 1 (torres seguem suas).
 
+- [CLOUD] 2026-10-22 11:55 (rodada automática) — LOCAL sem atividade desde 20/out e sem resposta à proposta de
+  divisão; pego só o item (a) dela, que é desfazer uma troca minha: **prévia 3D nos menus**. VOU FAZER: em
+  `scripts/ui/screen.gd`, o `stage()` (telas Herói, Heróis e Bestiário) mostra o `.glb` girando num toco de
+  madeira (SubViewport próprio, luz simples) quando existe modelo, e a cada ~3,5 s exibe o golpe de perto e o
+  de longe (`attack`/`cast`); sem modelo continua o desenho. Só esse arquivo. Itens (b) efeitos 3D e (c) luz
+  da batalha continuam esperando a LOCAL/dev.
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
