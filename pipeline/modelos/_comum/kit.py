@@ -98,6 +98,25 @@ def along(name, role, bone, a, b, r0, r1=None, t0=0.0, t1=1.0, segments=10, cap=
     return ob
 
 
+def plate(name, role, bone, center, outline, thickness=0.02, rotation=(0, 0, 0), bulge=0.0):
+    """Flat piece facing -Y, extruded from a convex 2D outline [(x, z), ...]: kite shields, blades, banners,
+    fins. bulge pushes the front centre forward (a domed shield face)."""
+    bm = bmesh.new()
+    cx = sum(x for x, _ in outline) / len(outline)
+    cz = sum(z for _, z in outline) / len(outline)
+    front = [bm.verts.new((x, -thickness / 2, z)) for x, z in outline]
+    back = [bm.verts.new((x, thickness / 2, z)) for x, z in outline]
+    mid = bm.verts.new((cx, -thickness / 2 - bulge, cz))
+    n = len(outline)
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new((front[j], front[i], mid))
+        bm.faces.new((front[i], front[j], back[j], back[i]))
+    bm.faces.new(back)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return _obj(name, bm, role, bone, center, rotation)
+
+
 def capsule(name, role, bone, a, b, r, segments=10):
     """Rounded limb: tube a->b with ball ends, one object."""
     a, b = Vector(a), Vector(b)

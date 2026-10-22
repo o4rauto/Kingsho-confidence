@@ -1,0 +1,17 @@
+{
+ "tris": 5992,
+ "verts": 3138,
+ "bones": 18,
+ "materials": 8,
+ "height": 1.032,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 14,
+  "die": 28
+ },
+ "id": "knight",
+ "glb": "godot/assets/models/knight.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 8
+}

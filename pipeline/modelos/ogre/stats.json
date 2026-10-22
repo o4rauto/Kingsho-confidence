@@ -1,0 +1,17 @@
+{
+ "tris": 5240,
+ "verts": 2736,
+ "bones": 18,
+ "materials": 10,
+ "height": 0.936,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 18,
+  "die": 28
+ },
+ "id": "ogre",
+ "glb": "godot/assets/models/ogre.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 11
+}

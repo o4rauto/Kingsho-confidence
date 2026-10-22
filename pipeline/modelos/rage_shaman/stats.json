@@ -1,0 +1,17 @@
+{
+ "tris": 7730,
+ "verts": 4052,
+ "bones": 18,
+ "materials": 16,
+ "height": 1.005,
+ "clips": {
+  "idle": 48,
+  "run": 16,
+  "attack": 20,
+  "die": 28
+ },
+ "id": "rage_shaman",
+ "glb": "godot/assets/models/rage_shaman.glb",
+ "unweighted_fixed": 0,
+ "attack_frame": 13
+}
