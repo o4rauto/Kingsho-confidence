@@ -1,5 +1,10 @@
 # Pipeline de assets — o "modo de construção" do vídeo
 
+> ⚠️ **Este documento descreve o fluxo ANTIGO (Canva / Tripo / Mixamo).**
+> O procedimento atual e vigente está em **[`PIPELINE_3D.md`](PIPELINE_3D.md)** —
+> o jogo é 100% 3D e o elenco é construído por script no Blender.
+> Mantido aqui só como histórico.
+
 Mesmo método do vídeo de referência (IA → Blender → animações → engine com o
 Claude operando as ferramentas via MCP), adaptado para o Bastion Rush:
 

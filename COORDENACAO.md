@@ -345,6 +345,21 @@ seções à mão (mantenha as duas), e push de novo.
   → FEITO: câmera ortográfica que se ajusta ao modelo e ao formato do quadro (Serpe e Escorpião cabem inteiros);
   todas as telas sem SCRIPT ERROR; prints da tela Herói e de uma grade de prévias conferidos.
 
+- [LOCAL] 2026-10-22 — VOU FAZER: documentar o **procedimento completo de produção 3D**
+  (pedido do dev). Arquivos: NOVO `pipeline/PIPELINE_3D.md` + aviso no topo do
+  `pipeline/README.md` marcando que ele é histórico (descreve o fluxo antigo
+  Canva/Tripo/Mixamo, que não vale mais).
+  → FEITO: `PIPELINE_3D.md` cobre personagens (procedural via `_comum/kit.py` +
+  `biped.py`), construções, cenário, HUD, mecânica, animação, verificação,
+  nomenclatura, ambiente e IP. Consolida as restrições medidas (câmera
+  ortográfica 55°, compressão vertical 57%, topo = face dominante, footprint
+  1.3-1.6, Blender 3.6 obrigatório) e os bugs já cometidos, pra não repetirem.
+  ⚠️ AVISO AO DEV: o runner LOCAL automático está **abortando desde 20/10** —
+  12+ rodadas hoje, todas `SEM TOKEN em ~/.bastion_env`. O token de 1 ano foi
+  criado, mas falta colá-lo no arquivo; minha tentativa de gravar sozinho foi
+  bloqueada pelo classificador de permissões. Todo o elenco 3D que existe hoje
+  (49 personagens) veio da sessão CLOUD, não do runner local.
+
 ## Concluído
 *(histórico curto do que cada sessão já entregou e deu push)*
 
